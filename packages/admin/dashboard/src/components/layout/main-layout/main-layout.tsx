@@ -1,18 +1,21 @@
 import {
+  BellAlert,
   BuildingStorefront,
-  Buildings,
+  ChartBar,
+  ChatBubbleLeftRight,
   ChevronDownMini,
   CogSixTooth,
   CurrencyDollar,
+  CursorArrowRays,
   EllipsisHorizontal,
   MagnifyingGlass,
   MinusMini,
+  Newspaper,
   OpenRectArrowOut,
-  ReceiptPercent,
-  ShoppingCart,
+  PencilSquare,
+  ShoppingBag,
   SquaresPlus,
-  Tag,
-  Users,
+  UserGroup,
 } from "@medusajs/icons"
 import { Avatar, Divider, DropdownMenu, Text, clx } from "@medusajs/ui"
 import { Collapsible as RadixCollapsible } from "radix-ui"
@@ -184,74 +187,68 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
 
   return [
     {
-      icon: <ShoppingCart />,
-      label: t("orders.domain"),
-      to: "/orders",
+      icon: <ShoppingBag />,
+      label: "E-Commerce",
+      to: "/ecommerce",
+      isGroup: true,
       items: [
-        // TODO: Enable when domin is introduced
-        // {
-        //   label: t("draftOrders.domain"),
-        //   to: "/draft-orders",
-        // },
+        { label: "Dashboard", to: "/ecommerce" },
+        { label: t("orders.domain"), to: "/orders" },
+        { label: t("products.domain"), to: "/products" },
+        { label: t("collections.domain"), to: "/collections" },
+        { label: t("categories.domain"), to: "/categories" },
+        { label: t("inventory.domain"), to: "/inventory" },
+        { label: t("reservations.domain"), to: "/reservations" },
+        { label: t("promotions.domain"), to: "/promotions" },
+        { label: t("campaigns.domain"), to: "/campaigns" },
+        { label: t("priceLists.domain"), to: "/price-lists" },
       ],
     },
     {
-      icon: <Tag />,
-      label: t("products.domain"),
-      to: "/products",
+      icon: <UserGroup />,
+      label: "CRM",
+      to: "/crm",
+      isGroup: true,
       items: [
-        {
-          label: t("collections.domain"),
-          to: "/collections",
-        },
-        {
-          label: t("categories.domain"),
-          to: "/categories",
-        },
-        // TODO: Enable when domin is introduced
-        // {
-        //   label: t("giftCards.domain"),
-        //   to: "/gift-cards",
-        // },
+        { label: "Dashboard", to: "/crm" },
+        { label: t("customers.domain"), to: "/customers" },
+        { label: t("customerGroups.domain"), to: "/customer-groups" },
       ],
     },
     {
-      icon: <Buildings />,
-      label: t("inventory.domain"),
-      to: "/inventory",
-      items: [
-        {
-          label: t("reservations.domain"),
-          to: "/reservations",
-        },
-      ],
-    },
-    {
-      icon: <Users />,
-      label: t("customers.domain"),
-      to: "/customers",
-      items: [
-        {
-          label: t("customerGroups.domain"),
-          to: "/customer-groups",
-        },
-      ],
-    },
-    {
-      icon: <ReceiptPercent />,
-      label: t("promotions.domain"),
-      to: "/promotions",
-      items: [
-        {
-          label: t("campaigns.domain"),
-          to: "/campaigns",
-        },
-      ],
+      icon: <ChartBar />,
+      label: "Analytics",
+      to: "/analytics",
     },
     {
       icon: <CurrencyDollar />,
-      label: t("priceLists.domain"),
-      to: "/price-lists",
+      label: "Revenue",
+      to: "/revenue",
+    },
+    {
+      icon: <Newspaper />,
+      label: "CMS",
+      to: "/cms",
+    },
+    {
+      icon: <PencilSquare />,
+      label: "Content",
+      to: "/content",
+    },
+    {
+      icon: <ChatBubbleLeftRight />,
+      label: "Social Media",
+      to: "/social-media",
+    },
+    {
+      icon: <BellAlert />,
+      label: "Notifications",
+      to: "/notifications",
+    },
+    {
+      icon: <CursorArrowRays />,
+      label: "AdSense",
+      to: "/adsense",
     },
   ]
 }

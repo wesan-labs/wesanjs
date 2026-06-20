@@ -951,6 +951,51 @@ export function getRouteMap({
                 },
               ],
             },
+            {
+              path: "/ecommerce",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/ecommerce"),
+            },
+            {
+              path: "/crm",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/crm"),
+            },
+            {
+              path: "/revenue",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/revenue"),
+            },
+            {
+              path: "/analytics",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/analytics"),
+            },
+            {
+              path: "/cms",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/cms"),
+            },
+            {
+              path: "/content",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/content"),
+            },
+            {
+              path: "/social-media",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/social-media"),
+            },
+            {
+              path: "/notifications",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/notifications"),
+            },
+            {
+              path: "/adsense",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/adsense"),
+            },
             ...coreRoutes,
           ],
         },

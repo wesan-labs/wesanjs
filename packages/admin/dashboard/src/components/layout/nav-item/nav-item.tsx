@@ -29,6 +29,9 @@ export type INavItem = {
   from?: string
   nested?: string
   translationNs?: string
+  // Grup başlığı (kendi sayfası olmayan; E-Commerce/CRM). Active kutu almaz —
+  // aksi halde başlık + aktif çocuk ikisi de seçili görünür.
+  isGroup?: boolean
 }
 
 const BASE_NAV_LINK_CLASSES =
@@ -93,6 +96,7 @@ export const NavItem = ({
   type = "core",
   from,
   translationNs,
+  isGroup,
 }: INavItem) => {
   const { t } = useTranslation(translationNs as any)
   const { pathname } = useLocation()
@@ -111,14 +115,21 @@ export const NavItem = ({
       isActive,
       isNested = false,
       isSetting = false,
+      asGroup = false,
     }: {
       to: string
       isActive: boolean
       isNested?: boolean
       isSetting?: boolean
+      asGroup?: boolean
     }) => {
       if (["core", "setting"].includes(type)) {
         isActive = pathname.startsWith(to)
+      }
+
+      // Grup başlığı kendi sayfası olmadığı için active kutu almaz.
+      if (asGroup) {
+        isActive = false
       }
 
       return clx(BASE_NAV_LINK_CLASSES, {
@@ -146,9 +157,12 @@ export const NavItem = ({
               : undefined
           }
           className={({ isActive }) => {
-            return clx(navLinkClassNames({ isActive, isSetting, to }), {
-              "max-lg:hidden": !!items?.length,
-            })
+            return clx(
+              navLinkClassNames({ isActive, isSetting, to, asGroup: isGroup }),
+              {
+                "max-lg:hidden": !!items?.length,
+              }
+            )
           }}
         >
           {type !== "setting" && (
