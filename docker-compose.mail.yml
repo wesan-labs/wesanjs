@@ -1,0 +1,19 @@
+# docker-compose.mail.yml — local-only Stalwart for Panel Mail V1
+services:
+  stalwart:
+    image: stalwartlabs/stalwart:latest
+    container_name: helm-stalwart
+    ports:
+      - "8080:8080"   # HTTP / JMAP / web-admin
+      - "1025:25"     # SMTP (host 1025 to avoid privileged port)
+      - "1143:143"    # IMAP
+      - "1587:587"    # submission
+    volumes:
+      - stalwart_data:/opt/stalwart
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+volumes:
+  stalwart_data:
