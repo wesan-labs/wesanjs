@@ -1,16 +1,22 @@
 import { PropsWithChildren, useEffect, useState } from "react"
-import { ThemeContext, ThemeOption, ThemeValue } from "./theme-context"
+import {
+  ThemeContext,
+  ThemeOption,
+  ThemeStyle,
+  ThemeValue,
+} from "./theme-context"
 
 const THEME_KEY = "medusa_admin_theme"
+const STYLE_KEY = "medusa_admin_theme_style"
 
-function getDefaultValue(): ThemeOption {
+function getDefaultTheme(): ThemeOption {
   const persisted = localStorage?.getItem(THEME_KEY) as ThemeOption
+  return persisted || "system"
+}
 
-  if (persisted) {
-    return persisted
-  }
-
-  return "system"
+function getDefaultStyle(): ThemeStyle {
+  const persisted = localStorage?.getItem(STYLE_KEY) as ThemeStyle
+  return persisted || "default"
 }
 
 function getThemeValue(selected: ThemeOption): ThemeValue {
@@ -29,16 +35,21 @@ function getThemeValue(selected: ThemeOption): ThemeValue {
 }
 
 export const ThemeProvider = ({ children }: PropsWithChildren) => {
-  const [state, setState] = useState<ThemeOption>(getDefaultValue())
-  const [value, setValue] = useState<ThemeValue>(getThemeValue(state))
+  // MODE axis: light / dark / system
+  const [theme, setThemeState] = useState<ThemeOption>(getDefaultTheme())
+  const [value, setValue] = useState<ThemeValue>(getThemeValue(getDefaultTheme()))
+  // STYLE axis: default + design-language themes (data-theme)
+  const [style, setStyleState] = useState<ThemeStyle>(getDefaultStyle())
 
-  const setTheme = (theme: ThemeOption) => {
-    localStorage.setItem(THEME_KEY, theme)
+  const setTheme = (next: ThemeOption) => {
+    localStorage.setItem(THEME_KEY, next)
+    setThemeState(next)
+    setValue(getThemeValue(next))
+  }
 
-    const themeValue = getThemeValue(theme)
-
-    setState(theme)
-    setValue(themeValue)
+  const setStyle = (next: ThemeStyle) => {
+    localStorage.setItem(STYLE_KEY, next)
+    setStyleState(next)
   }
 
   useEffect(() => {
@@ -62,10 +73,19 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
       )
       document.head.appendChild(css)
 
+      // MODE axis -> .dark/.light class (base tokens + class-based checks, e.g. data-grid)
       html.classList.remove(value === "light" ? "dark" : "light")
       html.classList.add(value)
       // Ensures that native elements respect the theme, e.g. the scrollbar.
       html.style.colorScheme = value
+
+      // STYLE axis -> data-theme attribute (design-language token overlay).
+      // Combined with .dark above, [data-theme].dark supplies the dark variant.
+      if (style && style !== "default") {
+        html.setAttribute("data-theme", style)
+      } else {
+        html.removeAttribute("data-theme")
+      }
 
       /**
        * Re-enable transitions after the theme has been set,
@@ -74,10 +94,10 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
       window.getComputedStyle(css).opacity
       document.head.removeChild(css)
     }
-  }, [value])
+  }, [value, style])
 
   return (
-    <ThemeContext.Provider value={{ theme: state, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, style, setStyle }}>
       {children}
     </ThemeContext.Provider>
   )

@@ -1,320 +1,321 @@
 export const theme = {
-  "extend": {
-    "colors": {
-      "ui": {
-        "tag": {
-          "neutral": {
-            "border": {
-              "DEFAULT": "var(--tag-neutral-border)"
+  extend: {
+    colors: {
+      ui: {
+        tag: {
+          neutral: {
+            border: {
+              DEFAULT: "var(--tag-neutral-border)",
             },
-            "icon": {
-              "DEFAULT": "var(--tag-neutral-icon)"
+            icon: {
+              DEFAULT: "var(--tag-neutral-icon)",
             },
-            "text": {
-              "DEFAULT": "var(--tag-neutral-text)"
+            text: {
+              DEFAULT: "var(--tag-neutral-text)",
             },
-            "bg": {
-              "hover": {
-                "DEFAULT": "var(--tag-neutral-bg-hover)"
+            bg: {
+              hover: {
+                DEFAULT: "var(--tag-neutral-bg-hover)",
               },
-              "DEFAULT": "var(--tag-neutral-bg)"
-            }
+              DEFAULT: "var(--tag-neutral-bg)",
+            },
           },
-          "red": {
-            "text": {
-              "DEFAULT": "var(--tag-red-text)"
+          red: {
+            text: {
+              DEFAULT: "var(--tag-red-text)",
             },
-            "bg": {
-              "DEFAULT": "var(--tag-red-bg)",
-              "hover": {
-                "DEFAULT": "var(--tag-red-bg-hover)"
-              }
-            },
-            "border": {
-              "DEFAULT": "var(--tag-red-border)"
-            },
-            "icon": {
-              "DEFAULT": "var(--tag-red-icon)"
-            }
-          },
-          "blue": {
-            "text": {
-              "DEFAULT": "var(--tag-blue-text)"
-            },
-            "border": {
-              "DEFAULT": "var(--tag-blue-border)"
-            },
-            "bg": {
-              "DEFAULT": "var(--tag-blue-bg)",
-              "hover": {
-                "DEFAULT": "var(--tag-blue-bg-hover)"
-              }
-            },
-            "icon": {
-              "DEFAULT": "var(--tag-blue-icon)"
-            }
-          },
-          "orange": {
-            "text": {
-              "DEFAULT": "var(--tag-orange-text)"
-            },
-            "border": {
-              "DEFAULT": "var(--tag-orange-border)"
-            },
-            "icon": {
-              "DEFAULT": "var(--tag-orange-icon)"
-            },
-            "bg": {
-              "hover": {
-                "DEFAULT": "var(--tag-orange-bg-hover)"
+            bg: {
+              DEFAULT: "var(--tag-red-bg)",
+              hover: {
+                DEFAULT: "var(--tag-red-bg-hover)",
               },
-              "DEFAULT": "var(--tag-orange-bg)"
-            }
+            },
+            border: {
+              DEFAULT: "var(--tag-red-border)",
+            },
+            icon: {
+              DEFAULT: "var(--tag-red-icon)",
+            },
           },
-          "green": {
-            "icon": {
-              "DEFAULT": "var(--tag-green-icon)"
+          blue: {
+            text: {
+              DEFAULT: "var(--tag-blue-text)",
             },
-            "border": {
-              "DEFAULT": "var(--tag-green-border)"
+            border: {
+              DEFAULT: "var(--tag-blue-border)",
             },
-            "text": {
-              "DEFAULT": "var(--tag-green-text)"
-            },
-            "bg": {
-              "hover": {
-                "DEFAULT": "var(--tag-green-bg-hover)"
+            bg: {
+              DEFAULT: "var(--tag-blue-bg)",
+              hover: {
+                DEFAULT: "var(--tag-blue-bg-hover)",
               },
-              "DEFAULT": "var(--tag-green-bg)"
-            }
+            },
+            icon: {
+              DEFAULT: "var(--tag-blue-icon)",
+            },
           },
-          "purple": {
-            "bg": {
-              "DEFAULT": "var(--tag-purple-bg)",
-              "hover": {
-                "DEFAULT": "var(--tag-purple-bg-hover)"
-              }
+          orange: {
+            text: {
+              DEFAULT: "var(--tag-orange-text)",
             },
-            "text": {
-              "DEFAULT": "var(--tag-purple-text)"
+            border: {
+              DEFAULT: "var(--tag-orange-border)",
             },
-            "icon": {
-              "DEFAULT": "var(--tag-purple-icon)"
+            icon: {
+              DEFAULT: "var(--tag-orange-icon)",
             },
-            "border": {
-              "DEFAULT": "var(--tag-purple-border)"
-            }
-          }
-        },
-        "bg": {
-          "switch": {
-            "off": {
-              "hover": {
-                "DEFAULT": "var(--bg-switch-off-hover)"
+            bg: {
+              hover: {
+                DEFAULT: "var(--tag-orange-bg-hover)",
               },
-              "DEFAULT": "var(--bg-switch-off)"
-            }
-          },
-          "subtle": {
-            "hover": {
-              "DEFAULT": "var(--bg-subtle-hover)"
+              DEFAULT: "var(--tag-orange-bg)",
             },
-            "DEFAULT": "var(--bg-subtle)",
-            "pressed": {
-              "DEFAULT": "var(--bg-subtle-pressed)"
-            }
           },
-          "field": {
-            "component": {
-              "hover": {
-                "DEFAULT": "var(--bg-field-component-hover)"
+          green: {
+            icon: {
+              DEFAULT: "var(--tag-green-icon)",
+            },
+            border: {
+              DEFAULT: "var(--tag-green-border)",
+            },
+            text: {
+              DEFAULT: "var(--tag-green-text)",
+            },
+            bg: {
+              hover: {
+                DEFAULT: "var(--tag-green-bg-hover)",
               },
-              "DEFAULT": "var(--bg-field-component)"
+              DEFAULT: "var(--tag-green-bg)",
             },
-            "DEFAULT": "var(--bg-field)",
-            "hover": {
-              "DEFAULT": "var(--bg-field-hover)"
-            }
           },
-          "base": {
-            "pressed": {
-              "DEFAULT": "var(--bg-base-pressed)"
-            },
-            "hover": {
-              "DEFAULT": "var(--bg-base-hover)"
-            },
-            "DEFAULT": "var(--bg-base)"
-          },
-          "highlight": {
-            "DEFAULT": "var(--bg-highlight)",
-            "hover": {
-              "DEFAULT": "var(--bg-highlight-hover)"
-            }
-          },
-          "component": {
-            "pressed": {
-              "DEFAULT": "var(--bg-component-pressed)"
-            },
-            "DEFAULT": "var(--bg-component)",
-            "hover": {
-              "DEFAULT": "var(--bg-component-hover)"
-            }
-          },
-          "interactive": {
-            "DEFAULT": "var(--bg-interactive)"
-          },
-          "disabled": {
-            "DEFAULT": "var(--bg-disabled)"
-          },
-          "overlay": {
-            "DEFAULT": "var(--bg-overlay)"
-          }
-        },
-        "border": {
-          "menu": {
-            "bot": {
-              "DEFAULT": "var(--border-menu-bot)"
-            },
-            "top": {
-              "DEFAULT": "var(--border-menu-top)"
-            }
-          },
-          "strong": {
-            "DEFAULT": "var(--border-strong)"
-          },
-          "interactive": {
-            "DEFAULT": "var(--border-interactive)"
-          },
-          "base": {
-            "DEFAULT": "var(--border-base)"
-          },
-          "danger": {
-            "DEFAULT": "var(--border-danger)"
-          },
-          "error": {
-            "DEFAULT": "var(--border-error)"
-          },
-          "transparent": {
-            "DEFAULT": "var(--border-transparent)"
-          }
-        },
-        "contrast": {
-          "fg": {
-            "primary": {
-              "DEFAULT": "var(--contrast-fg-primary)"
-            },
-            "secondary": {
-              "DEFAULT": "var(--contrast-fg-secondary)"
-            }
-          },
-          "bg": {
-            "base": {
-              "pressed": {
-                "DEFAULT": "var(--contrast-bg-base-pressed)"
+          purple: {
+            bg: {
+              DEFAULT: "var(--tag-purple-bg)",
+              hover: {
+                DEFAULT: "var(--tag-purple-bg-hover)",
               },
-              "DEFAULT": "var(--contrast-bg-base)",
-              "hover": {
-                "DEFAULT": "var(--contrast-bg-base-hover)"
-              }
             },
-            "subtle": {
-              "DEFAULT": "var(--contrast-bg-subtle)"
-            }
+            text: {
+              DEFAULT: "var(--tag-purple-text)",
+            },
+            icon: {
+              DEFAULT: "var(--tag-purple-icon)",
+            },
+            border: {
+              DEFAULT: "var(--tag-purple-border)",
+            },
           },
-          "border": {
-            "base": {
-              "DEFAULT": "var(--contrast-border-base)"
-            },
-            "bot": {
-              "DEFAULT": "var(--contrast-border-bot)"
-            },
-            "top": {
-              "DEFAULT": "var(--contrast-border-top)"
-            }
-          }
         },
-        "button": {
-          "inverted": {
-            "pressed": {
-              "DEFAULT": "var(--button-inverted-pressed)"
+        bg: {
+          switch: {
+            off: {
+              hover: {
+                DEFAULT: "var(--bg-switch-off-hover)",
+              },
+              DEFAULT: "var(--bg-switch-off)",
             },
-            "hover": {
-              "DEFAULT": "var(--button-inverted-hover)"
-            },
-            "DEFAULT": "var(--button-inverted)"
           },
-          "transparent": {
-            "DEFAULT": "var(--button-transparent)",
-            "hover": {
-              "DEFAULT": "var(--button-transparent-hover)"
+          subtle: {
+            hover: {
+              DEFAULT: "var(--bg-subtle-hover)",
             },
-            "pressed": {
-              "DEFAULT": "var(--button-transparent-pressed)"
-            }
+            DEFAULT: "var(--bg-subtle)",
+            pressed: {
+              DEFAULT: "var(--bg-subtle-pressed)",
+            },
           },
-          "danger": {
-            "pressed": {
-              "DEFAULT": "var(--button-danger-pressed)"
+          field: {
+            component: {
+              hover: {
+                DEFAULT: "var(--bg-field-component-hover)",
+              },
+              DEFAULT: "var(--bg-field-component)",
             },
-            "DEFAULT": "var(--button-danger)",
-            "hover": {
-              "DEFAULT": "var(--button-danger-hover)"
-            }
+            DEFAULT: "var(--bg-field)",
+            hover: {
+              DEFAULT: "var(--bg-field-hover)",
+            },
           },
-          "neutral": {
-            "DEFAULT": "var(--button-neutral)",
-            "hover": {
-              "DEFAULT": "var(--button-neutral-hover)"
+          base: {
+            pressed: {
+              DEFAULT: "var(--bg-base-pressed)",
             },
-            "pressed": {
-              "DEFAULT": "var(--button-neutral-pressed)"
-            }
-          }
+            hover: {
+              DEFAULT: "var(--bg-base-hover)",
+            },
+            DEFAULT: "var(--bg-base)",
+          },
+          highlight: {
+            DEFAULT: "var(--bg-highlight)",
+            hover: {
+              DEFAULT: "var(--bg-highlight-hover)",
+            },
+          },
+          component: {
+            pressed: {
+              DEFAULT: "var(--bg-component-pressed)",
+            },
+            DEFAULT: "var(--bg-component)",
+            hover: {
+              DEFAULT: "var(--bg-component-hover)",
+            },
+          },
+          interactive: {
+            DEFAULT: "var(--bg-interactive)",
+          },
+          disabled: {
+            DEFAULT: "var(--bg-disabled)",
+          },
+          overlay: {
+            DEFAULT: "var(--bg-overlay)",
+          },
         },
-        "fg": {
-          "on": {
-            "color": {
-              "DEFAULT": "var(--fg-on-color)"
+        border: {
+          menu: {
+            bot: {
+              DEFAULT: "var(--border-menu-bot)",
             },
-            "inverted": {
-              "DEFAULT": "var(--fg-on-inverted)"
-            }
-          },
-          "interactive": {
-            "hover": {
-              "DEFAULT": "var(--fg-interactive-hover)"
+            top: {
+              DEFAULT: "var(--border-menu-top)",
             },
-            "DEFAULT": "var(--fg-interactive)"
           },
-          "error": {
-            "DEFAULT": "var(--fg-error)"
+          strong: {
+            DEFAULT: "var(--border-strong)",
           },
-          "subtle": {
-            "DEFAULT": "var(--fg-subtle)"
+          interactive: {
+            DEFAULT: "var(--border-interactive)",
           },
-          "base": {
-            "DEFAULT": "var(--fg-base)"
+          base: {
+            DEFAULT: "var(--border-base)",
           },
-          "disabled": {
-            "DEFAULT": "var(--fg-disabled)"
+          danger: {
+            DEFAULT: "var(--border-danger)",
           },
-          "muted": {
-            "DEFAULT": "var(--fg-muted)"
-          }
+          error: {
+            DEFAULT: "var(--border-error)",
+          },
+          transparent: {
+            DEFAULT: "var(--border-transparent)",
+          },
         },
-        "alpha": {
+        contrast: {
+          fg: {
+            primary: {
+              DEFAULT: "var(--contrast-fg-primary)",
+            },
+            secondary: {
+              DEFAULT: "var(--contrast-fg-secondary)",
+            },
+          },
+          bg: {
+            base: {
+              pressed: {
+                DEFAULT: "var(--contrast-bg-base-pressed)",
+              },
+              DEFAULT: "var(--contrast-bg-base)",
+              hover: {
+                DEFAULT: "var(--contrast-bg-base-hover)",
+              },
+            },
+            subtle: {
+              DEFAULT: "var(--contrast-bg-subtle)",
+            },
+          },
+          border: {
+            base: {
+              DEFAULT: "var(--contrast-border-base)",
+            },
+            bot: {
+              DEFAULT: "var(--contrast-border-bot)",
+            },
+            top: {
+              DEFAULT: "var(--contrast-border-top)",
+            },
+          },
+        },
+        button: {
+          inverted: {
+            pressed: {
+              DEFAULT: "var(--button-inverted-pressed)",
+            },
+            hover: {
+              DEFAULT: "var(--button-inverted-hover)",
+            },
+            DEFAULT: "var(--button-inverted)",
+          },
+          transparent: {
+            DEFAULT: "var(--button-transparent)",
+            hover: {
+              DEFAULT: "var(--button-transparent-hover)",
+            },
+            pressed: {
+              DEFAULT: "var(--button-transparent-pressed)",
+            },
+          },
+          danger: {
+            pressed: {
+              DEFAULT: "var(--button-danger-pressed)",
+            },
+            DEFAULT: "var(--button-danger)",
+            hover: {
+              DEFAULT: "var(--button-danger-hover)",
+            },
+          },
+          neutral: {
+            DEFAULT: "var(--button-neutral)",
+            hover: {
+              DEFAULT: "var(--button-neutral-hover)",
+            },
+            pressed: {
+              DEFAULT: "var(--button-neutral-pressed)",
+            },
+          },
+        },
+        fg: {
+          on: {
+            color: {
+              DEFAULT: "var(--fg-on-color)",
+            },
+            inverted: {
+              DEFAULT: "var(--fg-on-inverted)",
+            },
+          },
+          interactive: {
+            hover: {
+              DEFAULT: "var(--fg-interactive-hover)",
+            },
+            DEFAULT: "var(--fg-interactive)",
+          },
+          error: {
+            DEFAULT: "var(--fg-error)",
+          },
+          subtle: {
+            DEFAULT: "var(--fg-subtle)",
+          },
+          base: {
+            DEFAULT: "var(--fg-base)",
+          },
+          disabled: {
+            DEFAULT: "var(--fg-disabled)",
+          },
+          muted: {
+            DEFAULT: "var(--fg-muted)",
+          },
+        },
+        alpha: {
           "250": {
-            "DEFAULT": "var(--alpha-250)"
+            DEFAULT: "var(--alpha-250)",
           },
           "400": {
-            "DEFAULT": "var(--alpha-400)"
-          }
-        }
-      }
+            DEFAULT: "var(--alpha-400)",
+          },
+        },
+      },
     },
-    "boxShadow": {
+    boxShadow: {
       "buttons-danger-focus": "var(--buttons-danger-focus)",
-      "details-contrast-on-bg-interactive": "var(--details-contrast-on-bg-interactive)",
+      "details-contrast-on-bg-interactive":
+        "var(--details-contrast-on-bg-interactive)",
       "borders-error": "var(--borders-error)",
       "borders-focus": "var(--borders-focus)",
       "buttons-danger": "var(--buttons-danger)",
@@ -325,7 +326,8 @@ export const theme = {
       "borders-base": "var(--borders-base)",
       "elevation-card-rest": "var(--elevation-card-rest)",
       "buttons-neutral-focus": "var(--buttons-neutral-focus)",
-      "details-switch-background-focus": "var(--details-switch-background-focus)",
+      "details-switch-background-focus":
+        "var(--details-switch-background-focus)",
       "details-switch-background": "var(--details-switch-background)",
       "elevation-flyout": "var(--elevation-flyout)",
       "elevation-tooltip": "var(--elevation-tooltip)",
@@ -334,8 +336,22 @@ export const theme = {
       "buttons-inverted": "var(--buttons-inverted)",
       "elevation-commandbar": "var(--elevation-commandbar)",
       "borders-interactive-with-focus": "var(--borders-interactive-with-focus)",
-      "borders-interactive-with-shadow": "var(--borders-interactive-with-shadow)",
-      "borders-interactive-with-active": "var(--borders-interactive-with-active)"
-    }
-  }
+      "borders-interactive-with-shadow":
+        "var(--borders-interactive-with-shadow)",
+      "borders-interactive-with-active":
+        "var(--borders-interactive-with-active)",
+      "theme": "var(--shadow)",
+      "theme-pressed": "var(--shadow-pressed)",
+      "glow": "var(--glow)",
+    },
+    "borderRadius": {
+      "theme": "var(--radius)",
+    },
+    "borderWidth": {
+      "theme": "var(--border-width)",
+    },
+    "backdropBlur": {
+      "theme": "var(--blur)",
+    },
+  },
 }

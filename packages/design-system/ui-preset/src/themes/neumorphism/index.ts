@@ -1,0 +1,66 @@
+import type { ThemeDefinition } from "../types"
+
+// Refs: css-tricks/Adrian Bece, neumorphism.io, Axess Lab. Surface == background;
+// depth only from dual shadow. Body text 12.2:1 (light) / 11.7:1 (dark).
+export const neumorphism: ThemeDefinition = {
+  name: "neumorphism",
+  label: "Neumorphism",
+  light: {
+    "--bg-base": "#e0e5ec",
+    "--bg-subtle": "#d6dbe2",
+    "--bg-component": "#e0e5ec",
+    "--bg-component-hover": "#d6dbe2",
+    "--fg-base": "#1c2530",
+    "--fg-muted": "#4a5460",
+    "--fg-subtle": "#6b7480",
+    "--border-base": "rgba(163, 177, 198, 0.18)",
+    "--border-strong": "rgba(110, 122, 140, 0.45)",
+    "--bg-interactive": "#3b5bdb",
+    "--fg-interactive": "#1b3a8f",
+    "--fg-on-color": "#ffffff",
+    "--background": "#e0e5ec",
+    "--surface": "#e0e5ec",
+    "--primary": "#3b5bdb",
+    "--secondary": "#6b7480",
+    "--text": "#1c2530",
+    "--border": "rgba(163, 177, 198, 0.18)",
+    "--radius": "16px",
+    "--border-width": "0px",
+    "--shadow":
+      "-6px -6px 12px rgba(255, 255, 255, 0.9), 6px 6px 14px rgba(163, 177, 198, 0.55)",
+    "--shadow-pressed":
+      "inset -5px -5px 10px rgba(255, 255, 255, 0.85), inset 5px 5px 11px rgba(163, 177, 198, 0.6)",
+    "--blur": "12px",
+    "--glow": "0 0 0 3px rgba(59, 91, 219, 0.35)",
+    "--opacity-surface": "1",
+  },
+  dark: {
+    "--bg-base": "#2b3038",
+    "--bg-subtle": "#313742",
+    "--bg-component": "#2b3038",
+    "--bg-component-hover": "#313742",
+    "--fg-base": "#eef1f5",
+    "--fg-muted": "#aab3c0",
+    "--fg-subtle": "#828d9c",
+    "--border-base": "rgba(0, 0, 0, 0.25)",
+    "--border-strong": "rgba(0, 0, 0, 0.5)",
+    "--bg-interactive": "#6f9bff",
+    "--fg-interactive": "#93b8ff",
+    "--fg-on-color": "#0c1320",
+    "--background": "#2b3038",
+    "--surface": "#2b3038",
+    "--primary": "#6f9bff",
+    "--secondary": "#828d9c",
+    "--text": "#eef1f5",
+    "--border": "rgba(0, 0, 0, 0.25)",
+    "--radius": "16px",
+    "--border-width": "0px",
+    "--shadow":
+      "-6px -6px 12px rgba(54, 60, 70, 0.9), 6px 6px 14px rgba(15, 18, 22, 0.75)",
+    "--shadow-pressed":
+      "inset -5px -5px 10px rgba(54, 60, 70, 0.85), inset 5px 5px 11px rgba(15, 18, 22, 0.8)",
+    "--blur": "12px",
+    "--glow": "0 0 0 3px rgba(111, 155, 255, 0.4)",
+    "--opacity-surface": "1",
+  },
+}

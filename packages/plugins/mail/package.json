@@ -1,5 +1,5 @@
 {
-  "name": "@wesan-labs/mail-plugin",
+  "name": "@wesanjs/mail-plugin",
   "version": "2.15.5",
   "description": "Medusa Plugin: Panel Mail (Stalwart-backed staff mailboxes)",
   "license": "MIT",
@@ -24,6 +24,7 @@
   "scripts": {
     "build": "medusa plugin:build",
     "dev": "medusa plugin:develop",
+    "test": "jest",
     "prepare": "cross-env NODE_ENV=production yarn run build"
   },
   "devDependencies": {
@@ -35,7 +36,10 @@
     "@medusajs/test-utils": "2.15.5",
     "@medusajs/types": "2.15.5",
     "@medusajs/ui": "4.1.15",
+    "@swc/core": "1.5.7",
+    "@types/node": "^20.0.0",
     "cross-env": "^7.0.3",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.2"
   },
   "peerDependencies": {

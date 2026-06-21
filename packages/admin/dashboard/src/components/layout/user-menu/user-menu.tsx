@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CardSparkle,
   CircleHalfSolid,
   EllipsisHorizontal,
   Keyboard,
@@ -28,7 +29,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useLogout, useMe } from "../../../hooks/api"
 import { queryClient } from "../../../lib/query-client"
 import { useGlobalShortcuts } from "../../../providers/keybind-provider/hooks"
-import { useTheme } from "../../../providers/theme-provider"
+import { THEME_STYLES, useTheme } from "../../../providers/theme-provider"
 import { useDocumentDirection } from "../../../hooks/use-document-direction"
 
 export const UserMenu = () => {
@@ -76,6 +77,7 @@ export const UserMenu = () => {
             {t("app.menus.user.shortcuts")}
           </DropdownMenu.Item>
           <ThemeToggle />
+          <StyleToggle />
           <DropdownMenu.Separator />
           <Logout />
         </DropdownMenu.Content>
@@ -188,6 +190,38 @@ const ThemeToggle = () => {
           >
             {t("app.menus.user.theme.dark")}
           </DropdownMenu.RadioItem>
+        </DropdownMenu.RadioGroup>
+      </DropdownMenu.SubMenuContent>
+    </DropdownMenu.SubMenu>
+  )
+}
+
+const StyleToggle = () => {
+  const { style, setStyle } = useTheme()
+
+  return (
+    <DropdownMenu.SubMenu>
+      <DropdownMenu.SubMenuTrigger
+        dir="ltr"
+        className="rounded-md rtl:rotate-180"
+      >
+        <CardSparkle className="text-ui-fg-subtle me-2" />
+        <span className="rtl:rotate-180">Style</span>
+      </DropdownMenu.SubMenuTrigger>
+      <DropdownMenu.SubMenuContent>
+        <DropdownMenu.RadioGroup value={style}>
+          {THEME_STYLES.map((option) => (
+            <DropdownMenu.RadioItem
+              key={option.value}
+              value={option.value}
+              onClick={(e) => {
+                e.preventDefault()
+                setStyle(option.value)
+              }}
+            >
+              {option.label}
+            </DropdownMenu.RadioItem>
+          ))}
         </DropdownMenu.RadioGroup>
       </DropdownMenu.SubMenuContent>
     </DropdownMenu.SubMenu>

@@ -5,6 +5,7 @@ import { colors } from "./theme/tokens/colors"
 import { components } from "./theme/tokens/components"
 import { effects } from "./theme/tokens/effects"
 import { typography } from "./theme/tokens/typography"
+import { themes } from "./themes"
 
 export default plugin(
   function medusaUi({ addBase, addComponents, config }) {
@@ -34,6 +35,23 @@ export default plugin(
         "@media (prefers-color-scheme: dark)": {
           ":root": { ...colors.dark, ...effects.dark },
           ...components.dark,
+        },
+      })
+    }
+
+    // Design-language themes (STYLE axis): opt-in via <html data-theme="...">.
+    // Light tokens at [data-theme]; dark tokens at [data-theme].dark (higher
+    // specificity), so STYLE × MODE compose independently. Emitted after
+    // :root/.dark so equal-specificity light rules win by source order.
+    for (const theme of Object.values(themes)) {
+      addBase({
+        [`[data-theme="${theme.name}"]`]: {
+          colorScheme: "light",
+          ...theme.light,
+        },
+        [`[data-theme="${theme.name}"].dark`]: {
+          colorScheme: "dark",
+          ...theme.dark,
         },
       })
     }
