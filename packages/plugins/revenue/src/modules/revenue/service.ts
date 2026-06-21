@@ -93,6 +93,7 @@ class RevenueModuleService extends MedusaService({
     return {
       mrr: latest ? Number(latest.mrr) : 0,
       activeSubscriptions: latest ? latest.active_subscriptions : 0,
+      activeTrials: latest?.active_trials ?? 0,
       newCustomers: latest?.new_customers ?? 0,
       activeUsers: latest?.active_users ?? 0,
       revenue28d,
