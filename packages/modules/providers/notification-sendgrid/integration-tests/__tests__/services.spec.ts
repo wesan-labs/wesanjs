@@ -114,7 +114,7 @@ describe.skip("Sendgrid notification provider", () => {
     )
 
     emailTemplate = process.env.SENDGRID_TEST_TEMPLATE ?? ""
-    emailContent = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8"></head><body>Welcome to medusa</body></html>`
+    emailContent = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8"></head><body>Welcome to Levios</body></html>`
     to = process.env.SENDGRID_TEST_TO ?? ""
   })
 

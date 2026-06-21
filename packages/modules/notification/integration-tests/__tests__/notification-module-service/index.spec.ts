@@ -109,7 +109,7 @@ moduleIntegrationTestRunner<INotificationModuleService>({
           channel: "email",
           data: {},
           content: {
-            html: "<p>Welcome to medusa</p>",
+            html: "<p>welcome to Levios</p>",
           },
         }
 
@@ -132,7 +132,7 @@ moduleIntegrationTestRunner<INotificationModuleService>({
           to: "admin@medusa.com",
           channel: "email",
           content: {
-            html: "<p>Welcome to medusa</p>",
+            html: "<p>welcome to Levios</p>",
           },
         }
 
