@@ -1,18 +1,24 @@
 import type { ThemeDefinition } from "../types"
 
 // Refs: Linear dark canvas, MagicUI/Aceternity aurora, Stripe CIELAB contrast.
-// 4-blob radial backdrop; read text on frosted --surface, not the gradient.
-// Needs backdrop-filter: blur(var(--blur)). Dark --fg-on-color is dark ink
-// (white fails on the light-violet primary). Tightest text: --fg-subtle 5.0:1.
+// Medusa layering: page = bg-subtle, cards = bg-base. The 4-blob aurora goes to
+// the page (var(--app-backdrop), applied fixed by the plugin); surfaces are
+// translucent + frosted (plugin adds backdrop-filter). Read text on the frosted
+// surface, not the gradient. Tightest text pair: --fg-subtle ~5.0:1. Dark
+// --fg-on-color is dark ink (white fails on the light-violet primary).
 export const aurora: ThemeDefinition = {
   name: "aurora",
   label: "Aurora UI",
+  frostedSurfaces: true,
   light: {
-    "--bg-base":
+    "--app-backdrop":
       "radial-gradient(60% 80% at 15% 10%, hsl(265 80% 88% / 0.55), transparent 60%), radial-gradient(50% 70% at 85% 15%, hsl(180 70% 85% / 0.45), transparent 55%), radial-gradient(55% 75% at 75% 90%, hsl(325 80% 90% / 0.50), transparent 60%), radial-gradient(50% 65% at 20% 95%, hsl(215 85% 88% / 0.45), transparent 55%), #f7f5fc",
-    "--bg-subtle": "hsl(255 40% 97%)",
-    "--bg-component": "hsl(255 50% 99% / 0.78)",
-    "--bg-component-hover": "hsl(255 55% 99% / 0.90)",
+    "--bg-base": "hsl(255 50% 99% / 0.80)",
+    "--bg-base-hover": "hsl(255 55% 99% / 0.90)",
+    "--bg-subtle": "hsl(255 40% 97% / 0.55)",
+    "--bg-component": "hsl(255 50% 99% / 0.72)",
+    "--bg-component-hover": "hsl(255 55% 99% / 0.82)",
+    "--bg-field": "hsl(255 50% 99% / 0.65)",
     "--fg-base": "#1a1626",
     "--fg-muted": "#4a4458",
     "--fg-subtle": "#6b6478",
@@ -43,11 +49,14 @@ export const aurora: ThemeDefinition = {
     "--neon-blue": "#5b9df9",
   },
   dark: {
-    "--bg-base":
+    "--app-backdrop":
       "radial-gradient(55% 75% at 12% 8%, hsl(265 75% 55% / 0.40), transparent 60%), radial-gradient(50% 70% at 88% 12%, hsl(180 70% 50% / 0.28), transparent 55%), radial-gradient(60% 80% at 80% 92%, hsl(322 80% 58% / 0.34), transparent 60%), radial-gradient(50% 65% at 18% 95%, hsl(218 85% 58% / 0.32), transparent 55%), #0a0a1a",
-    "--bg-subtle": "hsl(245 35% 9%)",
-    "--bg-component": "hsl(248 40% 16% / 0.72)",
-    "--bg-component-hover": "hsl(248 42% 20% / 0.82)",
+    "--bg-base": "hsl(248 40% 16% / 0.72)",
+    "--bg-base-hover": "hsl(248 42% 20% / 0.82)",
+    "--bg-subtle": "hsl(245 35% 9% / 0.55)",
+    "--bg-component": "hsl(248 40% 16% / 0.62)",
+    "--bg-component-hover": "hsl(248 42% 20% / 0.72)",
+    "--bg-field": "hsl(248 40% 16% / 0.50)",
     "--fg-base": "#f4f2ff",
     "--fg-muted": "#b8b4d8",
     "--fg-subtle": "#8a86ae",

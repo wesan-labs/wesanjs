@@ -1,16 +1,23 @@
 import type { ThemeDefinition } from "../types"
 
-// Refs: Apple HIG Liquid Glass, Linear, IxDF. Needs backdrop-filter:
-// blur(var(--blur)) saturate(180%) on surfaces. Contrast measured on the
-// COMPOSITED surface: 12.3:1 (light) / 16.7:1 (dark).
+// Refs: Apple HIG Liquid Glass, Linear, IxDF. Medusa layering: page = bg-subtle,
+// cards = bg-base, inputs = bg-component/field. So the GRADIENT goes to the page
+// (var(--app-backdrop), applied fixed by the plugin) and bg-base/component/field
+// are translucent + frosted (plugin adds backdrop-filter). Contrast measured on
+// the composited surface: 12.3:1 (light) / 16.7:1 (dark).
 export const glassmorphism: ThemeDefinition = {
   name: "glassmorphism",
   label: "Glassmorphism",
+  frostedSurfaces: true,
   light: {
-    "--bg-base": "linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)",
-    "--bg-subtle": "rgba(255, 255, 255, 0.55)",
-    "--bg-component": "rgba(255, 255, 255, 0.72)",
-    "--bg-component-hover": "rgba(255, 255, 255, 0.80)",
+    "--app-backdrop":
+      "linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)",
+    "--bg-base": "rgba(255, 255, 255, 0.72)",
+    "--bg-base-hover": "rgba(255, 255, 255, 0.80)",
+    "--bg-subtle": "rgba(255, 255, 255, 0.45)",
+    "--bg-component": "rgba(255, 255, 255, 0.62)",
+    "--bg-component-hover": "rgba(255, 255, 255, 0.72)",
+    "--bg-field": "rgba(255, 255, 255, 0.55)",
     "--fg-base": "#171723",
     "--fg-muted": "#474863",
     "--fg-subtle": "#6b6d8a",
@@ -35,11 +42,14 @@ export const glassmorphism: ThemeDefinition = {
     "--opacity-surface": "0.72",
   },
   dark: {
-    "--bg-base":
+    "--app-backdrop":
       "radial-gradient(120% 120% at 20% 0%, #1e1b4b 0%, #0f1020 55%, #050510 100%)",
-    "--bg-subtle": "rgba(22, 24, 38, 0.45)",
-    "--bg-component": "rgba(22, 24, 38, 0.62)",
-    "--bg-component-hover": "rgba(28, 30, 46, 0.70)",
+    "--bg-base": "rgba(22, 24, 38, 0.62)",
+    "--bg-base-hover": "rgba(28, 30, 46, 0.70)",
+    "--bg-subtle": "rgba(22, 24, 38, 0.40)",
+    "--bg-component": "rgba(28, 30, 46, 0.55)",
+    "--bg-component-hover": "rgba(34, 36, 54, 0.65)",
+    "--bg-field": "rgba(22, 24, 38, 0.48)",
     "--fg-base": "#f4f5ff",
     "--fg-muted": "#b0b6d6",
     "--fg-subtle": "#8086a8",

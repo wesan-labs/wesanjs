@@ -54,6 +54,26 @@ export default plugin(
           ...theme.dark,
         },
       })
+
+      // Translucent styles need real compositing: backdrop-filter is a CSS
+      // property (not a variable), so the token bridge alone can't frost
+      // surfaces. Paint the gradient as a single fixed page backdrop and blur
+      // Medusa surface utilities (cards = bg-base, inputs = bg-component/field).
+      if (theme.frostedSurfaces) {
+        addBase({
+          [`[data-theme="${theme.name}"]`]: {
+            backgroundImage: "var(--app-backdrop)",
+            backgroundAttachment: "fixed",
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+          },
+          [`[data-theme="${theme.name}"] :is(.bg-ui-bg-base, .bg-ui-bg-base-hover, .bg-ui-bg-component, .bg-ui-bg-component-hover, .bg-ui-bg-field)`]:
+            {
+              backdropFilter: "blur(var(--blur)) saturate(180%)",
+              WebkitBackdropFilter: "blur(var(--blur)) saturate(180%)",
+            },
+        })
+      }
     }
   },
   {
