@@ -1,22 +1,44 @@
 import { Badge, Button, Container, Heading, Input, Label, Text } from "@medusajs/ui"
 import { useState } from "react"
 import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
+import {
   useCreateExpense,
   useRevenueChart,
   useRevenueOverview,
-  type RevenueEventRow,
 } from "../../hooks/api/revenue"
-import {
-  AreaChartPanel,
-  BarList,
-  DataTable,
-  Money,
-  StatCard,
-  Widget,
-} from "../dashboards/kit"
+import { EmptyState, Money, Widget } from "../dashboards/kit"
 
 const CATEGORIES = ["infra", "api", "ads", "other"] as const
-const usd = (v: number) => `$${Number(v).toLocaleString()}`
+
+const MetricCard = ({
+  label,
+  children,
+  sub,
+}: {
+  label: string
+  children: React.ReactNode
+  sub?: string
+}) => (
+  <Container className="flex flex-col gap-y-2 p-6">
+    <Text size="small" weight="plus" className="text-ui-fg-subtle">
+      {label}
+    </Text>
+    <Heading level="h1">{children}</Heading>
+    {sub ? (
+      <Text size="xsmall" className="text-ui-fg-muted">
+        {sub}
+      </Text>
+    ) : null}
+  </Container>
+)
 
 const ExpenseForm = ({ currency }: { currency: string }) => {
   const create = useCreateExpense()
@@ -98,11 +120,80 @@ const ExpenseForm = ({ currency }: { currency: string }) => {
   )
 }
 
+const RevenueTrend = () => {
+  const { data, isLoading } = useRevenueChart("revenue")
+  const points = data?.points ?? []
+
+  if (isLoading) {
+    return <EmptyState label="Yükleniyor…" />
+  }
+  if (!points.length) {
+    return <EmptyState label="Henüz veri yok" />
+  }
+
+  return (
+    <div style={{ width: "100%", height: 240 }}>
+      <ResponsiveContainer>
+        <LineChart data={points}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            className="stroke-ui-border-base"
+          />
+          <XAxis dataKey="date" fontSize={11} />
+          <YAxis fontSize={11} />
+          <Tooltip />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+const PlatformBreakdown = ({ currency }: { currency: string }) => {
+  const { data, isLoading } = useRevenueChart("revenue", "store")
+
+  if (isLoading) {
+    return <EmptyState label="Yükleniyor…" />
+  }
+
+  const totals = (data?.points ?? []).reduce<Record<string, number>>(
+    (acc, p) => {
+      const seg = p.segment ?? "Total"
+      acc[seg] = (acc[seg] ?? 0) + p.value
+      return acc
+    },
+    {}
+  )
+  const platforms = Object.entries(totals)
+    .filter(([name]) => name !== "Total")
+    .sort((a, b) => b[1] - a[1])
+
+  if (!platforms.length) {
+    return <EmptyState label="Platform verisi yok" />
+  }
+
+  return (
+    <div className="flex flex-col divide-y">
+      {platforms.map(([name, value]) => (
+        <div key={name} className="flex items-center justify-between py-2">
+          <Text size="small">{name}</Text>
+          <Text size="small" weight="plus">
+            <Money amount={value} currency={currency} />
+          </Text>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export const Component = () => {
   const { overview, isLoading, isError } = useRevenueOverview()
-  const revenueChart = useRevenueChart("revenue")
-  const mrrChart = useRevenueChart("mrr")
-  const platformChart = useRevenueChart("revenue", "store")
 
   if (isLoading) {
     return (
@@ -118,32 +209,13 @@ export const Component = () => {
     return (
       <Container className="p-6">
         <Text size="small" className="text-ui-fg-error">
-          Revenue verisi alınamadı. Backend çalışıyor mu kontrol et.
+          Revenue verisi alınamadı.
         </Text>
       </Container>
     )
   }
 
   const currency = overview.currency || "USD"
-  const revenuePoints = revenueChart.data?.points ?? []
-  const revenueSeries = revenuePoints.map((p) => p.value)
-  const mrrSeries = (mrrChart.data?.points ?? []).map((p) => p.value)
-
-  const platformTotals = (platformChart.data?.points ?? []).reduce<
-    Record<string, number>
-  >((acc, p) => {
-    const seg = p.segment ?? "Total"
-    acc[seg] = (acc[seg] ?? 0) + p.value
-    return acc
-  }, {})
-  const platformItems = Object.entries(platformTotals)
-    .filter(([name]) => name !== "Total")
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, value]) => ({
-      label: name,
-      value,
-      display: <Money amount={value} currency={currency} />,
-    }))
 
   return (
     <div className="flex flex-col gap-y-3">
@@ -151,102 +223,70 @@ export const Component = () => {
         <div>
           <Heading level="h2">Revenue</Heading>
           <Text size="small" className="text-ui-fg-subtle">
-            Uygulama portföyü — abonelik geliri, gider ve net kâr
+            Abonelik geliri & gider — net P&L
           </Text>
         </div>
         <Badge size="2xsmall" color="green">
-          RevenueCat · canlı
+          RevenueCat + manuel gider
         </Badge>
       </Container>
 
-      {/* Hero — the two numbers a founder reads first */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <StatCard
-          label="MRR"
-          size="hero"
-          sub="Aylık yinelenen gelir"
-          trend={mrrSeries}
-          value={<Money amount={overview.mrr} currency={currency} />}
-        />
-        <StatCard
-          label="Net Kâr"
-          size="hero"
-          sub="Gelir − gider (28 gün)"
-          accent={overview.net >= 0 ? "positive" : "negative"}
-          value={<Money amount={overview.net} currency={currency} />}
-        />
-      </div>
-
-      {/* Secondary metrics */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Aktif Abonelik"
-          sub="Şu an"
-          value={overview.activeSubscriptions.toLocaleString()}
-        />
-        <StatCard
-          label="28g Gelir"
-          sub="Son 28 gün"
-          trend={revenueSeries}
-          value={<Money amount={overview.revenue28d} currency={currency} />}
-        />
-        <StatCard
-          label="Yeni Müşteri"
-          sub="Son 28 gün"
-          value={overview.newCustomers.toLocaleString()}
-        />
-        <StatCard
-          label="Aktif Kullanıcı"
-          sub="Son 28 gün"
-          value={overview.activeUsers.toLocaleString()}
-        />
+        <MetricCard label="MRR" sub="Aylık yinelenen gelir">
+          <Money amount={overview.mrr} currency={currency} />
+        </MetricCard>
+        <MetricCard label="Aktif Abonelik" sub="RevenueCat">
+          {overview.activeSubscriptions.toLocaleString()}
+        </MetricCard>
+        <MetricCard label="28g Gelir" sub="Son 28 gün">
+          <Money amount={overview.revenue28d} currency={currency} />
+        </MetricCard>
+        <MetricCard label="Net" sub="Gelir − gider">
+          <Money amount={overview.net} currency={currency} />
+        </MetricCard>
+        <MetricCard label="Yeni Müşteri" sub="Son 28 gün">
+          {overview.newCustomers.toLocaleString()}
+        </MetricCard>
+        <MetricCard label="Aktif Kullanıcı" sub="Son 28 gün">
+          {overview.activeUsers.toLocaleString()}
+        </MetricCard>
       </div>
 
-      {/* Signature — revenue trend + platform split */}
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-        <Widget title="Gelir Trendi" className="xl:col-span-2">
-          {revenuePoints.length ? (
-            <AreaChartPanel
-              data={revenuePoints}
-              xKey="date"
-              yKey="value"
-              valueFormatter={usd}
-            />
-          ) : (
-            <div className="text-ui-fg-muted flex h-[260px] items-center justify-center text-sm">
-              Henüz veri yok
-            </div>
-          )}
+        <Widget title="Gelir Trendi (günlük)" className="xl:col-span-2">
+          <RevenueTrend />
         </Widget>
         <Widget title="Platforma Göre Gelir">
-          <BarList items={platformItems} emptyLabel="Platform verisi yok" />
+          <PlatformBreakdown currency={currency} />
         </Widget>
       </div>
 
-      {/* Detail — transactions + expense entry */}
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <Widget title="Son İşlemler">
-          <DataTable<RevenueEventRow>
-            columns={[
-              { key: "kind", header: "Tür", render: (r) => r.kind },
-              {
-                key: "date",
-                header: "Tarih",
-                render: (r) => new Date(r.occurred_at).toLocaleDateString(),
-              },
-              {
-                key: "amount",
-                header: "Tutar",
-                align: "right",
-                render: (r) => (
-                  <Money amount={r.gross_amount} currency={r.currency} />
-                ),
-              },
-            ]}
-            rows={overview.recentEvents}
-            emptyLabel="Henüz işlem yok — webhook bağlanınca dolacak"
-          />
+          {overview.recentEvents.length ? (
+            <div className="flex flex-col divide-y">
+              {overview.recentEvents.map((ev) => (
+                <div
+                  key={ev.id}
+                  className="flex items-center justify-between py-2"
+                >
+                  <div className="flex flex-col">
+                    <Text size="small">{ev.kind}</Text>
+                    <Text size="xsmall" className="text-ui-fg-muted">
+                      {new Date(ev.occurred_at).toLocaleDateString()}
+                    </Text>
+                  </div>
+                  <Text size="small" weight="plus">
+                    <Money amount={ev.gross_amount} currency={ev.currency} />
+                  </Text>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState label="Henüz işlem yok — RevenueCat webhook bağlanınca dolar" />
+          )}
         </Widget>
+
         <Widget title="Gider Ekle">
           <ExpenseForm currency={currency} />
         </Widget>
