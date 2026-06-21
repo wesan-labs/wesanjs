@@ -16,9 +16,13 @@ export type RevenueOverview = {
   expenseTotal: number
   net: number
   currency: string
+  newCustomers: number
+  activeUsers: number
   recentEvents: RevenueEventRow[]
   mrrTrend: { date: string; mrr: number }[]
 }
+
+export type ChartPoint = { date: string; value: number; segment?: string }
 
 export type CreateExpenseInput = {
   description: string
@@ -42,6 +46,19 @@ export const useRevenueOverview = () => {
   })
 
   return { overview: data?.overview, ...rest }
+}
+
+export const useRevenueChart = (metric: string, segment?: string) => {
+  return useQuery({
+    queryKey: ["revenue", "chart", metric, segment ?? null],
+    queryFn: async () =>
+      sdk.client.fetch<{ points: ChartPoint[]; segments: string[] }>(
+        `/admin/revenue/charts/${metric}${
+          segment ? `?segment=${segment}` : ""
+        }`
+      ),
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
 export const useCreateExpense = () => {

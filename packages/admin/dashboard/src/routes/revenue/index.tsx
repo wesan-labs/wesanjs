@@ -11,6 +11,7 @@ import {
 } from "recharts"
 import {
   useCreateExpense,
+  useRevenueChart,
   useRevenueOverview,
 } from "../../hooks/api/revenue"
 import { EmptyState, Money, Widget } from "../dashboards/kit"
@@ -119,6 +120,78 @@ const ExpenseForm = ({ currency }: { currency: string }) => {
   )
 }
 
+const RevenueTrend = () => {
+  const { data, isLoading } = useRevenueChart("revenue")
+  const points = data?.points ?? []
+
+  if (isLoading) {
+    return <EmptyState label="Yükleniyor…" />
+  }
+  if (!points.length) {
+    return <EmptyState label="Henüz veri yok" />
+  }
+
+  return (
+    <div style={{ width: "100%", height: 240 }}>
+      <ResponsiveContainer>
+        <LineChart data={points}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            className="stroke-ui-border-base"
+          />
+          <XAxis dataKey="date" fontSize={11} />
+          <YAxis fontSize={11} />
+          <Tooltip />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+const PlatformBreakdown = ({ currency }: { currency: string }) => {
+  const { data, isLoading } = useRevenueChart("revenue", "store")
+
+  if (isLoading) {
+    return <EmptyState label="Yükleniyor…" />
+  }
+
+  const totals = (data?.points ?? []).reduce<Record<string, number>>(
+    (acc, p) => {
+      const seg = p.segment ?? "Total"
+      acc[seg] = (acc[seg] ?? 0) + p.value
+      return acc
+    },
+    {}
+  )
+  const platforms = Object.entries(totals)
+    .filter(([name]) => name !== "Total")
+    .sort((a, b) => b[1] - a[1])
+
+  if (!platforms.length) {
+    return <EmptyState label="Platform verisi yok" />
+  }
+
+  return (
+    <div className="flex flex-col divide-y">
+      {platforms.map(([name, value]) => (
+        <div key={name} className="flex items-center justify-between py-2">
+          <Text size="small">{name}</Text>
+          <Text size="small" weight="plus">
+            <Money amount={value} currency={currency} />
+          </Text>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export const Component = () => {
   const { overview, isLoading, isError } = useRevenueOverview()
 
@@ -171,33 +244,24 @@ export const Component = () => {
         <MetricCard label="Net" sub="Gelir − gider">
           <Money amount={overview.net} currency={currency} />
         </MetricCard>
+        <MetricCard label="Yeni Müşteri" sub="Son 28 gün">
+          {overview.newCustomers.toLocaleString()}
+        </MetricCard>
+        <MetricCard label="Aktif Kullanıcı" sub="Son 28 gün">
+          {overview.activeUsers.toLocaleString()}
+        </MetricCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        <Widget title="Gelir Trendi (günlük)" className="xl:col-span-2">
+          <RevenueTrend />
+        </Widget>
+        <Widget title="Platforma Göre Gelir">
+          <PlatformBreakdown currency={currency} />
+        </Widget>
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <Widget title="MRR Trend">
-          {overview.mrrTrend.length ? (
-            <div style={{ width: "100%", height: 240 }}>
-              <ResponsiveContainer>
-                <LineChart data={overview.mrrTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-ui-border-base" />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="mrr"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <EmptyState label="Henüz snapshot yok — günlük job çalışınca dolar" />
-          )}
-        </Widget>
-
         <Widget title="Son İşlemler">
           {overview.recentEvents.length ? (
             <div className="flex flex-col divide-y">
@@ -222,11 +286,11 @@ export const Component = () => {
             <EmptyState label="Henüz işlem yok — RevenueCat webhook bağlanınca dolar" />
           )}
         </Widget>
-      </div>
 
-      <Widget title="Gider Ekle">
-        <ExpenseForm currency={currency} />
-      </Widget>
+        <Widget title="Gider Ekle">
+          <ExpenseForm currency={currency} />
+        </Widget>
+      </div>
     </div>
   )
 }
