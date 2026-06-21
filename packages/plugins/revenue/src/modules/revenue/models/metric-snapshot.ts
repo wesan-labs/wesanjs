@@ -11,6 +11,8 @@ export default model
       mrr: model.bigNumber().default(0),
       active_subscriptions: model.number().default(0),
       active_trials: model.number().default(0),
+      new_customers: model.number().default(0),
+      active_users: model.number().default(0),
       gross_revenue: model.bigNumber().default(0),
       net_revenue: model.bigNumber().default(0),
       ad_revenue: model.bigNumber().default(0),

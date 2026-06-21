@@ -1,5 +1,5 @@
 import { RevenueEventKind, RevenueSourceType } from "../types"
-import { CanonicalEvent, ProviderMetrics, RevenueConnector } from "./types"
+import { CanonicalEvent, ChartPoint, ProviderMetrics, RevenueConnector } from "./types"
 
 const RC_BASE = "https://api.revenuecat.com/v2"
 
@@ -40,7 +40,41 @@ export class RevenueCatConnector implements RevenueConnector {
       activeTrials: num("active_trials"),
       revenue28d: num("revenue") || num("revenue_last_28_days"),
       currency: body.currency ?? "USD",
+      newCustomers: num("new_customers"),
+      activeUsers: num("active_users"),
     }
+  }
+
+  async fetchChart(
+    metric: string,
+    opts?: { segment?: string }
+  ): Promise<{ points: ChartPoint[]; segments: string[] }> {
+    // Time: O(n) where n = chart data points
+    // Space: O(n)
+    const base = `${RC_BASE}/projects/${this.opts.projectId}/charts/${metric}`
+    const url = opts?.segment ? `${base}?segment=${opts.segment}` : base
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${this.opts.apiKey}` },
+    })
+    if (!res.ok) {
+      throw new Error(`RevenueCat chart failed: ${res.status} ${await res.text()}`)
+    }
+    const body = (await res.json()) as {
+      values?: Array<{ cohort: number; value: number; segment?: number }>
+      segments?: Array<{ display_name: string }>
+    }
+    const segmentNames = (body.segments ?? []).map((s) => s.display_name)
+    const points: ChartPoint[] = (body.values ?? []).map((v) => {
+      const point: ChartPoint = {
+        date: new Date(v.cohort * 1000).toISOString().slice(0, 10),
+        value: v.value,
+      }
+      if (v.segment !== undefined && segmentNames[v.segment] !== undefined) {
+        point.segment = segmentNames[v.segment]
+      }
+      return point
+    })
+    return { points, segments: segmentNames }
   }
 
   parseWebhook(body: unknown): CanonicalEvent[] {

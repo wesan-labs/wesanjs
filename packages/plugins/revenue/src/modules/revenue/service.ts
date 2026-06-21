@@ -60,6 +60,8 @@ class RevenueModuleService extends MedusaService({
       mrr: metrics.mrr,
       active_subscriptions: metrics.activeSubscriptions,
       active_trials: metrics.activeTrials,
+      new_customers: metrics.newCustomers,
+      active_users: metrics.activeUsers,
       gross_revenue: metrics.revenue28d,
       net_revenue: metrics.revenue28d - expenseTotal,
       expense_total: expenseTotal,
@@ -91,6 +93,8 @@ class RevenueModuleService extends MedusaService({
     return {
       mrr: latest ? Number(latest.mrr) : 0,
       activeSubscriptions: latest ? latest.active_subscriptions : 0,
+      newCustomers: latest?.new_customers ?? 0,
+      activeUsers: latest?.active_users ?? 0,
       revenue28d,
       expenseTotal,
       net: Number((revenue28d - expenseTotal).toFixed(2)),
