@@ -26,16 +26,20 @@ export class RevenueCatConnector implements RevenueConnector {
     if (!res.ok) {
       throw new Error(`RevenueCat overview failed: ${res.status} ${await res.text()}`)
     }
-    const body = (await res.json()) as { metrics?: Array<{ id: string; value: number; unit?: string }> }
+    const body = (await res.json()) as {
+      currency?: string
+      metrics?: Array<{ id: string; value: number; unit?: string }>
+    }
     const byId = new Map((body.metrics ?? []).map((m) => [m.id, m]))
     const num = (id: string) => Number(byId.get(id)?.value ?? 0)
-    // ⚠️ Confirm these metric ids against the first live response; adjust if cased differently.
+    // Metric ids confirmed against live RC v2 response: mrr, active_subscriptions,
+    // active_trials, revenue. Currency is the TOP-LEVEL field (metric.unit is "$", not ISO).
     return {
       mrr: num("mrr"),
       activeSubscriptions: num("active_subscriptions"),
       activeTrials: num("active_trials"),
       revenue28d: num("revenue") || num("revenue_last_28_days"),
-      currency: byId.get("mrr")?.unit ?? "USD",
+      currency: body.currency ?? "USD",
     }
   }
 
