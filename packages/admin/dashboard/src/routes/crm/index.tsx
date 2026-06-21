@@ -1,9 +1,8 @@
-import { DashboardHeader, MetricGrid } from "../dashboards/metrics"
+import { MetricGrid } from "../dashboards/metrics"
 
 export const Component = () => {
   return (
     <div className="flex flex-col gap-y-3">
-      <DashboardHeader title="CRM" subtitle="Müşteri genel bakışı" />
       <MetricGrid
         metrics={[
           { label: "Toplam Müşteri", value: "0", sub: "Tüm zamanlar" },
