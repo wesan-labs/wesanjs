@@ -13557,9 +13557,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@wesan-labs/mail-plugin@workspace:packages/plugins/mail":
+"@wesanjs/mail-plugin@workspace:packages/plugins/mail":
   version: 0.0.0-use.local
-  resolution: "@wesan-labs/mail-plugin@workspace:packages/plugins/mail"
+  resolution: "@wesanjs/mail-plugin@workspace:packages/plugins/mail"
   dependencies:
     "@medusajs/admin-sdk": 2.15.5
     "@medusajs/cli": 2.15.5
@@ -13569,7 +13569,10 @@ __metadata:
     "@medusajs/test-utils": 2.15.5
     "@medusajs/types": 2.15.5
     "@medusajs/ui": 4.1.15
+    "@swc/core": 1.5.7
+    "@types/node": ^20.0.0
     cross-env: ^7.0.3
+    ts-node: ^10.9.2
     typescript: ^5.6.2
   peerDependencies:
     "@medusajs/framework": 2.15.5
