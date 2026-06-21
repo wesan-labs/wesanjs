@@ -1,43 +1,33 @@
-import { Badge, Button, Container, Heading, Input, Label, Text } from "@medusajs/ui"
-import { useState } from "react"
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Button, Container, Input, Label, Text } from "@medusajs/ui"
+import { ReactNode, useState } from "react"
 import {
   useCreateExpense,
+  useExpenses,
   useRevenueChart,
   useRevenueOverview,
+  type RevenueEventRow,
 } from "../../hooks/api/revenue"
-import { EmptyState, Money, Widget } from "../dashboards/kit"
+import {
+  AreaChartPanel,
+  BarList,
+  DataTable,
+  EmptyState,
+  Money,
+  StatCard,
+  Widget,
+} from "../dashboards/kit"
 
 const CATEGORIES = ["infra", "api", "ads", "other"] as const
+const usd = (v: number) => `$${Number(v).toLocaleString()}`
 
-const MetricCard = ({
-  label,
-  children,
-  sub,
-}: {
-  label: string
-  children: React.ReactNode
-  sub?: string
-}) => (
-  <Container className="flex flex-col gap-y-2 p-6">
-    <Text size="small" weight="plus" className="text-ui-fg-subtle">
-      {label}
-    </Text>
-    <Heading level="h1">{children}</Heading>
-    {sub ? (
-      <Text size="xsmall" className="text-ui-fg-muted">
-        {sub}
-      </Text>
-    ) : null}
-  </Container>
+const SectionLabel = ({ children }: { children: ReactNode }) => (
+  <Text
+    size="xsmall"
+    weight="plus"
+    className="text-ui-fg-muted px-1 pt-1 uppercase tracking-wider"
+  >
+    {children}
+  </Text>
 )
 
 const ExpenseForm = ({ currency }: { currency: string }) => {
@@ -75,7 +65,7 @@ const ExpenseForm = ({ currency }: { currency: string }) => {
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div className="flex flex-col gap-y-1">
+      <div className="flex min-w-40 flex-1 flex-col gap-y-1">
         <Label size="xsmall">Açıklama</Label>
         <Input
           value={form.description}
@@ -83,8 +73,8 @@ const ExpenseForm = ({ currency }: { currency: string }) => {
           placeholder="Sunucu, API, reklam…"
         />
       </div>
-      <div className="flex flex-col gap-y-1">
-        <Label size="xsmall">Tutar ({currency})</Label>
+      <div className="flex w-24 flex-col gap-y-1">
+        <Label size="xsmall">Tutar</Label>
         <Input
           type="number"
           value={form.amount}
@@ -114,86 +104,17 @@ const ExpenseForm = ({ currency }: { currency: string }) => {
         />
       </div>
       <Button onClick={submit} isLoading={create.isPending} disabled={!valid}>
-        Gider Ekle
+        Ekle
       </Button>
-    </div>
-  )
-}
-
-const RevenueTrend = () => {
-  const { data, isLoading } = useRevenueChart("revenue")
-  const points = data?.points ?? []
-
-  if (isLoading) {
-    return <EmptyState label="Yükleniyor…" />
-  }
-  if (!points.length) {
-    return <EmptyState label="Henüz veri yok" />
-  }
-
-  return (
-    <div style={{ width: "100%", height: 240 }}>
-      <ResponsiveContainer>
-        <LineChart data={points}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            className="stroke-ui-border-base"
-          />
-          <XAxis dataKey="date" fontSize={11} />
-          <YAxis fontSize={11} />
-          <Tooltip />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-const PlatformBreakdown = ({ currency }: { currency: string }) => {
-  const { data, isLoading } = useRevenueChart("revenue", "store")
-
-  if (isLoading) {
-    return <EmptyState label="Yükleniyor…" />
-  }
-
-  const totals = (data?.points ?? []).reduce<Record<string, number>>(
-    (acc, p) => {
-      const seg = p.segment ?? "Total"
-      acc[seg] = (acc[seg] ?? 0) + p.value
-      return acc
-    },
-    {}
-  )
-  const platforms = Object.entries(totals)
-    .filter(([name]) => name !== "Total")
-    .sort((a, b) => b[1] - a[1])
-
-  if (!platforms.length) {
-    return <EmptyState label="Platform verisi yok" />
-  }
-
-  return (
-    <div className="flex flex-col divide-y">
-      {platforms.map(([name, value]) => (
-        <div key={name} className="flex items-center justify-between py-2">
-          <Text size="small">{name}</Text>
-          <Text size="small" weight="plus">
-            <Money amount={value} currency={currency} />
-          </Text>
-        </div>
-      ))}
     </div>
   )
 }
 
 export const Component = () => {
   const { overview, isLoading, isError } = useRevenueOverview()
+  const revenueChart = useRevenueChart("revenue")
+  const platformChart = useRevenueChart("revenue", "store")
+  const { expenses } = useExpenses()
 
   if (isLoading) {
     return (
@@ -209,86 +130,146 @@ export const Component = () => {
     return (
       <Container className="p-6">
         <Text size="small" className="text-ui-fg-error">
-          Revenue verisi alınamadı.
+          Revenue verisi alınamadı. Backend çalışıyor mu kontrol et.
         </Text>
       </Container>
     )
   }
 
   const currency = overview.currency || "USD"
+  const revenuePoints = revenueChart.data?.points ?? []
+  const revenueSeries = revenuePoints.map((p) => p.value)
+
+  const platformTotals = (platformChart.data?.points ?? []).reduce<
+    Record<string, number>
+  >((acc, p) => {
+    const seg = p.segment ?? "Total"
+    acc[seg] = (acc[seg] ?? 0) + p.value
+    return acc
+  }, {})
+  const platformItems = Object.entries(platformTotals)
+    .filter(([name]) => name !== "Total")
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value]) => ({
+      label: name,
+      value,
+      display: <Money amount={value} currency={currency} />,
+    }))
+
+  const num = (n?: number) => (n ?? 0).toLocaleString()
 
   return (
-    <div className="flex flex-col gap-y-3">
-      <Container className="flex items-center justify-between p-6">
-        <div>
-          <Heading level="h2">Revenue</Heading>
-          <Text size="small" className="text-ui-fg-subtle">
-            Abonelik geliri & gider — net P&L
-          </Text>
-        </div>
-        <Badge size="2xsmall" color="green">
-          RevenueCat + manuel gider
-        </Badge>
-      </Container>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="MRR" sub="Aylık yinelenen gelir">
-          <Money amount={overview.mrr} currency={currency} />
-        </MetricCard>
-        <MetricCard label="Aktif Abonelik" sub="RevenueCat">
-          {overview.activeSubscriptions.toLocaleString()}
-        </MetricCard>
-        <MetricCard label="28g Gelir" sub="Son 28 gün">
-          <Money amount={overview.revenue28d} currency={currency} />
-        </MetricCard>
-        <MetricCard label="Net" sub="Gelir − gider">
-          <Money amount={overview.net} currency={currency} />
-        </MetricCard>
-        <MetricCard label="Yeni Müşteri" sub="Son 28 gün">
-          {overview.newCustomers.toLocaleString()}
-        </MetricCard>
-        <MetricCard label="Aktif Kullanıcı" sub="Son 28 gün">
-          {overview.activeUsers.toLocaleString()}
-        </MetricCard>
+    <div className="flex flex-col gap-y-2">
+      {/* PARA */}
+      <SectionLabel>Para</SectionLabel>
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <StatCard
+          label="MRR"
+          sub="Aylık yinelenen"
+          value={<Money amount={overview.mrr} currency={currency} />}
+        />
+        <StatCard
+          label="28g Gelir"
+          sub="Son 28 gün"
+          trend={revenueSeries}
+          value={<Money amount={overview.revenue28d} currency={currency} />}
+        />
+        <StatCard
+          label="Net Kâr"
+          sub="Gelir − gider"
+          accent={overview.net >= 0 ? "positive" : "negative"}
+          value={<Money amount={overview.net} currency={currency} />}
+        />
+        <StatCard
+          label="Toplam Gider"
+          sub="Tüm zamanlar"
+          value={<Money amount={overview.expenseTotal} currency={currency} />}
+        />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-        <Widget title="Gelir Trendi (günlük)" className="xl:col-span-2">
-          <RevenueTrend />
-        </Widget>
-        <Widget title="Platforma Göre Gelir">
-          <PlatformBreakdown currency={currency} />
-        </Widget>
+      {/* KİTLE */}
+      <SectionLabel>Kitle</SectionLabel>
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <StatCard label="Aktif Abonelik" sub="Şu an" value={num(overview.activeSubscriptions)} />
+        <StatCard label="Trial" sub="Şu an" value={num(overview.activeTrials)} />
+        <StatCard label="Yeni Müşteri" sub="Son 28 gün" value={num(overview.newCustomers)} />
+        <StatCard label="Aktif Kullanıcı" sub="Son 28 gün" value={num(overview.activeUsers)} />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <Widget title="Son İşlemler">
-          {overview.recentEvents.length ? (
-            <div className="flex flex-col divide-y">
-              {overview.recentEvents.map((ev) => (
-                <div
-                  key={ev.id}
-                  className="flex items-center justify-between py-2"
-                >
-                  <div className="flex flex-col">
-                    <Text size="small">{ev.kind}</Text>
-                    <Text size="xsmall" className="text-ui-fg-muted">
-                      {new Date(ev.occurred_at).toLocaleDateString()}
-                    </Text>
-                  </div>
-                  <Text size="small" weight="plus">
-                    <Money amount={ev.gross_amount} currency={ev.currency} />
-                  </Text>
-                </div>
-              ))}
-            </div>
+      {/* GRAFİK + PLATFORM */}
+      <div className="mt-1 grid grid-cols-1 gap-2 xl:grid-cols-3">
+        <Widget title="Gelir Trendi" className="xl:col-span-2">
+          {revenuePoints.length ? (
+            <AreaChartPanel
+              data={revenuePoints}
+              xKey="date"
+              yKey="value"
+              valueFormatter={usd}
+            />
           ) : (
-            <EmptyState label="Henüz işlem yok — RevenueCat webhook bağlanınca dolar" />
+            <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
+              Henüz veri yok
+            </div>
           )}
         </Widget>
+        <Widget title="Platforma Göre Gelir">
+          <BarList items={platformItems} emptyLabel="Platform verisi yok" />
+        </Widget>
+      </div>
 
-        <Widget title="Gider Ekle">
-          <ExpenseForm currency={currency} />
+      {/* DEFTER */}
+      <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+        <Widget title="Son İşlemler">
+          <DataTable<RevenueEventRow>
+            columns={[
+              { key: "kind", header: "Tür", render: (r) => r.kind },
+              {
+                key: "date",
+                header: "Tarih",
+                render: (r) => new Date(r.occurred_at).toLocaleDateString(),
+              },
+              {
+                key: "amount",
+                header: "Tutar",
+                align: "right",
+                render: (r) => (
+                  <Money amount={r.gross_amount} currency={r.currency} />
+                ),
+              },
+            ]}
+            rows={overview.recentEvents}
+            emptyLabel="Henüz işlem yok — webhook bağlanınca dolacak"
+          />
+        </Widget>
+
+        <Widget title="Giderler">
+          <div className="flex flex-col gap-y-4">
+            <ExpenseForm currency={currency} />
+            {expenses.length ? (
+              <div className="flex flex-col divide-y">
+                {expenses.map((e) => (
+                  <div
+                    key={e.id}
+                    className="flex items-center justify-between py-2"
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <Text size="small" className="truncate">
+                        {e.description}
+                      </Text>
+                      <Text size="xsmall" className="text-ui-fg-muted">
+                        {e.category} · {new Date(e.occurred_at).toLocaleDateString()}
+                      </Text>
+                    </div>
+                    <Text size="small" weight="plus" className="shrink-0">
+                      <Money amount={e.amount} currency={e.currency} />
+                    </Text>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState label="Henüz gider yok" />
+            )}
+          </div>
         </Widget>
       </div>
     </div>

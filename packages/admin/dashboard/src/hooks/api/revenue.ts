@@ -16,6 +16,7 @@ export type RevenueOverview = {
   expenseTotal: number
   net: number
   currency: string
+  activeTrials: number
   newCustomers: number
   activeUsers: number
   recentEvents: RevenueEventRow[]
@@ -23,6 +24,15 @@ export type RevenueOverview = {
 }
 
 export type ChartPoint = { date: string; value: number; segment?: string }
+
+export type ExpenseRow = {
+  id: string
+  description: string
+  category: string
+  amount: number
+  currency: string
+  occurred_at: string
+}
 
 export type CreateExpenseInput = {
   description: string
@@ -34,6 +44,7 @@ export type CreateExpenseInput = {
 
 export const revenueQueryKeys = {
   overview: ["revenue", "overview"] as const,
+  expenses: ["revenue", "expenses"] as const,
 }
 
 export const useRevenueOverview = () => {
@@ -61,6 +72,16 @@ export const useRevenueChart = (metric: string, segment?: string) => {
   })
 }
 
+export const useExpenses = () => {
+  const { data, ...rest } = useQuery({
+    queryKey: revenueQueryKeys.expenses,
+    queryFn: async () =>
+      sdk.client.fetch<{ expenses: ExpenseRow[] }>("/admin/revenue/expenses"),
+  })
+
+  return { expenses: data?.expenses ?? [], ...rest }
+}
+
 export const useCreateExpense = () => {
   const queryClient = useQueryClient()
 
@@ -72,6 +93,7 @@ export const useCreateExpense = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: revenueQueryKeys.overview })
+      queryClient.invalidateQueries({ queryKey: revenueQueryKeys.expenses })
     },
   })
 }

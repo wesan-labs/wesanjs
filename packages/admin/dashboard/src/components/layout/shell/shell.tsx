@@ -1,5 +1,5 @@
 import { SidebarLeft, TriangleRightMini, XMark } from "@medusajs/icons"
-import { IconButton, clx } from "@medusajs/ui"
+import { Badge, IconButton, clx } from "@medusajs/ui"
 import { AnimatePresence } from "motion/react"
 import { Dialog as RadixDialog } from "radix-ui"
 import { PropsWithChildren, ReactNode, useEffect, useState } from "react"
@@ -199,6 +199,9 @@ const Topbar = () => {
         <Breadcrumbs />
       </div>
       <div className="flex items-center justify-end gap-x-3">
+        <Badge size="2xsmall" color="orange">
+          DEV mode açık
+        </Badge>
         <Notifications />
       </div>
     </div>
