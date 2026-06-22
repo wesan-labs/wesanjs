@@ -16,6 +16,7 @@ export type RevSource = {
   app_id?: string | null
   external_id?: string | null
   credentials_ref?: string | null
+  hasSecret?: boolean
   status: string
   last_synced_at?: string | null
   last_error?: string | null
@@ -138,6 +139,7 @@ export const useCreateSource = () => {
       app_id?: string | null
       external_id?: string | null
       credentials_ref?: string | null
+      secret?: string | null
     }) => sdk.client.fetch("/admin/revenue/sources", { method: "POST", body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: sourcesKey }),
   })

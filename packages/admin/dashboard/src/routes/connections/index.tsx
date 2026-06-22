@@ -80,7 +80,7 @@ const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
   const deleteSource = useDeleteSource()
   const deleteApp = useDeleteApp()
   const [pid, setPid] = useState("")
-  const [ref, setRef] = useState("")
+  const [secret, setSecret] = useState("")
 
   const appSources = sources.filter((s) => s.app_id === app.id)
   const addSource = () =>
@@ -90,9 +90,9 @@ const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
         name: `${app.name} · RevenueCat`,
         app_id: app.id,
         external_id: pid.trim(),
-        credentials_ref: ref.trim(),
+        secret: secret.trim(),
       },
-      { onSuccess: () => { setPid(""); setRef("") } }
+      { onSuccess: () => { setPid(""); setSecret("") } }
     )
 
   return (
@@ -127,7 +127,7 @@ const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
                   </Text>
                 </div>
                 <Text size="xsmall" className="text-ui-fg-muted">
-                  key: {s.credentials_ref || "—"}
+                  anahtar: {s.hasSecret ? "kayıtlı ✓" : "yok"}
                   {s.last_error ? ` · hata: ${s.last_error}` : ""}
                 </Text>
               </div>
@@ -149,11 +149,12 @@ const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
           <Input value={pid} onChange={(e) => setPid(e.target.value)} placeholder="proj…" />
         </div>
         <div className="flex w-52 flex-col gap-y-1">
-          <Label size="xsmall">.env anahtar adı</Label>
+          <Label size="xsmall">Secret key</Label>
           <Input
-            value={ref}
-            onChange={(e) => setRef(e.target.value)}
-            placeholder="REVENUECAT_KEY_EMPIRE"
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="sk_…"
           />
         </div>
         <Button
@@ -161,7 +162,7 @@ const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
           variant="secondary"
           onClick={addSource}
           isLoading={createSource.isPending}
-          disabled={!pid.trim() || !ref.trim()}
+          disabled={!pid.trim() || !secret.trim()}
         >
           RevenueCat bağla
         </Button>
