@@ -77,12 +77,83 @@ class RevenueModuleService extends MedusaService({
     }
   }
 
-  async getOverview() {
-    const snaps = await this.listMetricSnapshots(
-      {},
-      { order: { date: "DESC" }, take: 30 }
+  // Per-(app, platform, source_type) snapshot upsert (app-merkezli sync).
+  async recordSnapshot({
+    date,
+    appId,
+    platform,
+    sourceType,
+    fields,
+  }: {
+    date: Date
+    appId: string | null
+    platform: string
+    sourceType: string
+    fields: Record<string, any>
+  }): Promise<void> {
+    const day = new Date(date.toISOString().slice(0, 10))
+    const existing = await this.listMetricSnapshots(
+      { date: day, app_id: appId, platform, source_type: sourceType },
+      { take: 1 }
     )
-    const latest = snaps[0]
+    const data = {
+      date: day,
+      app_id: appId,
+      platform,
+      source_type: sourceType,
+      currency: fields.currency ?? "USD",
+      ...fields,
+    }
+    if (existing.length) {
+      await this.updateMetricSnapshots({ id: existing[0].id, ...data })
+    } else {
+      await this.createMetricSnapshots(data)
+    }
+  }
+
+  // Her app'in en güncel "platform=all" revenuecat snapshot'ı.
+  private async latestPerApp(): Promise<any[]> {
+    const snaps = await this.listMetricSnapshots(
+      { platform: "all", source_type: "revenuecat" },
+      { order: { date: "DESC" }, take: 2000 }
+    )
+    const byApp = new Map<string, any>()
+    for (const s of snaps) {
+      if (s.app_id && !byApp.has(s.app_id)) {
+        byApp.set(s.app_id, s)
+      }
+    }
+    return [...byApp.values()]
+  }
+
+  // Per-app kırılım (Apps listesi).
+  async getAppsOverview() {
+    const apps = await this.listApps({}, { order: { name: "ASC" }, take: 200 })
+    const latest = await this.latestPerApp()
+    const byId = new Map(latest.map((s) => [s.app_id, s]))
+    return apps.map((a) => {
+      const s = byId.get(a.id)
+      return {
+        id: a.id,
+        name: a.name,
+        mrr: s ? Number(s.mrr) : 0,
+        revenue28d: s ? Number(s.gross_revenue) : 0,
+        activeSubscriptions: s ? s.active_subscriptions : 0,
+        newCustomers: s ? s.new_customers : 0,
+        activeUsers: s ? s.active_users : 0,
+        currency: s?.currency ?? "USD",
+        lastSyncedDate: s ? s.date.toISOString().slice(0, 10) : null,
+      }
+    })
+  }
+
+  // Genel toplam — tüm app'lerin son snapshot'ları toplanır.
+  async getOverview() {
+    const apps = await this.latestPerApp()
+    const sumN = (f: string) =>
+      Number(apps.reduce((a, s) => a + Number(s[f] ?? 0), 0).toFixed(2))
+    const sumI = (f: string) => apps.reduce((a, s) => a + (s[f] ?? 0), 0)
+    const revenue28d = sumN("gross_revenue")
     const expenses = await this.listExpenses({}, { take: 1000 })
     const expenseTotal = Number(
       expenses.reduce((a, e) => a + Number(e.amount), 0).toFixed(2)
@@ -91,22 +162,18 @@ class RevenueModuleService extends MedusaService({
       {},
       { order: { occurred_at: "DESC" }, take: 10 }
     )
-    const revenue28d = latest ? Number(latest.gross_revenue) : 0
     return {
-      mrr: latest ? Number(latest.mrr) : 0,
-      activeSubscriptions: latest ? latest.active_subscriptions : 0,
-      activeTrials: latest?.active_trials ?? 0,
-      newCustomers: latest?.new_customers ?? 0,
-      activeUsers: latest?.active_users ?? 0,
+      mrr: sumN("mrr"),
+      activeSubscriptions: sumI("active_subscriptions"),
+      activeTrials: sumI("active_trials"),
+      newCustomers: sumI("new_customers"),
+      activeUsers: sumI("active_users"),
       revenue28d,
       expenseTotal,
       net: Number((revenue28d - expenseTotal).toFixed(2)),
-      currency: latest?.currency ?? "USD",
+      currency: apps[0]?.currency ?? "USD",
       recentEvents,
-      mrrTrend: snaps
-        .slice()
-        .reverse()
-        .map((s) => ({ date: s.date.toISOString().slice(0, 10), mrr: Number(s.mrr) })),
+      mrrTrend: [],
     }
   }
 }
