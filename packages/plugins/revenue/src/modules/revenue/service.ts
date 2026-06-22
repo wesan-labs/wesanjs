@@ -147,6 +147,46 @@ class RevenueModuleService extends MedusaService({
     })
   }
 
+  // Tek app detayı: toplam metrik + platform/kaynak kırılımı.
+  async getAppDetail(appId: string) {
+    const apps = await this.listApps({ id: appId }, { take: 1 })
+    const app = apps[0]
+    const snaps = await this.listMetricSnapshots(
+      { app_id: appId },
+      { order: { date: "DESC" }, take: 500 }
+    )
+    const latest = new Map<string, any>()
+    for (const s of snaps) {
+      const k = `${s.platform}|${s.source_type}`
+      if (!latest.has(k)) {
+        latest.set(k, s)
+      }
+    }
+    const all = latest.get("all|revenuecat")
+    const platforms = [...latest.values()]
+      .filter((s) => s.platform !== "all")
+      .map((s) => ({
+        platform: s.platform,
+        source_type: s.source_type,
+        revenue: Number(s.gross_revenue),
+        currency: s.currency,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+    return {
+      id: appId,
+      name: app?.name ?? appId,
+      mrr: Number(all?.mrr ?? 0),
+      revenue28d: Number(all?.gross_revenue ?? 0),
+      activeSubscriptions: all?.active_subscriptions ?? 0,
+      activeTrials: all?.active_trials ?? 0,
+      newCustomers: all?.new_customers ?? 0,
+      activeUsers: all?.active_users ?? 0,
+      currency: all?.currency ?? "USD",
+      lastSyncedDate: all ? all.date.toISOString().slice(0, 10) : null,
+      platforms,
+    }
+  }
+
   // Genel toplam — tüm app'lerin son snapshot'ları toplanır.
   async getOverview() {
     const apps = await this.latestPerApp()
