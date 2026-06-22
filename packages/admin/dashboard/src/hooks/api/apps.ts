@@ -47,6 +47,27 @@ export const useAppsOverview = () => {
   return { apps: data?.apps ?? [], ...rest }
 }
 
+export type AppDetail = AppOverviewRow & {
+  activeTrials: number
+  lastSyncedDate?: string | null
+  platforms: {
+    platform: string
+    source_type: string
+    revenue: number
+    currency: string
+  }[]
+}
+
+export const useAppDetail = (id: string) => {
+  const { data, ...rest } = useQuery({
+    queryKey: ["revenue", "app", id],
+    queryFn: async () =>
+      sdk.client.fetch<{ app: AppDetail }>(`/admin/revenue/apps/${id}`),
+    enabled: !!id,
+  })
+  return { app: data?.app, ...rest }
+}
+
 export const useApps = () => {
   const { data, ...rest } = useQuery({
     queryKey: appsKey,

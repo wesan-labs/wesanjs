@@ -1,5 +1,6 @@
 import { Container, Text } from "@medusajs/ui"
 import { ReactNode } from "react"
+import { Link } from "react-router-dom"
 import { useAppsOverview, type AppOverviewRow } from "../../hooks/api/apps"
 import {
   useRevenueChart,
@@ -153,7 +154,18 @@ export const Component = () => {
         <Widget title="Uygulamalar">
           <DataTable<AppOverviewRow>
             columns={[
-              { key: "name", header: "Uygulama", render: (a) => a.name },
+              {
+                key: "name",
+                header: "Uygulama",
+                render: (a) => (
+                  <Link
+                    to={`/apps/${a.id}`}
+                    className="text-ui-fg-interactive hover:underline"
+                  >
+                    {a.name}
+                  </Link>
+                ),
+              },
               {
                 key: "mrr",
                 header: "MRR",
