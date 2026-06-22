@@ -17,6 +17,7 @@ import {
   useDeleteApp,
   useDeleteSource,
   useIntegrations,
+  useSaveIntegration,
   useSources,
   type RevApp,
   type RevSource,
@@ -75,6 +76,157 @@ const ProviderCard = ({
   </Container>
 )
 
+const AdMobCard = ({
+  connected,
+  publisherId,
+}: {
+  connected?: boolean
+  publisherId?: string | null
+}) => {
+  const save = useSaveIntegration()
+  const [f, setF] = useState({
+    publisher_id: "",
+    client_id: "",
+    client_secret: "",
+    refresh_token: "",
+  })
+  const valid =
+    !!f.publisher_id && !!f.client_id && !!f.client_secret && !!f.refresh_token
+  return (
+    <Container className="flex flex-col gap-y-2 p-5">
+      <div className="flex items-center justify-between">
+        <Heading level="h3">AdMob</Heading>
+        <Badge size="2xsmall" color={connected ? "green" : "grey"}>
+          {connected ? "bağlı" : "bağlı değil"}
+        </Badge>
+      </div>
+      <Text size="xsmall" className="text-ui-fg-subtle">
+        Reklam geliri — tek hesap, per-app/platform.
+        {publisherId ? ` · pub: ${publisherId}` : ""}
+      </Text>
+      <Input
+        value={f.publisher_id}
+        onChange={(e) => setF({ ...f, publisher_id: e.target.value })}
+        placeholder="publisher id (pub-…)"
+      />
+      <Input
+        value={f.client_id}
+        onChange={(e) => setF({ ...f, client_id: e.target.value })}
+        placeholder="client id"
+      />
+      <Input
+        type="password"
+        value={f.client_secret}
+        onChange={(e) => setF({ ...f, client_secret: e.target.value })}
+        placeholder="client secret"
+      />
+      <Input
+        type="password"
+        value={f.refresh_token}
+        onChange={(e) => setF({ ...f, refresh_token: e.target.value })}
+        placeholder="refresh token"
+      />
+      <Button
+        size="small"
+        variant="secondary"
+        onClick={() =>
+          save.mutate(
+            {
+              provider: "admob",
+              category: "ads",
+              config: { publisher_id: f.publisher_id.trim() },
+              secrets: {
+                client_id: f.client_id.trim(),
+                client_secret: f.client_secret.trim(),
+                refresh_token: f.refresh_token.trim(),
+              },
+            },
+            {
+              onSuccess: () =>
+                setF({
+                  publisher_id: "",
+                  client_id: "",
+                  client_secret: "",
+                  refresh_token: "",
+                }),
+            }
+          )
+        }
+        isLoading={save.isPending}
+        disabled={!valid}
+      >
+        Kaydet
+      </Button>
+    </Container>
+  )
+}
+
+const EmailCard = ({
+  connected,
+  recipient,
+  from,
+}: {
+  connected?: boolean
+  recipient?: string | null
+  from?: string | null
+}) => {
+  const save = useSaveIntegration()
+  const [f, setF] = useState({
+    recipient: recipient ?? "",
+    from: from ?? "",
+    api_key: "",
+  })
+  const valid = !!f.recipient && !!f.api_key
+  return (
+    <Container className="flex flex-col gap-y-2 p-5">
+      <div className="flex items-center justify-between">
+        <Heading level="h3">Email</Heading>
+        <Badge size="2xsmall" color={connected ? "green" : "grey"}>
+          {connected ? "bağlı" : "bağlı değil"}
+        </Badge>
+      </div>
+      <Text size="xsmall" className="text-ui-fg-subtle">
+        Aylık P&L raporu (Resend).
+      </Text>
+      <Input
+        value={f.recipient}
+        onChange={(e) => setF({ ...f, recipient: e.target.value })}
+        placeholder="alıcı e-mail"
+      />
+      <Input
+        value={f.from}
+        onChange={(e) => setF({ ...f, from: e.target.value })}
+        placeholder="gönderen (reports@…)"
+      />
+      <Input
+        type="password"
+        value={f.api_key}
+        onChange={(e) => setF({ ...f, api_key: e.target.value })}
+        placeholder="Resend API key (re_…)"
+      />
+      <Button
+        size="small"
+        variant="secondary"
+        onClick={() =>
+          save.mutate(
+            {
+              provider: "resend",
+              category: "mail",
+              config: { recipient: f.recipient.trim(), from: f.from.trim() },
+              secrets: { api_key: f.api_key.trim() },
+            },
+            { onSuccess: () => setF({ ...f, api_key: "" }) }
+          )
+        }
+        isLoading={save.isPending}
+        disabled={!valid}
+      >
+        Kaydet
+      </Button>
+    </Container>
+  )
+}
+
 const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
   const createSource = useCreateSource()
   const deleteSource = useDeleteSource()
@@ -126,10 +278,18 @@ const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
                     {s.external_id || "—"}
                   </Text>
                 </div>
-                <Text size="xsmall" className="text-ui-fg-muted">
+                <Text size="xsmall" className="text-ui-fg-muted truncate">
                   anahtar: {s.hasSecret ? "kayıtlı ✓" : "yok"}
-                  {s.last_error ? ` · hata: ${s.last_error}` : ""}
                 </Text>
+                {s.last_error ? (
+                  <Text
+                    size="xsmall"
+                    className="text-ui-tag-red-text truncate"
+                    title={s.last_error}
+                  >
+                    hata: {String(s.last_error).slice(0, 60)}
+                  </Text>
+                ) : null}
               </div>
               <IconButton
                 size="small"
@@ -183,8 +343,8 @@ export const Component = () => {
       <Container className="p-6">
         <Heading level="h2">Entegrasyonlar</Heading>
         <Text size="small" className="text-ui-fg-subtle">
-          Gelir kaynakları ve servisler. Secret değerler <code>helm/.env</code>'de
-          tutulur — burada yalnız bağlantı eşlemesi ve durum.
+          Gelir kaynakları ve servisler. Anahtarları buradan gir — şifreli
+          saklanır (DB), <code>.env</code> gerekmez.
         </Text>
       </Container>
 
@@ -200,22 +360,14 @@ export const Component = () => {
             </Text>
           }
         />
-        <ProviderCard
-          title="AdMob"
+        <AdMobCard
           connected={integrations?.admob.connected}
-          note={integrations?.admob.note}
-          vars={integrations?.admob.envVars}
+          publisherId={integrations?.admob.publisherId}
         />
-        <ProviderCard
-          title="Email"
+        <EmailCard
           connected={integrations?.email.connected}
-          note={integrations?.email.note}
-          vars={integrations?.email.envVars}
-          extra={
-            <Text size="xsmall" className="text-ui-fg-muted">
-              alıcı: {integrations?.email.recipient ?? "—"}
-            </Text>
-          }
+          recipient={integrations?.email.recipient}
+          from={integrations?.email.from}
         />
       </div>
 

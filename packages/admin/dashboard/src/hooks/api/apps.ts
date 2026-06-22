@@ -37,11 +37,11 @@ export type AppOverviewRow = {
 
 export type Integrations = {
   revenuecat: { connected: boolean; apps: number; sources: number }
-  admob: { connected: boolean; envVars: string[]; note: string }
+  admob: { connected: boolean; publisherId: string | null; note: string }
   email: {
     connected: boolean
     recipient: string | null
-    envVars: string[]
+    from: string | null
     note: string
   }
 }
@@ -58,6 +58,24 @@ export const useIntegrations = () => {
       ),
   })
   return { integrations: data?.integrations, ...rest }
+}
+
+export const useSaveIntegration = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      provider: string
+      category: string
+      config?: Record<string, unknown>
+      secrets: Record<string, string>
+    }) =>
+      sdk.client.fetch("/admin/revenue/integrations", {
+        method: "POST",
+        body,
+      }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["revenue", "integrations"] }),
+  })
 }
 
 export const useAppsOverview = () => {
