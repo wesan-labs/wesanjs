@@ -1,4 +1,5 @@
 import { RevenueCatConnector } from "../connectors/revenuecat"
+import { decryptSecret } from "./crypto"
 import { REVENUE_MODULE } from "../types"
 
 // RC "store" → bizim platform ekseni.
@@ -32,9 +33,9 @@ export async function syncRevenuecatSources(
   let skipped = 0
 
   for (const src of sources) {
-    const apiKey = src.credentials_ref
-      ? process.env[src.credentials_ref]
-      : undefined
+    const apiKey =
+      decryptSecret(src.secret_enc) ??
+      (src.credentials_ref ? process.env[src.credentials_ref] : undefined)
     const projectId = src.external_id
     if (!apiKey || !projectId) {
       logger.warn(

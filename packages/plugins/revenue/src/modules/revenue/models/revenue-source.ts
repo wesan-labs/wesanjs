@@ -11,6 +11,7 @@ export default model.define(
     external_id: model.text().nullable(),
     status: model.text().default("active"),
     credentials_ref: model.text().nullable(),
+    secret_enc: model.text().nullable(),
     last_synced_at: model.dateTime().nullable(),
     last_cursor: model.text().nullable(),
     last_error: model.text().nullable(),
