@@ -13,6 +13,7 @@ export type RevenueOverview = {
   mrr: number
   activeSubscriptions: number
   revenue28d: number
+  adRevenue: number
   expenseTotal: number
   net: number
   currency: string

@@ -181,6 +181,14 @@ export const Component = () => {
                 ),
               },
               {
+                key: "ad",
+                header: "Reklam",
+                align: "right",
+                render: (a) => (
+                  <Money amount={a.adRevenue} currency={a.currency} />
+                ),
+              },
+              {
                 key: "subs",
                 header: "Abone",
                 align: "right",

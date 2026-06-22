@@ -56,6 +56,10 @@ export const Component = () => {
           label="28g Gelir"
           value={<Money amount={app.revenue28d} currency={app.currency} />}
         />
+        <StatCard
+          label="Reklam Geliri"
+          value={<Money amount={app.adRevenue} currency={app.currency} />}
+        />
         <StatCard label="Abone" value={app.activeSubscriptions.toLocaleString()} />
         <StatCard
           label="Aktif Kullanıcı"

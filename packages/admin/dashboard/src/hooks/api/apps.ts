@@ -26,6 +26,7 @@ export type AppOverviewRow = {
   name: string
   mrr: number
   revenue28d: number
+  adRevenue: number
   activeSubscriptions: number
   newCustomers: number
   activeUsers: number
