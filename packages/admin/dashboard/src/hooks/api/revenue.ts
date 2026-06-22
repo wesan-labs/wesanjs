@@ -32,6 +32,7 @@ export type ExpenseRow = {
   amount: number
   currency: string
   occurred_at: string
+  recurring: boolean
 }
 
 export type CreateExpenseInput = {
@@ -40,6 +41,7 @@ export type CreateExpenseInput = {
   currency: string
   category: string
   occurred_at: string
+  recurring: boolean
 }
 
 export const revenueQueryKeys = {
@@ -91,6 +93,19 @@ export const useCreateExpense = () => {
         method: "POST",
         body: input,
       }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: revenueQueryKeys.overview })
+      queryClient.invalidateQueries({ queryKey: revenueQueryKeys.expenses })
+    },
+  })
+}
+
+export const useDeleteExpense = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      sdk.client.fetch(`/admin/revenue/expenses/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: revenueQueryKeys.overview })
       queryClient.invalidateQueries({ queryKey: revenueQueryKeys.expenses })
