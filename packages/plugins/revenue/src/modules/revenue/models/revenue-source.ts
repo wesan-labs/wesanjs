@@ -6,6 +6,9 @@ export default model.define(
   {
     id: model.id({ prefix: "rsrc" }).primaryKey(),
     type: model.enum(RevenueSourceType),
+    provider: model.text().nullable(),
+    category: model.text().nullable(),
+    config: model.json().nullable(),
     name: model.text(),
     app_id: model.text().nullable(),
     external_id: model.text().nullable(),

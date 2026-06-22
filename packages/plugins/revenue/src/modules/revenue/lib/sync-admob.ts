@@ -1,4 +1,5 @@
 import { AdMobConnector } from "../connectors/admob"
+import { decryptSecret } from "./crypto"
 import { REVENUE_MODULE } from "../types"
 
 // Tek AdMob hesabı → per-app/platform reklam geliri. Creds .env'de:
@@ -8,24 +9,42 @@ export async function syncAdmob(
   container: any
 ): Promise<{ synced: number; skipped: number }> {
   const logger = container.resolve("logger")
-  const {
-    ADMOB_CLIENT_ID,
-    ADMOB_CLIENT_SECRET,
-    ADMOB_REFRESH_TOKEN,
-    ADMOB_PUBLISHER_ID,
-  } = process.env
+  const service: any = container.resolve(REVENUE_MODULE)
+
+  // Creds: önce UI'dan kaydedilen (şifreli) AdMob entegrasyonu, yoksa .env.
+  const integ = (await service.listRevenueSources({}, { take: 500 })).find(
+    (s: any) => s.provider === "admob" && s.secret_enc
+  )
+  let clientId: string | undefined
+  let clientSecret: string | undefined
+  let refreshToken: string | undefined
+  let publisherId: string | undefined
+  if (integ) {
+    try {
+      const p = JSON.parse(decryptSecret(integ.secret_enc) || "{}")
+      clientId = p.client_id
+      clientSecret = p.client_secret
+      refreshToken = p.refresh_token
+      publisherId = integ.config?.publisher_id
+    } catch {
+      // bozuk → env'e düş
+    }
+  }
+  clientId = clientId || process.env.ADMOB_CLIENT_ID
+  clientSecret = clientSecret || process.env.ADMOB_CLIENT_SECRET
+  refreshToken = refreshToken || process.env.ADMOB_REFRESH_TOKEN
+  publisherId = publisherId || process.env.ADMOB_PUBLISHER_ID
+
   if (
-    !ADMOB_CLIENT_ID ||
-    !ADMOB_CLIENT_SECRET ||
-    !ADMOB_REFRESH_TOKEN ||
-    !ADMOB_PUBLISHER_ID ||
-    ADMOB_REFRESH_TOKEN.includes("placeholder")
+    !clientId ||
+    !clientSecret ||
+    !refreshToken ||
+    !publisherId ||
+    refreshToken.includes("placeholder")
   ) {
     logger.warn("[revenue] AdMob creds missing; skipping ad sync")
     return { synced: 0, skipped: 1 }
   }
-
-  const service: any = container.resolve(REVENUE_MODULE)
   const apps = await service.listApps({}, { take: 500 })
   const byExt = new Map<string, string>()
   const byName = new Map<string, string>()
@@ -40,10 +59,10 @@ export async function syncAdmob(
   }
 
   const connector = new AdMobConnector({
-    clientId: ADMOB_CLIENT_ID,
-    clientSecret: ADMOB_CLIENT_SECRET,
-    refreshToken: ADMOB_REFRESH_TOKEN,
-    publisherId: ADMOB_PUBLISHER_ID,
+    clientId,
+    clientSecret,
+    refreshToken,
+    publisherId,
   })
   const rows = await connector.fetchReport(28)
 
