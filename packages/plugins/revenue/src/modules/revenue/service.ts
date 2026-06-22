@@ -126,10 +126,36 @@ class RevenueModuleService extends MedusaService({
     return [...byApp.values()]
   }
 
+  // Reklam geliri (admob snapshot'larının app başına son hali toplamı).
+  private async adRevenueByApp(): Promise<Map<string, number>> {
+    const snaps = await this.listMetricSnapshots(
+      { source_type: "admob" },
+      { order: { date: "DESC" }, take: 5000 }
+    )
+    const latest = new Map<string, any>()
+    for (const s of snaps) {
+      const k = `${s.app_id}|${s.platform}`
+      if (!latest.has(k)) {
+        latest.set(k, s)
+      }
+    }
+    const byApp = new Map<string, number>()
+    for (const s of latest.values()) {
+      if (s.app_id) {
+        byApp.set(
+          s.app_id,
+          (byApp.get(s.app_id) ?? 0) + Number(s.ad_revenue ?? 0)
+        )
+      }
+    }
+    return byApp
+  }
+
   // Per-app kırılım (Apps listesi).
   async getAppsOverview() {
     const apps = await this.listApps({}, { order: { name: "ASC" }, take: 200 })
     const latest = await this.latestPerApp()
+    const adByApp = await this.adRevenueByApp()
     const byId = new Map(latest.map((s) => [s.app_id, s]))
     return apps.map((a) => {
       const s = byId.get(a.id)
@@ -138,6 +164,7 @@ class RevenueModuleService extends MedusaService({
         name: a.name,
         mrr: s ? Number(s.mrr) : 0,
         revenue28d: s ? Number(s.gross_revenue) : 0,
+        adRevenue: adByApp.get(a.id) ?? 0,
         activeSubscriptions: s ? s.active_subscriptions : 0,
         newCustomers: s ? s.new_customers : 0,
         activeUsers: s ? s.active_users : 0,
@@ -172,11 +199,13 @@ class RevenueModuleService extends MedusaService({
         currency: s.currency,
       }))
       .sort((a, b) => b.revenue - a.revenue)
+    const adRevenue = (await this.adRevenueByApp()).get(appId) ?? 0
     return {
       id: appId,
       name: app?.name ?? appId,
       mrr: Number(all?.mrr ?? 0),
       revenue28d: Number(all?.gross_revenue ?? 0),
+      adRevenue,
       activeSubscriptions: all?.active_subscriptions ?? 0,
       activeTrials: all?.active_trials ?? 0,
       newCustomers: all?.new_customers ?? 0,
@@ -194,6 +223,10 @@ class RevenueModuleService extends MedusaService({
       Number(apps.reduce((a, s) => a + Number(s[f] ?? 0), 0).toFixed(2))
     const sumI = (f: string) => apps.reduce((a, s) => a + (s[f] ?? 0), 0)
     const revenue28d = sumN("gross_revenue")
+    const adByApp = await this.adRevenueByApp()
+    const adRevenue = Number(
+      [...adByApp.values()].reduce((a, v) => a + v, 0).toFixed(2)
+    )
     const expenses = await this.listExpenses({}, { take: 1000 })
     const expenseTotal = Number(
       expenses.reduce((a, e) => a + Number(e.amount), 0).toFixed(2)
@@ -209,6 +242,7 @@ class RevenueModuleService extends MedusaService({
       newCustomers: sumI("new_customers"),
       activeUsers: sumI("active_users"),
       revenue28d,
+      adRevenue,
       expenseTotal,
       net: Number((revenue28d - expenseTotal).toFixed(2)),
       currency: apps[0]?.currency ?? "USD",
