@@ -21,8 +21,31 @@ export type RevSource = {
   last_error?: string | null
 }
 
+export type AppOverviewRow = {
+  id: string
+  name: string
+  mrr: number
+  revenue28d: number
+  activeSubscriptions: number
+  newCustomers: number
+  activeUsers: number
+  currency: string
+  lastSyncedDate?: string | null
+}
+
 const appsKey = ["revenue", "apps"] as const
 const sourcesKey = ["revenue", "sources"] as const
+
+export const useAppsOverview = () => {
+  const { data, ...rest } = useQuery({
+    queryKey: ["revenue", "apps-overview"],
+    queryFn: async () =>
+      sdk.client.fetch<{ apps: AppOverviewRow[] }>(
+        "/admin/revenue/apps-overview"
+      ),
+  })
+  return { apps: data?.apps ?? [], ...rest }
+}
 
 export const useApps = () => {
   const { data, ...rest } = useQuery({

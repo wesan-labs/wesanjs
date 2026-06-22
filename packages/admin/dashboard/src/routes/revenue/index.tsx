@@ -1,5 +1,6 @@
 import { Container, Text } from "@medusajs/ui"
 import { ReactNode } from "react"
+import { useAppsOverview, type AppOverviewRow } from "../../hooks/api/apps"
 import {
   useRevenueChart,
   useRevenueOverview,
@@ -34,6 +35,7 @@ export const Component = () => {
   const revenueChart = useRevenueChart("revenue")
   const platformChart = useRevenueChart("revenue", "store")
   const countryChart = useRevenueChart("revenue", "country")
+  const { apps } = useAppsOverview()
 
   if (isLoading) {
     return (
@@ -144,6 +146,39 @@ export const Component = () => {
         <StatCard label="Trial" sub="Şu an" value={num(overview.activeTrials)} />
         <StatCard label="Yeni Müşteri" sub="Son 28 gün" value={num(overview.newCustomers)} />
         <StatCard label="Aktif Kullanıcı" sub="Son 28 gün" value={num(overview.activeUsers)} />
+      </div>
+
+      {/* UYGULAMALAR (per-app kırılım) */}
+      <div className="mt-1">
+        <Widget title="Uygulamalar">
+          <DataTable<AppOverviewRow>
+            columns={[
+              { key: "name", header: "Uygulama", render: (a) => a.name },
+              {
+                key: "mrr",
+                header: "MRR",
+                align: "right",
+                render: (a) => <Money amount={a.mrr} currency={a.currency} />,
+              },
+              {
+                key: "rev",
+                header: "28g Gelir",
+                align: "right",
+                render: (a) => (
+                  <Money amount={a.revenue28d} currency={a.currency} />
+                ),
+              },
+              {
+                key: "subs",
+                header: "Abone",
+                align: "right",
+                render: (a) => a.activeSubscriptions.toLocaleString(),
+              },
+            ]}
+            rows={apps}
+            emptyLabel="Henüz ürün yok — Ayarlar → Bağlantılar'dan ekle"
+          />
+        </Widget>
       </div>
 
       {/* GRAFİK + PLATFORM */}
