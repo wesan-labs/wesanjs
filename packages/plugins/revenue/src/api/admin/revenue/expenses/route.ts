@@ -14,6 +14,7 @@ export const PostExpense = z.object({
   currency: z.string().min(3).max(3),
   category: z.enum(["infra", "api", "ads", "other"]).default("other"),
   occurred_at: z.coerce.date(),
+  recurring: z.boolean().default(false),
   app_id: z.string().nullable().optional(),
 })
 
