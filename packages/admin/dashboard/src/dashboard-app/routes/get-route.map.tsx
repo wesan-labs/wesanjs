@@ -1023,6 +1023,11 @@ export function getRouteMap({
               lazy: () => import("../../routes/expenses"),
             },
             {
+              path: "connections",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/connections"),
+            },
+            {
               path: "profile",
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/profile/profile-detail"),
