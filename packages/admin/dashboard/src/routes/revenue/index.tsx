@@ -10,11 +10,14 @@ import {
 import {
   AreaChartPanel,
   BarList,
+  centroidFor,
   DataTable,
   EmptyState,
+  MapPanel,
   Money,
   StatCard,
   Widget,
+  type MapMarker,
 } from "../dashboards/kit"
 
 const CATEGORIES = ["infra", "api", "ads", "other"] as const
@@ -114,6 +117,7 @@ export const Component = () => {
   const { overview, isLoading, isError } = useRevenueOverview()
   const revenueChart = useRevenueChart("revenue")
   const platformChart = useRevenueChart("revenue", "store")
+  const countryChart = useRevenueChart("revenue", "country")
   const { expenses } = useExpenses()
 
   if (isLoading) {
@@ -155,6 +159,35 @@ export const Component = () => {
       value,
       display: <Money amount={value} currency={currency} />,
     }))
+
+  const countryEntries = Object.entries(
+    (countryChart.data?.points ?? []).reduce<Record<string, number>>(
+      (acc, p) => {
+        const seg = p.segment ?? "Total"
+        acc[seg] = (acc[seg] ?? 0) + p.value
+        return acc
+      },
+      {}
+    )
+  )
+    .filter(([name]) => name !== "Total")
+    .sort((a, b) => b[1] - a[1])
+
+  const mapMarkers: MapMarker[] = []
+  const unmappedCountries: string[] = []
+  countryEntries.forEach(([name, value]) => {
+    const c = centroidFor(name)
+    if (c) {
+      mapMarkers.push({ lng: c[0], lat: c[1], label: name, value, display: usd(value) })
+    } else {
+      unmappedCountries.push(name)
+    }
+  })
+  const countryItems = countryEntries.map(([name, value]) => ({
+    label: name,
+    value,
+    display: <Money amount={value} currency={currency} />,
+  }))
 
   const num = (n?: number) => (n ?? 0).toLocaleString()
 
@@ -214,6 +247,27 @@ export const Component = () => {
         </Widget>
         <Widget title="Platforma Göre Gelir">
           <BarList items={platformItems} emptyLabel="Platform verisi yok" />
+        </Widget>
+      </div>
+
+      {/* ÖDEME BÖLGELERİ */}
+      <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
+        <Widget title="Ödeme Bölgeleri" className="xl:col-span-2">
+          {mapMarkers.length ? (
+            <MapPanel markers={mapMarkers} />
+          ) : (
+            <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
+              Henüz ödeme bölgesi yok
+            </div>
+          )}
+        </Widget>
+        <Widget title="Ülkeye Göre Gelir">
+          <BarList items={countryItems} emptyLabel="Ülke verisi yok" />
+          {unmappedCountries.length ? (
+            <Text size="xsmall" className="text-ui-fg-muted mt-2">
+              Haritada gösterilemeyen: {unmappedCountries.join(", ")}
+            </Text>
+          ) : null}
         </Widget>
       </div>
 
