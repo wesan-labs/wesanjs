@@ -7,6 +7,7 @@ export default model
       id: model.id({ prefix: "rsnap" }).primaryKey(),
       date: model.dateTime(),
       app_id: model.text().nullable(),
+      platform: model.text().default("all"),
       source_type: model.text().nullable(),
       mrr: model.bigNumber().default(0),
       active_subscriptions: model.number().default(0),
@@ -21,4 +22,6 @@ export default model
       currency: model.text(),
     }
   )
-  .indexes([{ on: ["date", "app_id", "source_type"], unique: true }])
+  .indexes([
+    { on: ["date", "app_id", "platform", "source_type"], unique: true },
+  ])

@@ -7,6 +7,8 @@ export default model.define(
     id: model.id({ prefix: "rsrc" }).primaryKey(),
     type: model.enum(RevenueSourceType),
     name: model.text(),
+    app_id: model.text().nullable(),
+    external_id: model.text().nullable(),
     status: model.text().default("active"),
     credentials_ref: model.text().nullable(),
     last_synced_at: model.dateTime().nullable(),

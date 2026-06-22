@@ -1,4 +1,5 @@
 import { MedusaService } from "@medusajs/framework/utils"
+import App from "./models/app"
 import RevenueSource from "./models/revenue-source"
 import RevenueEvent from "./models/revenue-event"
 import Expense from "./models/expense"
@@ -7,6 +8,7 @@ import { RevenueSourceType } from "./types"
 import type { CanonicalEvent, ProviderMetrics } from "./connectors/types"
 
 class RevenueModuleService extends MedusaService({
+  App,
   RevenueSource,
   RevenueEvent,
   Expense,

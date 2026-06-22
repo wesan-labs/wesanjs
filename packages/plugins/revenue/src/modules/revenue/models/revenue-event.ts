@@ -10,6 +10,7 @@ export default model
       source_type: model.enum(RevenueSourceType),
       external_id: model.text(),
       app_id: model.text().nullable(),
+      platform: model.text().nullable(),
       kind: model.enum(RevenueEventKind),
       status: model.text().default("completed"),
       gross_amount: model.bigNumber(),
