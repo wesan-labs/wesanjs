@@ -33,8 +33,30 @@ export type AppOverviewRow = {
   lastSyncedDate?: string | null
 }
 
+export type Integrations = {
+  revenuecat: { connected: boolean; apps: number; sources: number }
+  admob: { connected: boolean; envVars: string[]; note: string }
+  email: {
+    connected: boolean
+    recipient: string | null
+    envVars: string[]
+    note: string
+  }
+}
+
 const appsKey = ["revenue", "apps"] as const
 const sourcesKey = ["revenue", "sources"] as const
+
+export const useIntegrations = () => {
+  const { data, ...rest } = useQuery({
+    queryKey: ["revenue", "integrations"],
+    queryFn: async () =>
+      sdk.client.fetch<{ integrations: Integrations }>(
+        "/admin/revenue/integrations"
+      ),
+  })
+  return { integrations: data?.integrations, ...rest }
+}
 
 export const useAppsOverview = () => {
   const { data, ...rest } = useQuery({

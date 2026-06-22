@@ -40,7 +40,7 @@ const useSettingRoutes = (): INavItem[] => {
         to: "/settings/expenses",
       },
       {
-        label: "Bağlantılar",
+        label: "Entegrasyonlar",
         to: "/settings/connections",
       },
       {
