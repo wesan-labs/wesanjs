@@ -128,7 +128,16 @@ const Glyph = ({
   </div>
 )
 
-/* ---- one matrix cell ---- */
+/* ---- one matrix cell: compact single line ---- */
+const StatusDot = ({ integration }: { integration: IntegrationDef }) => (
+  <div className="relative shrink-0">
+    <Glyph integration={integration} lit size={20} />
+    <span className="bg-ui-tag-green-bg ring-ui-bg-base absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-2">
+      <Check className="text-ui-tag-green-icon h-2.5 w-2.5" />
+    </span>
+  </div>
+)
+
 const MatrixCell = ({
   integration,
   connected,
@@ -142,10 +151,10 @@ const MatrixCell = ({
 }) => {
   if (!integration.available) {
     return (
-      <td className="px-2 py-3 text-center align-middle">
-        <Tooltip content="Yakında">
-          <div className="mx-auto flex w-24 flex-col items-center gap-y-1 opacity-45">
-            <Glyph integration={integration} lit={false} />
+      <td className="w-44 px-3 py-1.5">
+        <Tooltip content={`${integration.label} · yakında`}>
+          <div className="flex items-center gap-x-2 opacity-40">
+            <Glyph integration={integration} lit={false} size={20} />
             <Text size="xsmall" className="text-ui-fg-muted">
               yakında
             </Text>
@@ -156,29 +165,24 @@ const MatrixCell = ({
   }
 
   return (
-    <td className="px-2 py-2 text-center align-middle">
+    <td className="w-44 px-3 py-1.5">
       <button
         type="button"
         onClick={onOpen}
-        className="group mx-auto flex w-24 flex-col items-center gap-y-1 rounded-lg px-2 py-1.5 transition-colors hover:bg-ui-bg-base-hover"
+        className="group flex w-full items-center gap-x-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-ui-bg-base-hover"
       >
-        <div className="relative">
-          <Glyph integration={integration} lit={connected} />
-          {connected ? (
-            <span className="bg-ui-tag-green-bg ring-ui-bg-base absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2">
-              <Check className="text-ui-tag-green-icon h-3 w-3" />
-            </span>
-          ) : (
-            <span className="bg-ui-bg-component text-ui-fg-muted ring-ui-bg-base absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full opacity-0 ring-2 transition-opacity group-hover:opacity-100">
-              <Plus className="h-3 w-3" />
-            </span>
-          )}
-        </div>
+        {connected ? (
+          <StatusDot integration={integration} />
+        ) : (
+          <Glyph integration={integration} lit={false} size={20} />
+        )}
         <Text
           size="xsmall"
           className={
-            "max-w-[88px] truncate " +
-            (connected ? "text-ui-fg-subtle" : "text-ui-fg-muted")
+            "truncate " +
+            (connected
+              ? "text-ui-fg-subtle"
+              : "text-ui-fg-muted group-hover:text-ui-fg-subtle")
           }
         >
           {connected ? hint || "bağlı" : "bağla"}
@@ -559,23 +563,22 @@ export const Component = () => {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-ui-border-base border-b">
-                <th className="bg-ui-bg-subtle sticky left-0 z-10 min-w-[200px] px-5 py-3 text-left">
+              <tr className="border-ui-border-base bg-ui-bg-subtle border-b">
+                <th className="px-4 py-2.5 text-left">
                   <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
                     Ürün
                   </Text>
                 </th>
                 {INTEGRATIONS.map((i) => (
-                  <th key={i.key} className="px-2 py-3 align-bottom">
-                    <div className="flex flex-col items-center gap-y-1">
-                      <Glyph integration={i} lit size={24} />
-                      <Text size="xsmall" weight="plus" className="text-ui-fg-base">
-                        {i.label}
-                      </Text>
-                      <Text size="xsmall" className="text-ui-fg-muted">
-                        {i.category}
-                      </Text>
-                    </div>
+                  <th key={i.key} className="w-44 px-3 py-2.5 text-left">
+                    <Tooltip content={i.category}>
+                      <div className="flex items-center gap-x-2">
+                        <Glyph integration={i} lit size={18} />
+                        <Text size="xsmall" weight="plus" className="text-ui-fg-base">
+                          {i.label}
+                        </Text>
+                      </div>
+                    </Tooltip>
                   </th>
                 ))}
                 <th className="w-10" />
@@ -591,13 +594,13 @@ export const Component = () => {
                     key={app.id}
                     className="border-ui-border-base group border-b transition-colors hover:bg-ui-bg-base-hover/40"
                   >
-                    <td className="bg-ui-bg-base group-hover:bg-ui-bg-base-hover/40 sticky left-0 z-10 min-w-[200px] px-5 py-3">
-                      <div className="flex flex-col">
+                    <td className="px-4 py-1.5">
+                      <div className="flex items-baseline gap-x-2">
                         <Text size="small" weight="plus" className="truncate">
                           {app.name}
                         </Text>
-                        <Text size="xsmall" className="text-ui-fg-muted">
-                          {conn}/{activeCount} bağlı
+                        <Text size="xsmall" className="text-ui-fg-muted shrink-0">
+                          {conn}/{activeCount}
                         </Text>
                       </div>
                     </td>
