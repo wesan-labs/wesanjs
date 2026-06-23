@@ -139,6 +139,22 @@ export const useDeleteApp = () => {
   })
 }
 
+export const useUpdateApp = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string
+      name?: string
+      external_ids?: Record<string, unknown>
+    }) =>
+      sdk.client.fetch(`/admin/revenue/apps/${id}`, { method: "POST", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: appsKey }),
+  })
+}
+
 export const useSources = () => {
   const { data, ...rest } = useQuery({
     queryKey: sourcesKey,
