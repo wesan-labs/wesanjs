@@ -6,6 +6,7 @@ import Expense from "./models/expense"
 import MetricSnapshot from "./models/metric-snapshot"
 import { RevenueSourceType } from "./types"
 import type { CanonicalEvent, ProviderMetrics } from "./connectors/types"
+import { rateTo } from "./lib/fx"
 
 class RevenueModuleService extends MedusaService({
   App,
@@ -126,8 +127,8 @@ class RevenueModuleService extends MedusaService({
     return [...byApp.values()]
   }
 
-  // Reklam geliri (admob snapshot'larının app başına son hali toplamı).
-  private async adRevenueByApp(): Promise<Map<string, number>> {
+  // AdMob snapshot'larının (app|platform) en güncel hali.
+  private async latestAdmobSnaps(): Promise<any[]> {
     const snaps = await this.listMetricSnapshots(
       { source_type: "admob" },
       { order: { date: "DESC" }, take: 5000 }
@@ -139,36 +140,82 @@ class RevenueModuleService extends MedusaService({
         latest.set(k, s)
       }
     }
-    const byApp = new Map<string, number>()
-    for (const s of latest.values()) {
-      if (s.app_id) {
-        byApp.set(
-          s.app_id,
-          (byApp.get(s.app_id) ?? 0) + Number(s.ad_revenue ?? 0)
-        )
+    return [...latest.values()]
+  }
+
+  // Reklam geliri (app başına son hali) — kendi para birimiyle.
+  private async adRevenueByApp(): Promise<
+    Map<string, { amount: number; currency: string }>
+  > {
+    const byApp = new Map<string, { amount: number; currency: string }>()
+    for (const s of await this.latestAdmobSnaps()) {
+      if (!s.app_id) {
+        continue
       }
+      const cur = byApp.get(s.app_id) ?? {
+        amount: 0,
+        currency: s.currency ?? "USD",
+      }
+      cur.amount += Number(s.ad_revenue ?? 0)
+      byApp.set(s.app_id, cur)
     }
     return byApp
   }
 
-  // Per-app kırılım (Apps listesi).
-  async getAppsOverview() {
+  // Verilen para birimleri için display'e kur tablosu (distinct → tek FX çağrısı).
+  private async fxMap(
+    currencies: Iterable<string>,
+    display: string
+  ): Promise<Map<string, number>> {
+    const m = new Map<string, number>()
+    for (const raw of new Set(currencies)) {
+      const cur = (raw || display).toUpperCase()
+      if (!m.has(cur)) {
+        m.set(cur, await rateTo(cur, display))
+      }
+    }
+    return m
+  }
+
+  // Per-app kırılım (Apps listesi) — display birimine normalize toplam.
+  async getAppsOverview(display = "USD") {
+    display = (display || "USD").toUpperCase()
     const apps = await this.listApps({}, { order: { name: "ASC" }, take: 200 })
     const latest = await this.latestPerApp()
     const adByApp = await this.adRevenueByApp()
     const byId = new Map(latest.map((s) => [s.app_id, s]))
+    const rates = await this.fxMap(
+      [
+        ...latest.map((s) => s.currency ?? display),
+        ...[...adByApp.values()].map((a) => a.currency),
+      ],
+      display
+    )
+    const conv = (amt: any, cur?: string) =>
+      Number(amt ?? 0) * (rates.get((cur || display).toUpperCase()) ?? 1)
+
     return apps.map((a) => {
       const s = byId.get(a.id)
+      const ad = adByApp.get(a.id)
+      const revenue28d = s ? Number(s.gross_revenue) : 0
+      const adRevenue = ad?.amount ?? 0
+      const adCurrency = ad?.currency ?? display
+      const subCurrency = s?.currency ?? "USD"
       return {
         id: a.id,
         name: a.name,
         mrr: s ? Number(s.mrr) : 0,
-        revenue28d: s ? Number(s.gross_revenue) : 0,
-        adRevenue: adByApp.get(a.id) ?? 0,
+        revenue28d,
+        adRevenue,
+        adCurrency,
+        totalDisplay: Number(
+          (conv(revenue28d, subCurrency) + conv(adRevenue, adCurrency)).toFixed(2)
+        ),
+        displayCurrency: display,
         activeSubscriptions: s ? s.active_subscriptions : 0,
         newCustomers: s ? s.new_customers : 0,
         activeUsers: s ? s.active_users : 0,
-        currency: s?.currency ?? "USD",
+        currency: subCurrency,
         lastSyncedDate: s ? s.date.toISOString().slice(0, 10) : null,
       }
     })
@@ -199,13 +246,14 @@ class RevenueModuleService extends MedusaService({
         currency: s.currency,
       }))
       .sort((a, b) => b.revenue - a.revenue)
-    const adRevenue = (await this.adRevenueByApp()).get(appId) ?? 0
+    const ad = (await this.adRevenueByApp()).get(appId)
     return {
       id: appId,
       name: app?.name ?? appId,
       mrr: Number(all?.mrr ?? 0),
       revenue28d: Number(all?.gross_revenue ?? 0),
-      adRevenue,
+      adRevenue: ad?.amount ?? 0,
+      adCurrency: ad?.currency ?? (all?.currency ?? "USD"),
       activeSubscriptions: all?.active_subscriptions ?? 0,
       activeTrials: all?.active_trials ?? 0,
       newCustomers: all?.new_customers ?? 0,
@@ -216,36 +264,65 @@ class RevenueModuleService extends MedusaService({
     }
   }
 
-  // Genel toplam — tüm app'lerin son snapshot'ları toplanır.
-  async getOverview() {
-    const apps = await this.latestPerApp()
-    const sumN = (f: string) =>
-      Number(apps.reduce((a, s) => a + Number(s[f] ?? 0), 0).toFixed(2))
-    const sumI = (f: string) => apps.reduce((a, s) => a + (s[f] ?? 0), 0)
-    const revenue28d = sumN("gross_revenue")
-    const adByApp = await this.adRevenueByApp()
-    const adRevenue = Number(
-      [...adByApp.values()].reduce((a, v) => a + v, 0).toFixed(2)
-    )
+  // Genel P&L — abonelik + reklam + gider, hepsi display birimine FX-normalize.
+  async getOverview(display = "USD") {
+    display = (display || "USD").toUpperCase()
+    const subs = await this.latestPerApp()
+    const adSnaps = await this.latestAdmobSnaps()
     const expenses = await this.listExpenses({}, { take: 1000 })
-    const expenseTotal = Number(
-      expenses.reduce((a, e) => a + Number(e.amount), 0).toFixed(2)
+
+    const rates = await this.fxMap(
+      [
+        ...subs.map((s) => s.currency ?? display),
+        ...adSnaps.map((s) => s.currency ?? display),
+        ...expenses.map((e) => e.currency ?? display),
+      ],
+      display
     )
+    const conv = (amt: any, cur?: string) =>
+      Number(amt ?? 0) * (rates.get((cur || display).toUpperCase()) ?? 1)
+    const r2 = (n: number) => Number(n.toFixed(2))
+    const sumI = (f: string) => subs.reduce((a, s) => a + (s[f] ?? 0), 0)
+
+    let subscriptionRevenue = 0
+    let mrr = 0
+    for (const s of subs) {
+      subscriptionRevenue += conv(s.gross_revenue, s.currency)
+      mrr += conv(s.mrr, s.currency)
+    }
+    let adRevenue = 0
+    const platAgg = new Map<string, number>()
+    for (const s of adSnaps) {
+      const v = conv(s.ad_revenue, s.currency)
+      adRevenue += v
+      platAgg.set(s.platform, (platAgg.get(s.platform) ?? 0) + v)
+    }
+    const expenseTotal = expenses.reduce(
+      (a, e) => a + conv(e.amount, e.currency),
+      0
+    )
+    const totalRevenue = subscriptionRevenue + adRevenue
+
     const recentEvents = await this.listRevenueEvents(
       {},
       { order: { occurred_at: "DESC" }, take: 10 }
     )
     return {
-      mrr: sumN("mrr"),
+      currency: display,
+      mrr: r2(mrr),
+      subscriptionRevenue: r2(subscriptionRevenue),
+      adRevenue: r2(adRevenue),
+      totalRevenue: r2(totalRevenue),
+      revenue28d: r2(subscriptionRevenue), // geri uyumluluk (abonelik)
+      expenseTotal: r2(expenseTotal),
+      net: r2(totalRevenue - expenseTotal),
       activeSubscriptions: sumI("active_subscriptions"),
       activeTrials: sumI("active_trials"),
       newCustomers: sumI("new_customers"),
       activeUsers: sumI("active_users"),
-      revenue28d,
-      adRevenue,
-      expenseTotal,
-      net: Number((revenue28d - expenseTotal).toFixed(2)),
-      currency: apps[0]?.currency ?? "USD",
+      adByPlatform: [...platAgg.entries()]
+        .map(([platform, amount]) => ({ platform, amount: r2(amount) }))
+        .sort((a, b) => b.amount - a.amount),
       recentEvents,
       mrrTrend: [],
     }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { sdk } from "../../lib/client"
+import { useDisplayCurrency } from "./revenue"
 
 export type RevApp = {
   id: string
@@ -28,6 +29,9 @@ export type AppOverviewRow = {
   mrr: number
   revenue28d: number
   adRevenue: number
+  adCurrency: string
+  totalDisplay: number
+  displayCurrency: string
   activeSubscriptions: number
   newCustomers: number
   activeUsers: number
@@ -100,11 +104,12 @@ export const useSaveIntegration = () => {
 }
 
 export const useAppsOverview = () => {
+  const display = useDisplayCurrency()
   const { data, ...rest } = useQuery({
-    queryKey: ["revenue", "apps-overview"],
+    queryKey: ["revenue", "apps-overview", display ?? null],
     queryFn: async () =>
       sdk.client.fetch<{ apps: AppOverviewRow[] }>(
-        "/admin/revenue/apps-overview"
+        `/admin/revenue/apps-overview${display ? `?display=${display}` : ""}`
       ),
   })
   return { apps: data?.apps ?? [], ...rest }

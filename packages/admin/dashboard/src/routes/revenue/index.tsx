@@ -1,4 +1,4 @@
-import { Container, Text } from "@medusajs/ui"
+import { Container, Tabs, Text } from "@medusajs/ui"
 import { ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { useAppsOverview, type AppOverviewRow } from "../../hooks/api/apps"
@@ -20,15 +20,45 @@ import {
 } from "../dashboards/kit"
 
 const usd = (v: number) => `$${Number(v).toLocaleString()}`
+// RevenueCat grafik/segment verisi USD (abonelik native) — Money buradan display'e çevirir.
+const RC = "USD"
 
-const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <Text
-    size="xsmall"
-    weight="plus"
-    className="text-ui-fg-muted px-1 pt-1 uppercase tracking-wider"
-  >
-    {children}
-  </Text>
+const prettyPlatform = (p: string) =>
+  p === "ios" ? "iOS" : p === "android" ? "Android" : p || "—"
+
+/* P&L denklemi: Toplam (Abonelik+Reklam) − Gider = Net */
+const PnlFig = ({
+  label,
+  children,
+  accent,
+  strong,
+}: {
+  label: string
+  children: ReactNode
+  accent?: "positive" | "negative"
+  strong?: boolean
+}) => (
+  <div className="flex flex-col gap-y-0.5">
+    <Text size="xsmall" className="text-ui-fg-muted uppercase tracking-wider">
+      {label}
+    </Text>
+    <span
+      className={
+        (strong ? "text-xl font-semibold " : "text-base font-medium ") +
+        (accent === "positive"
+          ? "text-ui-tag-green-text"
+          : accent === "negative"
+            ? "text-ui-tag-red-text"
+            : "text-ui-fg-base")
+      }
+    >
+      {children}
+    </span>
+  </div>
+)
+
+const Op = ({ children }: { children: ReactNode }) => (
+  <span className="text-ui-fg-muted self-center text-lg">{children}</span>
 )
 
 export const Component = () => {
@@ -58,41 +88,29 @@ export const Component = () => {
     )
   }
 
-  const currency = overview.currency || "USD"
+  const cur = overview.currency || "USD"
   const revenuePoints = revenueChart.data?.points ?? []
-  const revenueSeries = revenuePoints.map((p) => p.value)
 
-  const platformItems = Object.entries(
-    (platformChart.data?.points ?? []).reduce<Record<string, number>>(
-      (acc, p) => {
+  const aggregate = (points: { segment?: string; value: number }[]) =>
+    Object.entries(
+      points.reduce<Record<string, number>>((acc, p) => {
         const seg = p.segment ?? "Total"
         acc[seg] = (acc[seg] ?? 0) + p.value
         return acc
-      },
-      {}
+      }, {})
     )
-  )
-    .filter(([name]) => name !== "Total")
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, value]) => ({
-      label: name,
+      .filter(([name]) => name !== "Total")
+      .sort((a, b) => b[1] - a[1])
+
+  const platformItems = aggregate(platformChart.data?.points ?? []).map(
+    ([label, value]) => ({
+      label,
       value,
-      display: <Money amount={value} currency={currency} />,
-    }))
-
-  const countryEntries = Object.entries(
-    (countryChart.data?.points ?? []).reduce<Record<string, number>>(
-      (acc, p) => {
-        const seg = p.segment ?? "Total"
-        acc[seg] = (acc[seg] ?? 0) + p.value
-        return acc
-      },
-      {}
-    )
+      display: <Money amount={value} currency={RC} />,
+    })
   )
-    .filter(([name]) => name !== "Total")
-    .sort((a, b) => b[1] - a[1])
 
+  const countryEntries = aggregate(countryChart.data?.points ?? [])
   const mapMarkers: MapMarker[] = []
   const unmappedCountries: string[] = []
   countryEntries.forEach(([name, value]) => {
@@ -106,164 +124,221 @@ export const Component = () => {
   const countryItems = countryEntries.map(([name, value]) => ({
     label: name,
     value,
-    display: <Money amount={value} currency={currency} />,
+    display: <Money amount={value} currency={RC} />,
   }))
+
+  const adPlatformItems = (overview.adByPlatform ?? []).map((p) => ({
+    label: prettyPlatform(p.platform),
+    value: p.amount,
+    display: <Money amount={p.amount} currency={cur} />,
+  }))
+  const adByAppItems = apps
+    .filter((a) => a.adRevenue > 0)
+    .map((a) => ({
+      label: a.name,
+      value: a.adRevenue,
+      display: <Money amount={a.adRevenue} currency={a.adCurrency} />,
+    }))
+    .sort((a, b) => b.value - a.value)
 
   const num = (n?: number) => (n ?? 0).toLocaleString()
 
   return (
-    <div className="flex flex-col gap-y-2">
-      {/* PARA */}
-      <SectionLabel>Para</SectionLabel>
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-        <StatCard
-          label="MRR"
-          sub="Aylık yinelenen"
-          value={<Money amount={overview.mrr} currency={currency} />}
-        />
-        <StatCard
-          label="28g Gelir"
-          sub="Son 28 gün"
-          trend={revenueSeries}
-          value={<Money amount={overview.revenue28d} currency={currency} />}
-        />
-        <StatCard
-          label="Net Kâr"
-          sub="Gelir − gider"
+    <div className="flex flex-col gap-y-3">
+      {/* P&L ŞERİDİ */}
+      <Container className="flex flex-wrap items-stretch gap-x-7 gap-y-4 p-5">
+        <PnlFig label="Toplam Gelir" strong>
+          <Money amount={overview.totalRevenue} currency={cur} />
+        </PnlFig>
+        <Op>=</Op>
+        <PnlFig label="Abonelik">
+          <Money amount={overview.subscriptionRevenue} currency={cur} />
+        </PnlFig>
+        <Op>+</Op>
+        <PnlFig label="Reklam">
+          <Money amount={overview.adRevenue} currency={cur} />
+        </PnlFig>
+        <Op>−</Op>
+        <PnlFig label="Gider">
+          <Money amount={overview.expenseTotal} currency={cur} />
+        </PnlFig>
+        <Op>=</Op>
+        <PnlFig
+          label="Net"
+          strong
           accent={overview.net >= 0 ? "positive" : "negative"}
-          value={<Money amount={overview.net} currency={currency} />}
-        />
-        <StatCard
-          label="Toplam Gider"
-          sub="Tüm zamanlar"
-          value={<Money amount={overview.expenseTotal} currency={currency} />}
-        />
-      </div>
+        >
+          <Money amount={overview.net} currency={cur} />
+        </PnlFig>
+      </Container>
 
-      {/* KİTLE */}
-      <SectionLabel>Kitle</SectionLabel>
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-        <StatCard label="Aktif Abonelik" sub="Şu an" value={num(overview.activeSubscriptions)} />
-        <StatCard label="Trial" sub="Şu an" value={num(overview.activeTrials)} />
-        <StatCard label="Yeni Müşteri" sub="Son 28 gün" value={num(overview.newCustomers)} />
-        <StatCard label="Aktif Kullanıcı" sub="Son 28 gün" value={num(overview.activeUsers)} />
-      </div>
+      <Tabs defaultValue="genel">
+        <Tabs.List>
+          <Tabs.Trigger value="genel">Genel</Tabs.Trigger>
+          <Tabs.Trigger value="abonelik">Abonelik</Tabs.Trigger>
+          <Tabs.Trigger value="reklam">Reklam</Tabs.Trigger>
+        </Tabs.List>
 
-      {/* UYGULAMALAR (per-app kırılım) */}
-      <div className="mt-1">
-        <Widget title="Uygulamalar">
-          <DataTable<AppOverviewRow>
-            columns={[
-              {
-                key: "name",
-                header: "Uygulama",
-                render: (a) => (
-                  <Link
-                    to={`/apps/${a.id}`}
-                    className="text-ui-fg-interactive hover:underline"
-                  >
-                    {a.name}
-                  </Link>
-                ),
-              },
-              {
-                key: "mrr",
-                header: "MRR",
-                align: "right",
-                render: (a) => <Money amount={a.mrr} currency={a.currency} />,
-              },
-              {
-                key: "rev",
-                header: "28g Gelir",
-                align: "right",
-                render: (a) => (
-                  <Money amount={a.revenue28d} currency={a.currency} />
-                ),
-              },
-              {
-                key: "ad",
-                header: "Reklam",
-                align: "right",
-                render: (a) => (
-                  <Money amount={a.adRevenue} currency={a.currency} />
-                ),
-              },
-              {
-                key: "subs",
-                header: "Abone",
-                align: "right",
-                render: (a) => a.activeSubscriptions.toLocaleString(),
-              },
-            ]}
-            rows={apps}
-            emptyLabel="Henüz ürün yok — Ayarlar → Bağlantılar'dan ekle"
-          />
-        </Widget>
-      </div>
-
-      {/* GRAFİK + PLATFORM */}
-      <div className="mt-1 grid grid-cols-1 gap-2 xl:grid-cols-3">
-        <Widget title="Gelir Trendi" className="xl:col-span-2">
-          {revenuePoints.length ? (
-            <AreaChartPanel
-              data={revenuePoints}
-              xKey="date"
-              yKey="value"
-              valueFormatter={usd}
+        {/* GENEL: ürün kırılımı + defter */}
+        <Tabs.Content value="genel" className="mt-3 flex flex-col gap-y-3">
+          <Widget title="Uygulamalar">
+            <DataTable<AppOverviewRow>
+              columns={[
+                {
+                  key: "name",
+                  header: "Uygulama",
+                  render: (a) => (
+                    <Link
+                      to={`/apps/${a.id}`}
+                      className="text-ui-fg-interactive hover:underline"
+                    >
+                      {a.name}
+                    </Link>
+                  ),
+                },
+                {
+                  key: "rev",
+                  header: "Abonelik",
+                  align: "right",
+                  render: (a) => <Money amount={a.revenue28d} currency={a.currency} />,
+                },
+                {
+                  key: "ad",
+                  header: "Reklam",
+                  align: "right",
+                  render: (a) => <Money amount={a.adRevenue} currency={a.adCurrency} />,
+                },
+                {
+                  key: "total",
+                  header: "Toplam",
+                  align: "right",
+                  render: (a) => (
+                    <span className="font-medium">
+                      <Money amount={a.totalDisplay} currency={a.displayCurrency} />
+                    </span>
+                  ),
+                },
+                {
+                  key: "subs",
+                  header: "Abone",
+                  align: "right",
+                  render: (a) => a.activeSubscriptions.toLocaleString(),
+                },
+              ]}
+              rows={apps}
+              emptyLabel="Henüz ürün yok — Ayarlar → Entegrasyonlar'dan ekle"
             />
-          ) : (
-            <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
-              Henüz veri yok
-            </div>
-          )}
-        </Widget>
-        <Widget title="Platforma Göre Gelir">
-          <BarList items={platformItems} emptyLabel="Platform verisi yok" />
-        </Widget>
-      </div>
+          </Widget>
 
-      {/* ÖDEME BÖLGELERİ */}
-      <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
-        <Widget title="Ödeme Bölgeleri" className="xl:col-span-2">
-          {mapMarkers.length ? (
-            <MapPanel markers={mapMarkers} />
-          ) : (
-            <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
-              Henüz ödeme bölgesi yok
-            </div>
-          )}
-        </Widget>
-        <Widget title="Ülkeye Göre Gelir">
-          <BarList items={countryItems} emptyLabel="Ülke verisi yok" />
-          {unmappedCountries.length ? (
-            <Text size="xsmall" className="text-ui-fg-muted mt-2">
-              Haritada gösterilemeyen: {unmappedCountries.join(", ")}
-            </Text>
-          ) : null}
-        </Widget>
-      </div>
+          <Widget title="Son İşlemler">
+            <DataTable<RevenueEventRow>
+              columns={[
+                { key: "kind", header: "Tür", render: (r) => r.kind },
+                {
+                  key: "date",
+                  header: "Tarih",
+                  render: (r) => new Date(r.occurred_at).toLocaleDateString(),
+                },
+                {
+                  key: "amount",
+                  header: "Tutar",
+                  align: "right",
+                  render: (r) => <Money amount={r.gross_amount} currency={r.currency} />,
+                },
+              ]}
+              rows={overview.recentEvents}
+              emptyLabel="Henüz işlem yok — webhook bağlanınca dolacak"
+            />
+          </Widget>
+        </Tabs.Content>
 
-      {/* DEFTER */}
-      <Widget title="Son İşlemler">
-        <DataTable<RevenueEventRow>
-          columns={[
-            { key: "kind", header: "Tür", render: (r) => r.kind },
-            {
-              key: "date",
-              header: "Tarih",
-              render: (r) => new Date(r.occurred_at).toLocaleDateString(),
-            },
-            {
-              key: "amount",
-              header: "Tutar",
-              align: "right",
-              render: (r) => <Money amount={r.gross_amount} currency={r.currency} />,
-            },
-          ]}
-          rows={overview.recentEvents}
-          emptyLabel="Henüz işlem yok — webhook bağlanınca dolacak"
-        />
-      </Widget>
+        {/* ABONELİK: RevenueCat dünyası */}
+        <Tabs.Content value="abonelik" className="mt-3 flex flex-col gap-y-3">
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+            <StatCard
+              label="MRR"
+              sub="Aylık yinelenen"
+              value={<Money amount={overview.mrr} currency={cur} />}
+            />
+            <StatCard label="Aktif Abonelik" sub="Şu an" value={num(overview.activeSubscriptions)} />
+            <StatCard label="Trial" sub="Şu an" value={num(overview.activeTrials)} />
+            <StatCard label="Yeni Müşteri" sub="Son 28 gün" value={num(overview.newCustomers)} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
+            <Widget title="Abonelik Geliri Trendi" className="xl:col-span-2">
+              {revenuePoints.length ? (
+                <AreaChartPanel
+                  data={revenuePoints}
+                  xKey="date"
+                  yKey="value"
+                  valueFormatter={usd}
+                />
+              ) : (
+                <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
+                  Henüz veri yok
+                </div>
+              )}
+            </Widget>
+            <Widget title="Platforma Göre">
+              <BarList items={platformItems} emptyLabel="Platform verisi yok" />
+            </Widget>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
+            <Widget title="Ödeme Bölgeleri" className="xl:col-span-2">
+              {mapMarkers.length ? (
+                <MapPanel markers={mapMarkers} />
+              ) : (
+                <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
+                  Henüz ödeme bölgesi yok
+                </div>
+              )}
+            </Widget>
+            <Widget title="Ülkeye Göre">
+              <BarList items={countryItems} emptyLabel="Ülke verisi yok" />
+              {unmappedCountries.length ? (
+                <Text size="xsmall" className="text-ui-fg-muted mt-2">
+                  Haritada gösterilemeyen: {unmappedCountries.join(", ")}
+                </Text>
+              ) : null}
+            </Widget>
+          </div>
+        </Tabs.Content>
+
+        {/* REKLAM: AdMob dünyası */}
+        <Tabs.Content value="reklam" className="mt-3 flex flex-col gap-y-3">
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+            <StatCard
+              label="Reklam Geliri"
+              sub="Son 28 gün"
+              value={<Money amount={overview.adRevenue} currency={cur} />}
+            />
+            {(overview.adByPlatform ?? []).map((p) => (
+              <StatCard
+                key={p.platform}
+                label={prettyPlatform(p.platform)}
+                sub="Reklam"
+                value={<Money amount={p.amount} currency={cur} />}
+              />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+            <Widget title="Platforma Göre Reklam">
+              <BarList items={adPlatformItems} emptyLabel="Reklam platform verisi yok" />
+            </Widget>
+            <Widget title="Ürüne Göre Reklam">
+              <BarList items={adByAppItems} emptyLabel="Reklam verisi yok" />
+            </Widget>
+          </div>
+
+          <Text size="xsmall" className="text-ui-fg-muted px-1">
+            AdMob şu an gelir (ESTIMATED_EARNINGS) çekiyor. eCPM / gösterim
+            istersen rapor metriklerine ekleyebiliriz.
+          </Text>
+        </Tabs.Content>
+      </Tabs>
     </div>
   )
 }

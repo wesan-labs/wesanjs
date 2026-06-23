@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { sdk } from "../../lib/client"
+import { useStore } from "./store"
+
+// Sayfalardaki gösterim para birimi = store default (Money ile aynı kaynak).
+export const useDisplayCurrency = (): string | undefined => {
+  const { store } = useStore()
+  return store?.supported_currencies?.find((c) => c.is_default)?.currency_code
+}
 
 export type RevenueEventRow = {
   id: string
@@ -13,13 +20,16 @@ export type RevenueOverview = {
   mrr: number
   activeSubscriptions: number
   revenue28d: number
+  subscriptionRevenue: number
   adRevenue: number
+  totalRevenue: number
   expenseTotal: number
   net: number
   currency: string
   activeTrials: number
   newCustomers: number
   activeUsers: number
+  adByPlatform: { platform: string; amount: number }[]
   recentEvents: RevenueEventRow[]
   mrrTrend: { date: string; mrr: number }[]
 }
@@ -51,11 +61,12 @@ export const revenueQueryKeys = {
 }
 
 export const useRevenueOverview = () => {
+  const display = useDisplayCurrency()
   const { data, ...rest } = useQuery({
-    queryKey: revenueQueryKeys.overview,
+    queryKey: [...revenueQueryKeys.overview, display ?? null],
     queryFn: async () =>
       sdk.client.fetch<{ overview: RevenueOverview }>(
-        "/admin/revenue/overview"
+        `/admin/revenue/overview${display ? `?display=${display}` : ""}`
       ),
   })
 

@@ -10,6 +10,7 @@ export const GET = async (
   res: MedusaResponse
 ) => {
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const apps = await service.getAppsOverview()
+  const display = (req.query.display as string) || undefined
+  const apps = await service.getAppsOverview(display)
   res.status(200).json({ apps })
 }
