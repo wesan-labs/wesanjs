@@ -317,6 +317,45 @@ export const Component = () => {
             <StatCard label="Aktif Kullanıcı" sub="Son 28 gün" value={num(overview.activeUsers)} />
           </div>
 
+          <Widget title="Ürüne Göre">
+            <DataTable<AppOverviewRow>
+              columns={[
+                {
+                  key: "name",
+                  header: "Ürün",
+                  render: (a) => (
+                    <Link
+                      to={`/apps/${a.id}`}
+                      className="text-ui-fg-interactive hover:underline"
+                    >
+                      {a.name}
+                    </Link>
+                  ),
+                },
+                {
+                  key: "rev",
+                  header: "Bu Ay",
+                  align: "right",
+                  render: (a) => <Money amount={a.revenue28d} currency={a.currency} />,
+                },
+                {
+                  key: "mrr",
+                  header: "MRR",
+                  align: "right",
+                  render: (a) => <Money amount={a.mrr} currency={a.currency} />,
+                },
+                {
+                  key: "subs",
+                  header: "Aktif Abonelik",
+                  align: "right",
+                  render: (a) => a.activeSubscriptions.toLocaleString(),
+                },
+              ]}
+              rows={apps}
+              emptyLabel="Henüz ürün yok"
+            />
+          </Widget>
+
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
             <Widget title="Abonelik Geliri Trendi" className="xl:col-span-2">
               {revenuePoints.length ? (

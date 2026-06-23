@@ -50,7 +50,7 @@ export const StatCard = ({
   const delta = pctDelta(trend)
 
   return (
-    <Container className="flex flex-col gap-y-1.5 p-4">
+    <Container className="flex min-h-[92px] flex-col gap-y-1.5 p-4">
       <div className="flex items-center justify-between gap-x-2">
         <Text
           size="xsmall"
@@ -70,14 +70,14 @@ export const StatCard = ({
       </div>
 
       <div
-        className="text-xl font-semibold leading-none tabular-nums"
+        className="truncate text-xl font-semibold leading-none tabular-nums"
         style={{ color: accentColor[accent] }}
       >
         {value}
       </div>
 
       {sub ? (
-        <Text size="xsmall" className="text-ui-fg-muted truncate">
+        <Text size="xsmall" className="text-ui-fg-muted mt-auto truncate">
           {sub}
         </Text>
       ) : null}
