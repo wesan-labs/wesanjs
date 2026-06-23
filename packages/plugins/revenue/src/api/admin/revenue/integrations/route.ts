@@ -50,6 +50,7 @@ export const GET = async (
       admob: {
         connected: !!admob || envSet("ADMOB_REFRESH_TOKEN"),
         publisherId: admob?.config?.publisher_id ?? null,
+        currency: admob?.config?.currency ?? null,
         secretsSet: secretsSet(admob),
         note: "Tek hesap; OAuth (client id/secret + refresh token).",
       },

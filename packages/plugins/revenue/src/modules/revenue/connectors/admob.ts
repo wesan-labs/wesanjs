@@ -27,6 +27,7 @@ export class AdMobConnector {
       clientSecret: string
       refreshToken: string
       publisherId: string
+      currency?: string
     }
   ) {}
 
@@ -71,6 +72,10 @@ export class AdMobConnector {
             dateRange: { startDate: ymd(start), endDate: ymd(end) },
             dimensions: ["DATE", "APP", "PLATFORM"],
             metrics: ["ESTIMATED_EARNINGS"],
+            // İstenen para birimi (boşsa AdMob hesabının yerel birimi, ör. TRY).
+            ...(this.opts.currency
+              ? { localizationSettings: { currencyCode: this.opts.currency } }
+              : {}),
           },
         }),
       }

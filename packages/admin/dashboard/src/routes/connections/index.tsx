@@ -8,8 +8,10 @@ import {
   IconButton,
   Input,
   Label,
+  Select,
   Text,
   Tooltip,
+  toast,
 } from "@medusajs/ui"
 import { useState } from "react"
 import {
@@ -23,6 +25,7 @@ import {
   useSources,
   useSync,
   useUpdateApp,
+  type Integrations,
   type RevApp,
   type RevSource,
 } from "../../hooks/api/apps"
@@ -34,6 +37,8 @@ const ICON_ADMOB =
   "M11.46.033h-.052A11.993 11.993 0 0 0 0 11.922v.052c0 7.475 6.563 11.928 11.447 11.928h.17a3.086 3.086 0 0 0 3.125-3.047c0-1.693-1.433-2.917-3.152-2.917h-.039a6.016 6.016 0 0 1-5.508-6.368v-.052a6.016 6.016 0 0 1 5.573-5.509c1.719 0 3.125-1.237 3.125-2.917A3.086 3.086 0 0 0 11.604.02h-.143zm2.031.026a3.516 3.516 0 0 1 1.746 3.021 3.386 3.386 0 0 1-1.928 3.047c2.865.6 4.532 3.126 4.688 5.378v7.684a3.49 3.49 0 0 1 6.003.026v-7.736A12.046 12.046 0 0 0 13.491.045zm7.475 17.932a2.995 2.995 0 1 0 .04 0z"
 const ICON_SENTRY =
   "M13.91 2.505c-.873-1.448-2.972-1.448-3.844 0L6.904 7.92a15.478 15.478 0 0 1 8.53 12.811h-2.221A13.301 13.301 0 0 0 5.784 9.814l-2.926 5.06a7.65 7.65 0 0 1 4.435 5.848H2.194a.365.365 0 0 1-.298-.534l1.413-2.402a5.16 5.16 0 0 0-1.614-.913L.296 19.275a2.182 2.182 0 0 0 .812 2.999 2.24 2.24 0 0 0 1.086.288h6.983a9.322 9.322 0 0 0-3.845-8.318l1.11-1.922a11.47 11.47 0 0 1 4.95 10.24h5.915a17.242 17.242 0 0 0-7.885-15.28l2.244-3.845a.37.37 0 0 1 .504-.13c.255.14 9.75 16.708 9.928 16.9a.365.365 0 0 1-.327.543h-2.287c.029.612.029 1.223 0 1.831h2.297a2.206 2.206 0 0 0 1.922-3.31z"
+
+const CURRENCIES = ["USD", "EUR", "GBP", "TRY"]
 
 /* ---- single source of truth: columns are derived from this ---- */
 type IntegrationDef = {
@@ -89,13 +94,24 @@ const INTEGRATIONS: IntegrationDef[] = [
   },
 ]
 
+const ADMOB_DEF = INTEGRATIONS.find((i) => i.key === "admob") as IntegrationDef
+
+const admobMapped = (app: RevApp) => {
+  const e = app.external_ids ?? {}
+  return !!(
+    (e.admob_android as string) ||
+    (e.admob_ios as string) ||
+    (typeof e.admob === "string" && e.admob)
+  )
+}
+
 /* connection state per (app, integration) — read from existing data */
 const isConnected = (app: RevApp, sources: RevSource[], key: string) => {
   if (key === "revenuecat")
     return sources.some(
       (s) => s.app_id === app.id && s.type === "revenuecat" && s.hasSecret
     )
-  if (key === "admob") return !!(app.external_ids?.admob as string)
+  if (key === "admob") return admobMapped(app)
   return false
 }
 
@@ -190,7 +206,7 @@ const MatrixCell = ({
   )
 }
 
-/* ---- editor drawer: per (app, integration) ---- */
+/* ---- per-product editor drawer ---- */
 const RevenuecatBody = ({
   app,
   sources,
@@ -233,7 +249,11 @@ const RevenuecatBody = ({
               <IconButton
                 size="small"
                 variant="transparent"
-                onClick={() => deleteSource.mutate(s.id)}
+                onClick={() =>
+                  deleteSource.mutate(s.id, {
+                    onSuccess: () => toast.success("Bağlantı kaldırıldı"),
+                  })
+                }
               >
                 <Trash className="text-ui-fg-muted" />
               </IconButton>
@@ -274,7 +294,14 @@ const RevenuecatBody = ({
                 external_id: pid.trim(),
                 secret: secret.trim(),
               },
-              { onSuccess: () => { setPid(""); setSecret("") } }
+              {
+                onSuccess: () => {
+                  setPid("")
+                  setSecret("")
+                  toast.success("RevenueCat bağlandı")
+                },
+                onError: () => toast.error("Bağlanamadı"),
+              }
             )
           }
           isLoading={createSource.isPending}
@@ -295,57 +322,79 @@ const AdmobBody = ({
   accountConnected: boolean
 }) => {
   const updateApp = useUpdateApp()
-  const [admobId, setAdmobId] = useState(
-    (app.external_ids?.admob as string) ?? ""
+  const ext = app.external_ids ?? {}
+  const [android, setAndroid] = useState(
+    (ext.admob_android as string) ||
+      (typeof ext.admob === "string" ? (ext.admob as string) : "")
   )
+  const [ios, setIos] = useState((ext.admob_ios as string) || "")
+
+  const save = (a: string, i: string, msg: string) =>
+    updateApp.mutate(
+      {
+        id: app.id,
+        external_ids: {
+          ...ext,
+          admob_android: a.trim(),
+          admob_ios: i.trim(),
+          admob: "", // legacy tek-alan temizlenir
+        },
+      },
+      {
+        onSuccess: () => toast.success(msg),
+        onError: () => toast.error("Kaydedilemedi"),
+      }
+    )
 
   return (
     <div className="flex flex-col gap-y-4">
       {!accountConnected ? (
         <div className="bg-ui-tag-orange-bg rounded-md px-3 py-2">
           <Text size="xsmall" className="text-ui-tag-orange-text">
-            AdMob hesabı henüz bağlı değil. Önce sayfanın altındaki{" "}
-            <strong>Servisler → AdMob hesabı</strong> bölümünden hesabı bağla;
-            burada sadece bu ürünün app eşlemesini yaparsın.
+            AdMob hesabı henüz bağlı değil. Önce üstteki{" "}
+            <strong>AdMob hesabı</strong> butonundan hesabı bağla; burada her
+            platformun app id'sini eşlersin.
           </Text>
         </div>
       ) : null}
+
       <div className="flex flex-col gap-y-1">
-        <Label size="xsmall">AdMob app id</Label>
+        <Label size="xsmall">Android app id</Label>
         <Input
-          value={admobId}
-          onChange={(e) => setAdmobId(e.target.value)}
-          placeholder="ca-app-pub-…  (boşsa isimle eşleşir)"
+          value={android}
+          onChange={(e) => setAndroid(e.target.value)}
+          placeholder="ca-app-pub-…~android"
+        />
+      </div>
+      <div className="flex flex-col gap-y-1">
+        <Label size="xsmall">iOS (Apple) app id</Label>
+        <Input
+          value={ios}
+          onChange={(e) => setIos(e.target.value)}
+          placeholder="ca-app-pub-…~ios"
         />
         <Text size="xsmall" className="text-ui-fg-muted">
-          Reklam geliri tek hesaptan gelir; bu id ile bu ürüne ayrıştırılır.
+          Reklam geliri tek hesaptan gelir; her platform kendi id'siyle bu ürüne
+          ayrıştırılır. Boş bıraktığın platform isimle eşleşmeye düşer.
         </Text>
       </div>
+
       <div className="flex gap-x-2">
         <Button
           variant="secondary"
           isLoading={updateApp.isPending}
-          onClick={() =>
-            updateApp.mutate({
-              id: app.id,
-              external_ids: {
-                ...(app.external_ids ?? {}),
-                admob: admobId.trim(),
-              },
-            })
-          }
+          disabled={!android.trim() && !ios.trim()}
+          onClick={() => save(android, ios, "AdMob eşlemesi kaydedildi")}
         >
           Kaydet
         </Button>
-        {app.external_ids?.admob ? (
+        {admobMapped(app) ? (
           <Button
             variant="transparent"
             onClick={() => {
-              setAdmobId("")
-              updateApp.mutate({
-                id: app.id,
-                external_ids: { ...(app.external_ids ?? {}), admob: "" },
-              })
+              setAndroid("")
+              setIos("")
+              save("", "", "Eşleme kaldırıldı")
             }}
           >
             Eşlemeyi kaldır
@@ -397,9 +446,9 @@ const IntegrationDrawer = ({
   </Drawer>
 )
 
-/* ---- account-level services (entered once) ---- */
+/* ---- account-level services ---- */
 /* write-only secret: kayıtlıysa "•••• kayıtlı" gösterir, boş bırakılırsa korunur */
-const SecretInput = ({
+const SecretField = ({
   value,
   onChange,
   label,
@@ -411,6 +460,7 @@ const SecretInput = ({
   saved: boolean
 }) => (
   <div className="flex flex-col gap-y-1">
+    <Label size="xsmall">{label}</Label>
     <Input
       size="small"
       type="password"
@@ -433,24 +483,26 @@ const StorageNote = () => (
   </Text>
 )
 
-const AdMobCard = ({
+const AdmobAccountForm = ({
   connected,
   publisherId,
+  currency,
   secretsSet = [],
 }: {
   connected?: boolean
   publisherId?: string | null
+  currency?: string | null
   secretsSet?: string[]
 }) => {
   const save = useSaveIntegration()
   const [f, setF] = useState({
     publisher_id: publisherId ?? "",
+    currency: currency ?? "USD",
     client_id: "",
     client_secret: "",
     refresh_token: "",
   })
   const has = (k: string) => secretsSet.includes(k)
-  // bağlıysa secret'lar opsiyonel (merge); değilse hepsi gerekli
   const valid = connected
     ? !!f.publisher_id.trim()
     : !!f.publisher_id.trim() &&
@@ -459,20 +511,35 @@ const AdMobCard = ({
       !!f.refresh_token.trim()
 
   return (
-    <Container className="flex flex-col gap-y-2 p-5">
-      <div className="flex items-center justify-between">
-        <Heading level="h3">AdMob hesabı</Heading>
-        <Badge size="2xsmall" color={connected ? "green" : "grey"}>
-          {connected ? "bağlı" : "bağlı değil"}
-        </Badge>
-      </div>
+    <div className="flex flex-col gap-y-3">
       <Text size="xsmall" className="text-ui-fg-subtle">
         Tek hesap, OAuth. Gelir app'lere matristen eşlenir.
       </Text>
-      <Input size="small" value={f.publisher_id} onChange={(e) => setF({ ...f, publisher_id: e.target.value })} placeholder="publisher id (pub-…)" />
-      <SecretInput value={f.client_id} onChange={(v) => setF({ ...f, client_id: v })} label="client id" saved={has("client_id")} />
-      <SecretInput value={f.client_secret} onChange={(v) => setF({ ...f, client_secret: v })} label="client secret" saved={has("client_secret")} />
-      <SecretInput value={f.refresh_token} onChange={(v) => setF({ ...f, refresh_token: v })} label="refresh token" saved={has("refresh_token")} />
+      <div className="flex flex-col gap-y-1">
+        <Label size="xsmall">publisher id</Label>
+        <Input size="small" value={f.publisher_id} onChange={(e) => setF({ ...f, publisher_id: e.target.value })} placeholder="pub-…" />
+      </div>
+      <div className="flex flex-col gap-y-1">
+        <Label size="xsmall">Rapor para birimi</Label>
+        <Select value={f.currency} onValueChange={(v) => setF({ ...f, currency: v })}>
+          <Select.Trigger>
+            <Select.Value placeholder="Para birimi" />
+          </Select.Trigger>
+          <Select.Content>
+            {CURRENCIES.map((c) => (
+              <Select.Item key={c} value={c}>
+                {c}
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select>
+        <Text size="xsmall" className="text-ui-fg-muted">
+          AdMob raporu bu birimde gelir — TRY/USD karışıklığını önler.
+        </Text>
+      </div>
+      <SecretField value={f.client_id} onChange={(v) => setF({ ...f, client_id: v })} label="client id" saved={has("client_id")} />
+      <SecretField value={f.client_secret} onChange={(v) => setF({ ...f, client_secret: v })} label="client secret" saved={has("client_secret")} />
+      <SecretField value={f.refresh_token} onChange={(v) => setF({ ...f, refresh_token: v })} label="refresh token" saved={has("refresh_token")} />
       <StorageNote />
       <Button
         size="small"
@@ -488,23 +555,26 @@ const AdMobCard = ({
             {
               provider: "admob",
               category: "ads",
-              config: { publisher_id: f.publisher_id.trim() },
+              config: { publisher_id: f.publisher_id.trim(), currency: f.currency },
               secrets,
             },
             {
-              onSuccess: () =>
-                setF((s) => ({ ...s, client_id: "", client_secret: "", refresh_token: "" })),
+              onSuccess: () => {
+                toast.success("AdMob hesabı kaydedildi")
+                setF((s) => ({ ...s, client_id: "", client_secret: "", refresh_token: "" }))
+              },
+              onError: () => toast.error("Kaydedilemedi"),
             }
           )
         }}
       >
         Kaydet
       </Button>
-    </Container>
+    </div>
   )
 }
 
-const EmailCard = ({
+const EmailAccountForm = ({
   connected,
   recipient,
   from,
@@ -527,19 +597,19 @@ const EmailCard = ({
     : !!f.recipient.trim() && !!f.api_key.trim()
 
   return (
-    <Container className="flex flex-col gap-y-2 p-5">
-      <div className="flex items-center justify-between">
-        <Heading level="h3">Email</Heading>
-        <Badge size="2xsmall" color={connected ? "green" : "grey"}>
-          {connected ? "bağlı" : "bağlı değil"}
-        </Badge>
-      </div>
+    <div className="flex flex-col gap-y-3">
       <Text size="xsmall" className="text-ui-fg-subtle">
         Aylık P&L raporu (Resend).
       </Text>
-      <Input size="small" value={f.recipient} onChange={(e) => setF({ ...f, recipient: e.target.value })} placeholder="alıcı e-mail" />
-      <Input size="small" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} placeholder="gönderen (reports@…)" />
-      <SecretInput value={f.api_key} onChange={(v) => setF({ ...f, api_key: v })} label="Resend API key (re_…)" saved={hasKey} />
+      <div className="flex flex-col gap-y-1">
+        <Label size="xsmall">alıcı e-mail</Label>
+        <Input size="small" value={f.recipient} onChange={(e) => setF({ ...f, recipient: e.target.value })} placeholder="can@…" />
+      </div>
+      <div className="flex flex-col gap-y-1">
+        <Label size="xsmall">gönderen</Label>
+        <Input size="small" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} placeholder="reports@…" />
+      </div>
+      <SecretField value={f.api_key} onChange={(v) => setF({ ...f, api_key: v })} label="Resend API key (re_…)" saved={hasKey} />
       <StorageNote />
       <Button
         size="small"
@@ -556,15 +626,107 @@ const EmailCard = ({
               config: { recipient: f.recipient.trim(), from: f.from.trim() },
               secrets,
             },
-            { onSuccess: () => setF((s) => ({ ...s, api_key: "" })) }
+            {
+              onSuccess: () => {
+                toast.success("Email kaydedildi")
+                setF((s) => ({ ...s, api_key: "" }))
+              },
+              onError: () => toast.error("Kaydedilemedi"),
+            }
           )
         }}
       >
         Kaydet
       </Button>
-    </Container>
+    </div>
   )
 }
+
+/* account creds open in a side drawer from the top buttons */
+const AccountDrawer = ({
+  kind,
+  integrations,
+  onClose,
+}: {
+  kind: "admob" | "email"
+  integrations?: Integrations
+  onClose: () => void
+}) => {
+  const admob = integrations?.admob
+  const email = integrations?.email
+  const isAdmob = kind === "admob"
+  const connected = isAdmob ? !!admob?.connected : !!email?.connected
+
+  return (
+    <Drawer open onOpenChange={(o) => !o && onClose()}>
+      <Drawer.Content>
+        <Drawer.Header>
+          <div className="flex w-full items-center gap-x-3">
+            {isAdmob ? (
+              <Glyph integration={ADMOB_DEF} lit size={36} />
+            ) : (
+              <div className="bg-ui-bg-component text-ui-fg-base flex h-9 w-9 items-center justify-center rounded-md text-base">
+                ✉
+              </div>
+            )}
+            <div className="flex flex-col">
+              <Drawer.Title>{isAdmob ? "AdMob hesabı" : "Email"}</Drawer.Title>
+              <Text size="small" className="text-ui-fg-subtle">
+                {isAdmob ? "Reklam · tek hesap (OAuth)" : "Aylık P&L · Resend"}
+              </Text>
+            </div>
+            <Badge size="2xsmall" color={connected ? "green" : "grey"} className="ml-auto">
+              {connected ? "bağlı" : "bağlı değil"}
+            </Badge>
+          </div>
+        </Drawer.Header>
+        <Drawer.Body className="overflow-y-auto">
+          {isAdmob ? (
+            <AdmobAccountForm
+              key={`af:${admob?.publisherId ?? ""}:${admob?.currency ?? ""}:${
+                admob?.secretsSet?.join(",") ?? ""
+              }`}
+              connected={admob?.connected}
+              publisherId={admob?.publisherId}
+              currency={admob?.currency}
+              secretsSet={admob?.secretsSet}
+            />
+          ) : (
+            <EmailAccountForm
+              key={`ef:${email?.recipient ?? ""}:${email?.from ?? ""}:${
+                email?.secretsSet?.join(",") ?? ""
+              }`}
+              connected={email?.connected}
+              recipient={email?.recipient}
+              from={email?.from}
+              secretsSet={email?.secretsSet}
+            />
+          )}
+        </Drawer.Body>
+      </Drawer.Content>
+    </Drawer>
+  )
+}
+
+const AccountButton = ({
+  label,
+  connected,
+  onClick,
+}: {
+  label: string
+  connected: boolean
+  onClick: () => void
+}) => (
+  <Button variant="secondary" size="small" onClick={onClick}>
+    <span
+      className={
+        "mr-1.5 inline-block h-2 w-2 rounded-full " +
+        (connected ? "bg-ui-tag-green-icon" : "bg-ui-fg-disabled")
+      }
+    />
+    {label}
+  </Button>
+)
 
 export const Component = () => {
   const { integrations } = useIntegrations()
@@ -578,9 +740,23 @@ export const Component = () => {
     app: RevApp
     integration: IntegrationDef
   } | null>(null)
+  const [accountDrawer, setAccountDrawer] = useState<"admob" | "email" | null>(
+    null
+  )
 
   const activeCount = INTEGRATIONS.filter((i) => i.available).length
   const accountAdmobConnected = !!integrations?.admob.connected
+
+  const addApp = () =>
+    createApp.mutate(
+      { name: name.trim() },
+      {
+        onSuccess: () => {
+          setName("")
+          toast.success("Ürün eklendi")
+        },
+      }
+    )
 
   return (
     <div className="flex w-full flex-col gap-y-3">
@@ -592,21 +768,33 @@ export const Component = () => {
             bağla. Anahtarlar şifreli saklanır.
           </Text>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-y-1">
-          <Button
-            variant="secondary"
-            size="small"
-            isLoading={sync.isPending}
-            onClick={() => sync.mutate()}
-          >
-            Şimdi senkronla
-          </Button>
-          {sync.data ? (
-            <Text size="xsmall" className="text-ui-fg-muted">
-              abonelik {sync.data.revenuecat.synced} · reklam{" "}
-              {sync.data.admob.synced}
-            </Text>
-          ) : null}
+        <div className="flex shrink-0 items-center gap-x-2">
+          <AccountButton
+            label="AdMob hesabı"
+            connected={!!integrations?.admob.connected}
+            onClick={() => setAccountDrawer("admob")}
+          />
+          <AccountButton
+            label="Email"
+            connected={!!integrations?.email.connected}
+            onClick={() => setAccountDrawer("email")}
+          />
+          <div className="flex flex-col items-end gap-y-1">
+            <Button
+              variant="secondary"
+              size="small"
+              isLoading={sync.isPending}
+              onClick={() => sync.mutate()}
+            >
+              Şimdi senkronla
+            </Button>
+            {sync.data ? (
+              <Text size="xsmall" className="text-ui-fg-muted">
+                abonelik {sync.data.revenuecat.synced} · reklam{" "}
+                {sync.data.admob.synced}
+              </Text>
+            ) : null}
+          </div>
         </div>
       </Container>
 
@@ -668,7 +856,11 @@ export const Component = () => {
                         size="small"
                         variant="transparent"
                         className="opacity-0 transition-opacity group-hover:opacity-100"
-                        onClick={() => deleteApp.mutate(app.id)}
+                        onClick={() =>
+                          deleteApp.mutate(app.id, {
+                            onSuccess: () => toast.success("Ürün silindi"),
+                          })
+                        }
                       >
                         <Trash className="text-ui-fg-muted" />
                       </IconButton>
@@ -687,22 +879,13 @@ export const Component = () => {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Yeni ürün adı — Empire Inc."
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && name.trim())
-                          createApp.mutate(
-                            { name: name.trim() },
-                            { onSuccess: () => setName("") }
-                          )
+                        if (e.key === "Enter" && name.trim()) addApp()
                       }}
                     />
                     <Button
                       size="small"
                       variant="secondary"
-                      onClick={() =>
-                        createApp.mutate(
-                          { name: name.trim() },
-                          { onSuccess: () => setName("") }
-                        )
-                      }
+                      onClick={addApp}
                       isLoading={createApp.isPending}
                       disabled={!name.trim()}
                     >
@@ -723,33 +906,6 @@ export const Component = () => {
         ) : null}
       </Container>
 
-      <Text
-        size="xsmall"
-        weight="plus"
-        className="text-ui-fg-muted px-1 pt-3 uppercase tracking-wider"
-      >
-        Servisler (bir kez)
-      </Text>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <AdMobCard
-          key={`admob:${integrations?.admob.publisherId ?? ""}:${
-            integrations?.admob.secretsSet?.join(",") ?? ""
-          }`}
-          connected={integrations?.admob.connected}
-          publisherId={integrations?.admob.publisherId}
-          secretsSet={integrations?.admob.secretsSet}
-        />
-        <EmailCard
-          key={`email:${integrations?.email.recipient ?? ""}:${
-            integrations?.email.from ?? ""
-          }:${integrations?.email.secretsSet?.join(",") ?? ""}`}
-          connected={integrations?.email.connected}
-          recipient={integrations?.email.recipient}
-          from={integrations?.email.from}
-          secretsSet={integrations?.email.secretsSet}
-        />
-      </div>
-
       {editing ? (
         <IntegrationDrawer
           key={editing.app.id + editing.integration.key}
@@ -758,6 +914,15 @@ export const Component = () => {
           sources={sources}
           accountAdmobConnected={accountAdmobConnected}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {accountDrawer ? (
+        <AccountDrawer
+          key={accountDrawer}
+          kind={accountDrawer}
+          integrations={integrations}
+          onClose={() => setAccountDrawer(null)}
         />
       ) : null}
     </div>

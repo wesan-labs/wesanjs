@@ -40,6 +40,7 @@ export type Integrations = {
   admob: {
     connected: boolean
     publisherId: string | null
+    currency: string | null
     secretsSet: string[]
     note: string
   }

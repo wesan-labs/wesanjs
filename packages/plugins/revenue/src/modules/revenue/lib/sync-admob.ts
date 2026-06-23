@@ -45,16 +45,24 @@ export async function syncAdmob(
     logger.warn("[revenue] AdMob creds missing; skipping ad sync")
     return { synced: 0, skipped: 1 }
   }
+  // İstenen rapor para birimi (UI'dan; boşsa AdMob hesabının yerel birimi).
+  const currency = integ?.config?.currency || process.env.ADMOB_CURRENCY
+
   const apps = await service.listApps({}, { take: 500 })
   const byExt = new Map<string, string>()
   const byName = new Map<string, string>()
   for (const a of apps) {
     byName.set((a.name || "").toLowerCase(), a.id)
-    const ids = a.external_ids?.admob ?? a.external_ids?.admob_app_ids
-    if (Array.isArray(ids)) {
-      ids.forEach((id: string) => byExt.set(id, a.id))
-    } else if (typeof ids === "string") {
-      byExt.set(ids, a.id)
+    // Android + iOS ayrı app id'leri; her ikisi de aynı ürüne eşlenir.
+    const ext = a.external_ids ?? {}
+    const ids = [
+      ext.admob_android,
+      ext.admob_ios,
+      ext.admob, // legacy (string | string[])
+      ext.admob_app_ids,
+    ].flat()
+    for (const id of ids) {
+      if (typeof id === "string" && id.trim()) byExt.set(id.trim(), a.id)
     }
   }
 
@@ -63,6 +71,7 @@ export async function syncAdmob(
     clientSecret,
     refreshToken,
     publisherId,
+    currency,
   })
   const rows = await connector.fetchReport(28)
 
