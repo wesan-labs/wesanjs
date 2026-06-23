@@ -37,11 +37,17 @@ export type AppOverviewRow = {
 
 export type Integrations = {
   revenuecat: { connected: boolean; apps: number; sources: number }
-  admob: { connected: boolean; publisherId: string | null; note: string }
+  admob: {
+    connected: boolean
+    publisherId: string | null
+    secretsSet: string[]
+    note: string
+  }
   email: {
     connected: boolean
     recipient: string | null
     from: string | null
+    secretsSet: string[]
     note: string
   }
 }

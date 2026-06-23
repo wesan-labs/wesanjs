@@ -398,22 +398,66 @@ const IntegrationDrawer = ({
 )
 
 /* ---- account-level services (entered once) ---- */
+/* write-only secret: kayıtlıysa "•••• kayıtlı" gösterir, boş bırakılırsa korunur */
+const SecretInput = ({
+  value,
+  onChange,
+  label,
+  saved,
+}: {
+  value: string
+  onChange: (v: string) => void
+  label: string
+  saved: boolean
+}) => (
+  <div className="flex flex-col gap-y-1">
+    <Input
+      size="small"
+      type="password"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={saved ? "•••••••• kayıtlı — değiştirmek için yaz" : label}
+    />
+    {saved ? (
+      <Text size="xsmall" className="text-ui-tag-green-text">
+        kayıtlı ✓
+      </Text>
+    ) : null}
+  </div>
+)
+
+const StorageNote = () => (
+  <Text size="xsmall" className="text-ui-fg-muted">
+    Şifreli olarak veritabanında saklanır (revenue_source.secret_enc). Güvenlik
+    için anahtarlar geri gösterilmez; alanı boş bırakırsan mevcut değer korunur.
+  </Text>
+)
+
 const AdMobCard = ({
   connected,
   publisherId,
+  secretsSet = [],
 }: {
   connected?: boolean
   publisherId?: string | null
+  secretsSet?: string[]
 }) => {
   const save = useSaveIntegration()
   const [f, setF] = useState({
-    publisher_id: "",
+    publisher_id: publisherId ?? "",
     client_id: "",
     client_secret: "",
     refresh_token: "",
   })
-  const valid =
-    !!f.publisher_id && !!f.client_id && !!f.client_secret && !!f.refresh_token
+  const has = (k: string) => secretsSet.includes(k)
+  // bağlıysa secret'lar opsiyonel (merge); değilse hepsi gerekli
+  const valid = connected
+    ? !!f.publisher_id.trim()
+    : !!f.publisher_id.trim() &&
+      !!f.client_id.trim() &&
+      !!f.client_secret.trim() &&
+      !!f.refresh_token.trim()
+
   return (
     <Container className="flex flex-col gap-y-2 p-5">
       <div className="flex items-center justify-between">
@@ -424,35 +468,35 @@ const AdMobCard = ({
       </div>
       <Text size="xsmall" className="text-ui-fg-subtle">
         Tek hesap, OAuth. Gelir app'lere matristen eşlenir.
-        {publisherId ? ` · pub: ${publisherId}` : ""}
       </Text>
       <Input size="small" value={f.publisher_id} onChange={(e) => setF({ ...f, publisher_id: e.target.value })} placeholder="publisher id (pub-…)" />
-      <Input size="small" value={f.client_id} onChange={(e) => setF({ ...f, client_id: e.target.value })} placeholder="client id" />
-      <Input size="small" type="password" value={f.client_secret} onChange={(e) => setF({ ...f, client_secret: e.target.value })} placeholder="client secret" />
-      <Input size="small" type="password" value={f.refresh_token} onChange={(e) => setF({ ...f, refresh_token: e.target.value })} placeholder="refresh token" />
+      <SecretInput value={f.client_id} onChange={(v) => setF({ ...f, client_id: v })} label="client id" saved={has("client_id")} />
+      <SecretInput value={f.client_secret} onChange={(v) => setF({ ...f, client_secret: v })} label="client secret" saved={has("client_secret")} />
+      <SecretInput value={f.refresh_token} onChange={(v) => setF({ ...f, refresh_token: v })} label="refresh token" saved={has("refresh_token")} />
+      <StorageNote />
       <Button
         size="small"
         variant="secondary"
         isLoading={save.isPending}
         disabled={!valid}
-        onClick={() =>
+        onClick={() => {
+          const secrets: Record<string, string> = {}
+          if (f.client_id.trim()) secrets.client_id = f.client_id.trim()
+          if (f.client_secret.trim()) secrets.client_secret = f.client_secret.trim()
+          if (f.refresh_token.trim()) secrets.refresh_token = f.refresh_token.trim()
           save.mutate(
             {
               provider: "admob",
               category: "ads",
               config: { publisher_id: f.publisher_id.trim() },
-              secrets: {
-                client_id: f.client_id.trim(),
-                client_secret: f.client_secret.trim(),
-                refresh_token: f.refresh_token.trim(),
-              },
+              secrets,
             },
             {
               onSuccess: () =>
-                setF({ publisher_id: "", client_id: "", client_secret: "", refresh_token: "" }),
+                setF((s) => ({ ...s, client_id: "", client_secret: "", refresh_token: "" })),
             }
           )
-        }
+        }}
       >
         Kaydet
       </Button>
@@ -464,10 +508,12 @@ const EmailCard = ({
   connected,
   recipient,
   from,
+  secretsSet = [],
 }: {
   connected?: boolean
   recipient?: string | null
   from?: string | null
+  secretsSet?: string[]
 }) => {
   const save = useSaveIntegration()
   const [f, setF] = useState({
@@ -475,7 +521,11 @@ const EmailCard = ({
     from: from ?? "",
     api_key: "",
   })
-  const valid = !!f.recipient && !!f.api_key
+  const hasKey = secretsSet.includes("api_key")
+  const valid = connected
+    ? !!f.recipient.trim()
+    : !!f.recipient.trim() && !!f.api_key.trim()
+
   return (
     <Container className="flex flex-col gap-y-2 p-5">
       <div className="flex items-center justify-between">
@@ -489,23 +539,26 @@ const EmailCard = ({
       </Text>
       <Input size="small" value={f.recipient} onChange={(e) => setF({ ...f, recipient: e.target.value })} placeholder="alıcı e-mail" />
       <Input size="small" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} placeholder="gönderen (reports@…)" />
-      <Input size="small" type="password" value={f.api_key} onChange={(e) => setF({ ...f, api_key: e.target.value })} placeholder="Resend API key (re_…)" />
+      <SecretInput value={f.api_key} onChange={(v) => setF({ ...f, api_key: v })} label="Resend API key (re_…)" saved={hasKey} />
+      <StorageNote />
       <Button
         size="small"
         variant="secondary"
         isLoading={save.isPending}
         disabled={!valid}
-        onClick={() =>
+        onClick={() => {
+          const secrets: Record<string, string> = {}
+          if (f.api_key.trim()) secrets.api_key = f.api_key.trim()
           save.mutate(
             {
               provider: "resend",
               category: "mail",
               config: { recipient: f.recipient.trim(), from: f.from.trim() },
-              secrets: { api_key: f.api_key.trim() },
+              secrets,
             },
-            { onSuccess: () => setF({ ...f, api_key: "" }) }
+            { onSuccess: () => setF((s) => ({ ...s, api_key: "" })) }
           )
-        }
+        }}
       >
         Kaydet
       </Button>
@@ -679,13 +732,21 @@ export const Component = () => {
       </Text>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <AdMobCard
+          key={`admob:${integrations?.admob.publisherId ?? ""}:${
+            integrations?.admob.secretsSet?.join(",") ?? ""
+          }`}
           connected={integrations?.admob.connected}
           publisherId={integrations?.admob.publisherId}
+          secretsSet={integrations?.admob.secretsSet}
         />
         <EmailCard
+          key={`email:${integrations?.email.recipient ?? ""}:${
+            integrations?.email.from ?? ""
+          }:${integrations?.email.secretsSet?.join(",") ?? ""}`}
           connected={integrations?.email.connected}
           recipient={integrations?.email.recipient}
           from={integrations?.email.from}
+          secretsSet={integrations?.email.secretsSet}
         />
       </div>
 
