@@ -1,15 +1,17 @@
-import { Trash } from "@medusajs/icons"
+import { Check, Plus, Trash } from "@medusajs/icons"
 import {
   Badge,
   Button,
   Container,
+  Drawer,
   Heading,
   IconButton,
   Input,
   Label,
   Text,
+  Tooltip,
 } from "@medusajs/ui"
-import { ReactNode, useState } from "react"
+import { useState } from "react"
 import {
   useApps,
   useCreateApp,
@@ -25,167 +27,373 @@ import {
   type RevSource,
 } from "../../hooks/api/apps"
 
-const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <Text
-    size="xsmall"
-    weight="plus"
-    className="text-ui-fg-muted px-1 pt-3 uppercase tracking-wider"
+/* ---- single source of truth: columns are derived from this ---- */
+type IntegrationDef = {
+  key: string
+  label: string
+  mono: string
+  category: string
+  color: string
+  bg: string
+  available: boolean
+}
+
+const INTEGRATIONS: IntegrationDef[] = [
+  {
+    key: "revenuecat",
+    label: "RevenueCat",
+    mono: "RC",
+    category: "Abonelik",
+    color: "#E0483D",
+    bg: "rgba(224,72,61,0.14)",
+    available: true,
+  },
+  {
+    key: "admob",
+    label: "AdMob",
+    mono: "Ad",
+    category: "Reklam",
+    color: "#3B82F6",
+    bg: "rgba(59,130,246,0.14)",
+    available: true,
+  },
+  {
+    key: "applovin",
+    label: "AppLovin",
+    mono: "AL",
+    category: "Reklam",
+    color: "#14B8A6",
+    bg: "rgba(20,184,166,0.14)",
+    available: false,
+  },
+  {
+    key: "sentry",
+    label: "Sentry",
+    mono: "Se",
+    category: "Hata",
+    color: "#7B51F8",
+    bg: "rgba(123,81,248,0.14)",
+    available: false,
+  },
+]
+
+/* connection state per (app, integration) — read from existing data */
+const isConnected = (app: RevApp, sources: RevSource[], key: string) => {
+  if (key === "revenuecat")
+    return sources.some(
+      (s) => s.app_id === app.id && s.type === "revenuecat" && s.hasSecret
+    )
+  if (key === "admob") return !!(app.external_ids?.admob as string)
+  return false
+}
+
+const valueHint = (app: RevApp, sources: RevSource[], key: string) => {
+  if (key === "revenuecat")
+    return (
+      sources.find((s) => s.app_id === app.id && s.type === "revenuecat")
+        ?.external_id ?? undefined
+    )
+  if (key === "admob") return (app.external_ids?.admob as string) || undefined
+  return undefined
+}
+
+/* ---- brand glyph: lit = marka rengi, sönük = gri ---- */
+const Glyph = ({
+  integration,
+  lit,
+  size = 28,
+}: {
+  integration: IntegrationDef
+  lit: boolean
+  size?: number
+}) => (
+  <div
+    className={
+      "flex items-center justify-center rounded-md font-semibold transition-colors " +
+      (lit ? "" : "bg-ui-bg-component text-ui-fg-disabled")
+    }
+    style={
+      lit
+        ? {
+            width: size,
+            height: size,
+            backgroundColor: integration.bg,
+            color: integration.color,
+            fontSize: Math.round(size * 0.4),
+          }
+        : { width: size, height: size, fontSize: Math.round(size * 0.4) }
+    }
   >
-    {children}
-  </Text>
+    {integration.mono}
+  </div>
 )
 
-/* ---- per-app: integrations live INSIDE the product card ---- */
-const AppCard = ({ app, sources }: { app: RevApp; sources: RevSource[] }) => {
+/* ---- one matrix cell ---- */
+const MatrixCell = ({
+  integration,
+  connected,
+  hint,
+  onOpen,
+}: {
+  integration: IntegrationDef
+  connected: boolean
+  hint?: string
+  onOpen: () => void
+}) => {
+  if (!integration.available) {
+    return (
+      <td className="px-2 py-3 text-center align-middle">
+        <Tooltip content="Yakında">
+          <div className="mx-auto flex w-24 flex-col items-center gap-y-1 opacity-45">
+            <Glyph integration={integration} lit={false} />
+            <Text size="xsmall" className="text-ui-fg-muted">
+              yakında
+            </Text>
+          </div>
+        </Tooltip>
+      </td>
+    )
+  }
+
+  return (
+    <td className="px-2 py-2 text-center align-middle">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="group mx-auto flex w-24 flex-col items-center gap-y-1 rounded-lg px-2 py-1.5 transition-colors hover:bg-ui-bg-base-hover"
+      >
+        <div className="relative">
+          <Glyph integration={integration} lit={connected} />
+          {connected ? (
+            <span className="bg-ui-tag-green-bg ring-ui-bg-base absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2">
+              <Check className="text-ui-tag-green-icon h-3 w-3" />
+            </span>
+          ) : (
+            <span className="bg-ui-bg-component text-ui-fg-muted ring-ui-bg-base absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full opacity-0 ring-2 transition-opacity group-hover:opacity-100">
+              <Plus className="h-3 w-3" />
+            </span>
+          )}
+        </div>
+        <Text
+          size="xsmall"
+          className={
+            "max-w-[88px] truncate " +
+            (connected ? "text-ui-fg-subtle" : "text-ui-fg-muted")
+          }
+        >
+          {connected ? hint || "bağlı" : "bağla"}
+        </Text>
+      </button>
+    </td>
+  )
+}
+
+/* ---- editor drawer: per (app, integration) ---- */
+const RevenuecatBody = ({
+  app,
+  sources,
+}: {
+  app: RevApp
+  sources: RevSource[]
+}) => {
   const createSource = useCreateSource()
   const deleteSource = useDeleteSource()
-  const deleteApp = useDeleteApp()
-  const updateApp = useUpdateApp()
-
   const [pid, setPid] = useState("")
   const [secret, setSecret] = useState("")
+  const appSources = sources.filter(
+    (s) => s.app_id === app.id && s.type === "revenuecat"
+  )
+
+  return (
+    <div className="flex flex-col gap-y-4">
+      {appSources.length ? (
+        <div className="flex flex-col gap-y-2">
+          {appSources.map((s) => (
+            <div
+              key={s.id}
+              className="bg-ui-bg-subtle flex items-center justify-between rounded-md px-3 py-2"
+            >
+              <div className="flex min-w-0 flex-col">
+                <Text size="small" className="truncate">
+                  {s.external_id || "—"} ·{" "}
+                  {s.hasSecret ? "anahtar kayıtlı ✓" : "anahtar yok"}
+                </Text>
+                {s.last_error ? (
+                  <Text
+                    size="xsmall"
+                    className="text-ui-tag-red-text truncate"
+                    title={s.last_error}
+                  >
+                    hata: {String(s.last_error).slice(0, 80)}
+                  </Text>
+                ) : null}
+              </div>
+              <IconButton
+                size="small"
+                variant="transparent"
+                onClick={() => deleteSource.mutate(s.id)}
+              >
+                <Trash className="text-ui-fg-muted" />
+              </IconButton>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-y-3">
+        <div className="flex flex-col gap-y-1">
+          <Label size="xsmall">project_id</Label>
+          <Input
+            value={pid}
+            onChange={(e) => setPid(e.target.value)}
+            placeholder="proj…"
+          />
+        </div>
+        <div className="flex flex-col gap-y-1">
+          <Label size="xsmall">secret key</Label>
+          <Input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="sk_…"
+          />
+          <Text size="xsmall" className="text-ui-fg-muted">
+            Anahtar şifreli saklanır — <code>.env</code> gerekmez.
+          </Text>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            createSource.mutate(
+              {
+                type: "revenuecat",
+                name: `${app.name} · RevenueCat`,
+                app_id: app.id,
+                external_id: pid.trim(),
+                secret: secret.trim(),
+              },
+              { onSuccess: () => { setPid(""); setSecret("") } }
+            )
+          }
+          isLoading={createSource.isPending}
+          disabled={!pid.trim() || !secret.trim()}
+        >
+          Bağla
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+const AdmobBody = ({
+  app,
+  accountConnected,
+}: {
+  app: RevApp
+  accountConnected: boolean
+}) => {
+  const updateApp = useUpdateApp()
   const [admobId, setAdmobId] = useState(
     (app.external_ids?.admob as string) ?? ""
   )
 
-  const appSources = sources.filter((s) => s.app_id === app.id)
-  const connected = appSources.some((s) => s.hasSecret)
-
-  const addSource = () =>
-    createSource.mutate(
-      {
-        type: "revenuecat",
-        name: `${app.name} · RevenueCat`,
-        app_id: app.id,
-        external_id: pid.trim(),
-        secret: secret.trim(),
-      },
-      { onSuccess: () => { setPid(""); setSecret("") } }
-    )
-
   return (
-    <Container className="flex flex-col gap-y-4 p-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-x-2">
-          <Heading level="h3">{app.name}</Heading>
-          <Badge size="2xsmall" color={connected ? "green" : "orange"}>
-            {connected ? "bağlı" : "kurulum"}
-          </Badge>
+    <div className="flex flex-col gap-y-4">
+      {!accountConnected ? (
+        <div className="bg-ui-tag-orange-bg rounded-md px-3 py-2">
+          <Text size="xsmall" className="text-ui-tag-orange-text">
+            AdMob hesabı henüz bağlı değil. Önce sayfanın altındaki{" "}
+            <strong>Servisler → AdMob hesabı</strong> bölümünden hesabı bağla;
+            burada sadece bu ürünün app eşlemesini yaparsın.
+          </Text>
         </div>
-        <IconButton
-          size="small"
-          variant="transparent"
-          onClick={() => deleteApp.mutate(app.id)}
+      ) : null}
+      <div className="flex flex-col gap-y-1">
+        <Label size="xsmall">AdMob app id</Label>
+        <Input
+          value={admobId}
+          onChange={(e) => setAdmobId(e.target.value)}
+          placeholder="ca-app-pub-…  (boşsa isimle eşleşir)"
+        />
+        <Text size="xsmall" className="text-ui-fg-muted">
+          Reklam geliri tek hesaptan gelir; bu id ile bu ürüne ayrıştırılır.
+        </Text>
+      </div>
+      <div className="flex gap-x-2">
+        <Button
+          variant="secondary"
+          isLoading={updateApp.isPending}
+          onClick={() =>
+            updateApp.mutate({
+              id: app.id,
+              external_ids: {
+                ...(app.external_ids ?? {}),
+                admob: admobId.trim(),
+              },
+            })
+          }
         >
-          <Trash className="text-ui-fg-muted" />
-        </IconButton>
-      </div>
-
-      {/* Abonelik · RevenueCat */}
-      <div className="flex flex-col gap-y-2">
-        <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
-          Abonelik · RevenueCat
-        </Text>
-        {appSources.map((s) => (
-          <div
-            key={s.id}
-            className="bg-ui-bg-subtle flex items-center justify-between rounded-md px-3 py-2"
-          >
-            <div className="flex min-w-0 flex-col">
-              <Text size="small" className="truncate">
-                {s.external_id || "—"} ·{" "}
-                {s.hasSecret ? "anahtar kayıtlı ✓" : "anahtar yok"}
-              </Text>
-              {s.last_error ? (
-                <Text
-                  size="xsmall"
-                  className="text-ui-tag-red-text truncate"
-                  title={s.last_error}
-                >
-                  hata: {String(s.last_error).slice(0, 60)}
-                </Text>
-              ) : null}
-            </div>
-            <IconButton
-              size="small"
-              variant="transparent"
-              onClick={() => deleteSource.mutate(s.id)}
-            >
-              <Trash className="text-ui-fg-muted" />
-            </IconButton>
-          </div>
-        ))}
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex w-44 flex-col gap-y-1">
-            <Label size="xsmall">project_id</Label>
-            <Input
-              size="small"
-              value={pid}
-              onChange={(e) => setPid(e.target.value)}
-              placeholder="proj…"
-            />
-          </div>
-          <div className="flex w-44 flex-col gap-y-1">
-            <Label size="xsmall">secret key</Label>
-            <Input
-              size="small"
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder="sk_…"
-            />
-          </div>
+          Kaydet
+        </Button>
+        {app.external_ids?.admob ? (
           <Button
-            size="small"
-            variant="secondary"
-            onClick={addSource}
-            isLoading={createSource.isPending}
-            disabled={!pid.trim() || !secret.trim()}
-          >
-            Bağla
-          </Button>
-        </div>
-      </div>
-
-      {/* Reklam · AdMob (eşleme) */}
-      <div className="flex flex-col gap-y-2 border-t border-ui-border-base pt-3">
-        <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
-          Reklam · AdMob{" "}
-          <span className="text-ui-fg-muted normal-case">
-            (hesap aşağıda; burada app eşlemesi)
-          </span>
-        </Text>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex w-60 flex-col gap-y-1">
-            <Label size="xsmall">AdMob app id (opsiyonel)</Label>
-            <Input
-              size="small"
-              value={admobId}
-              onChange={(e) => setAdmobId(e.target.value)}
-              placeholder="ca-app-pub-…  (boşsa isimle eşleşir)"
-            />
-          </div>
-          <Button
-            size="small"
-            variant="secondary"
-            isLoading={updateApp.isPending}
-            onClick={() =>
+            variant="transparent"
+            onClick={() => {
+              setAdmobId("")
               updateApp.mutate({
                 id: app.id,
-                external_ids: {
-                  ...(app.external_ids ?? {}),
-                  admob: admobId.trim(),
-                },
+                external_ids: { ...(app.external_ids ?? {}), admob: "" },
               })
-            }
+            }}
           >
-            Kaydet
+            Eşlemeyi kaldır
           </Button>
-        </div>
+        ) : null}
       </div>
-    </Container>
+    </div>
   )
 }
+
+const IntegrationDrawer = ({
+  app,
+  integration,
+  sources,
+  accountAdmobConnected,
+  onClose,
+}: {
+  app: RevApp
+  integration: IntegrationDef
+  sources: RevSource[]
+  accountAdmobConnected: boolean
+  onClose: () => void
+}) => (
+  <Drawer open onOpenChange={(o) => !o && onClose()}>
+    <Drawer.Content>
+      <Drawer.Header>
+        <div className="flex items-center gap-x-3">
+          <Glyph integration={integration} lit size={36} />
+          <div className="flex flex-col">
+            <Drawer.Title>{app.name}</Drawer.Title>
+            <Text size="small" className="text-ui-fg-subtle">
+              {integration.label} · {integration.category}
+            </Text>
+          </div>
+        </div>
+      </Drawer.Header>
+      <Drawer.Body className="overflow-y-auto">
+        {integration.key === "revenuecat" ? (
+          <RevenuecatBody app={app} sources={sources} />
+        ) : integration.key === "admob" ? (
+          <AdmobBody app={app} accountConnected={accountAdmobConnected} />
+        ) : (
+          <Text size="small" className="text-ui-fg-muted">
+            Bu entegrasyon yakında eklenecek.
+          </Text>
+        )}
+      </Drawer.Body>
+    </Drawer.Content>
+  </Drawer>
+)
 
 /* ---- account-level services (entered once) ---- */
 const AdMobCard = ({
@@ -213,7 +421,7 @@ const AdMobCard = ({
         </Badge>
       </div>
       <Text size="xsmall" className="text-ui-fg-subtle">
-        Tek hesap, OAuth. Gelir app'lere yukarıdan eşlenir.
+        Tek hesap, OAuth. Gelir app'lere matristen eşlenir.
         {publisherId ? ` · pub: ${publisherId}` : ""}
       </Text>
       <Input size="small" value={f.publisher_id} onChange={(e) => setF({ ...f, publisher_id: e.target.value })} placeholder="publisher id (pub-…)" />
@@ -308,77 +516,167 @@ export const Component = () => {
   const { apps } = useApps()
   const { sources } = useSources()
   const createApp = useCreateApp()
+  const deleteApp = useDeleteApp()
   const sync = useSync()
   const [name, setName] = useState("")
+  const [editing, setEditing] = useState<{
+    app: RevApp
+    integration: IntegrationDef
+  } | null>(null)
+
+  const activeCount = INTEGRATIONS.filter((i) => i.available).length
+  const accountAdmobConnected = !!integrations?.admob.connected
 
   return (
     <div className="flex w-full flex-col gap-y-3">
-      <Container className="flex flex-col gap-y-3 p-6">
-        <div className="flex items-start justify-between gap-x-4">
-          <div>
-            <Heading level="h2">Entegrasyonlar</Heading>
-            <Text size="small" className="text-ui-fg-subtle">
-              Her ürünü ekle ve gelir kaynaklarını ürün altında bağla.
-              Anahtarlar şifreli saklanır — <code>.env</code> gerekmez.
-            </Text>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-y-1">
-            <Button
-              variant="secondary"
-              size="small"
-              isLoading={sync.isPending}
-              onClick={() => sync.mutate()}
-            >
-              Şimdi senkronla
-            </Button>
-            {sync.data ? (
-              <Text size="xsmall" className="text-ui-fg-muted">
-                abonelik {sync.data.revenuecat.synced} · reklam{" "}
-                {sync.data.admob.synced}
-              </Text>
-            ) : null}
-          </div>
+      <Container className="flex items-start justify-between gap-x-4 p-6">
+        <div>
+          <Heading level="h2">Entegrasyonlar</Heading>
+          <Text size="small" className="text-ui-fg-subtle">
+            Her satır bir ürün, her sütun bir entegrasyon. Bir hücreye tıkla,
+            bağla. Anahtarlar şifreli saklanır.
+          </Text>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex min-w-64 flex-1 flex-col gap-y-1">
-            <Label size="xsmall">Yeni ürün</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Empire Inc."
-            />
-          </div>
+        <div className="flex shrink-0 flex-col items-end gap-y-1">
           <Button
-            onClick={() =>
-              createApp.mutate(
-                { name: name.trim() },
-                { onSuccess: () => setName("") }
-              )
-            }
-            isLoading={createApp.isPending}
-            disabled={!name.trim()}
+            variant="secondary"
+            size="small"
+            isLoading={sync.isPending}
+            onClick={() => sync.mutate()}
           >
-            Ürün Ekle
+            Şimdi senkronla
           </Button>
+          {sync.data ? (
+            <Text size="xsmall" className="text-ui-fg-muted">
+              abonelik {sync.data.revenuecat.synced} · reklam{" "}
+              {sync.data.admob.synced}
+            </Text>
+          ) : null}
         </div>
       </Container>
 
-      <SectionLabel>Ürünler</SectionLabel>
-      {apps.length ? (
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-          {apps.map((app) => (
-            <AppCard key={app.id} app={app} sources={sources} />
-          ))}
+      <Container className="overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-ui-border-base border-b">
+                <th className="bg-ui-bg-subtle sticky left-0 z-10 min-w-[200px] px-5 py-3 text-left">
+                  <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
+                    Ürün
+                  </Text>
+                </th>
+                {INTEGRATIONS.map((i) => (
+                  <th key={i.key} className="px-2 py-3 align-bottom">
+                    <div className="flex flex-col items-center gap-y-1">
+                      <Glyph integration={i} lit size={24} />
+                      <Text size="xsmall" weight="plus" className="text-ui-fg-base">
+                        {i.label}
+                      </Text>
+                      <Text size="xsmall" className="text-ui-fg-muted">
+                        {i.category}
+                      </Text>
+                    </div>
+                  </th>
+                ))}
+                <th className="w-10" />
+              </tr>
+            </thead>
+            <tbody>
+              {apps.map((app) => {
+                const conn = INTEGRATIONS.filter(
+                  (i) => i.available && isConnected(app, sources, i.key)
+                ).length
+                return (
+                  <tr
+                    key={app.id}
+                    className="border-ui-border-base group border-b transition-colors hover:bg-ui-bg-base-hover/40"
+                  >
+                    <td className="bg-ui-bg-base group-hover:bg-ui-bg-base-hover/40 sticky left-0 z-10 min-w-[200px] px-5 py-3">
+                      <div className="flex flex-col">
+                        <Text size="small" weight="plus" className="truncate">
+                          {app.name}
+                        </Text>
+                        <Text size="xsmall" className="text-ui-fg-muted">
+                          {conn}/{activeCount} bağlı
+                        </Text>
+                      </div>
+                    </td>
+                    {INTEGRATIONS.map((i) => (
+                      <MatrixCell
+                        key={i.key}
+                        integration={i}
+                        connected={isConnected(app, sources, i.key)}
+                        hint={valueHint(app, sources, i.key)}
+                        onOpen={() => setEditing({ app, integration: i })}
+                      />
+                    ))}
+                    <td className="px-2 text-center align-middle">
+                      <IconButton
+                        size="small"
+                        variant="transparent"
+                        className="opacity-0 transition-opacity group-hover:opacity-100"
+                        onClick={() => deleteApp.mutate(app.id)}
+                      >
+                        <Trash className="text-ui-fg-muted" />
+                      </IconButton>
+                    </td>
+                  </tr>
+                )
+              })}
+              <tr>
+                <td colSpan={INTEGRATIONS.length + 2} className="px-5 py-3">
+                  <div className="border-ui-border-strong flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
+                    <Plus className="text-ui-fg-muted" />
+                    <Input
+                      size="small"
+                      className="w-56"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Yeni ürün adı — Empire Inc."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && name.trim())
+                          createApp.mutate(
+                            { name: name.trim() },
+                            { onSuccess: () => setName("") }
+                          )
+                      }}
+                    />
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={() =>
+                        createApp.mutate(
+                          { name: name.trim() },
+                          { onSuccess: () => setName("") }
+                        )
+                      }
+                      isLoading={createApp.isPending}
+                      disabled={!name.trim()}
+                    >
+                      Ürün Ekle
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <Container className="p-6">
-          <Text size="small" className="text-ui-fg-muted">
-            Henüz ürün yok — yukarıdan ekle.
-          </Text>
-        </Container>
-      )}
+        {!apps.length ? (
+          <div className="px-5 pb-5">
+            <Text size="small" className="text-ui-fg-muted">
+              Henüz ürün yok — yukarıdan ekle, sonra hücrelere tıklayıp bağla.
+            </Text>
+          </div>
+        ) : null}
+      </Container>
 
-      <SectionLabel>Servis Hesapları (bir kez)</SectionLabel>
+      <Text
+        size="xsmall"
+        weight="plus"
+        className="text-ui-fg-muted px-1 pt-3 uppercase tracking-wider"
+      >
+        Servisler (bir kez)
+      </Text>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <AdMobCard
           connected={integrations?.admob.connected}
@@ -390,6 +688,17 @@ export const Component = () => {
           from={integrations?.email.from}
         />
       </div>
+
+      {editing ? (
+        <IntegrationDrawer
+          key={editing.app.id + editing.integration.key}
+          app={editing.app}
+          integration={editing.integration}
+          sources={sources}
+          accountAdmobConnected={accountAdmobConnected}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </div>
   )
 }
