@@ -29,6 +29,11 @@ import {
   type RevApp,
   type RevSource,
 } from "../../hooks/api/apps"
+import {
+  useFinanceSettings,
+  useSaveFinanceSettings,
+  type FinanceSettings,
+} from "../../hooks/api/revenue"
 
 /* ---- brand logos (simple-icons, viewBox 0 0 24 24, single path) ---- */
 const ICON_REVENUECAT =
@@ -642,46 +647,140 @@ const EmailAccountForm = ({
   )
 }
 
+/* finans ayarları: platform komisyonları + vergi oranı (%) */
+const PctField = ({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string
+  hint?: string
+  value: string
+  onChange: (v: string) => void
+}) => (
+  <div className="flex flex-col gap-y-1">
+    <Label size="xsmall">{label}</Label>
+    <div className="relative">
+      <Input
+        size="small"
+        type="number"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="0"
+        className="pr-7"
+      />
+      <span className="text-ui-fg-muted pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm">
+        %
+      </span>
+    </div>
+    {hint ? (
+      <Text size="xsmall" className="text-ui-fg-muted">
+        {hint}
+      </Text>
+    ) : null}
+  </div>
+)
+
+const FinanceForm = ({ initial }: { initial?: FinanceSettings }) => {
+  const save = useSaveFinanceSettings()
+  const [f, setF] = useState({
+    apple: initial?.appleCommission ? String(initial.appleCommission) : "",
+    google: initial?.googleCommission ? String(initial.googleCommission) : "",
+    other: initial?.otherCommission ? String(initial.otherCommission) : "",
+    tax: initial?.taxRate ? String(initial.taxRate) : "",
+  })
+  return (
+    <div className="flex flex-col gap-y-3">
+      <Text size="xsmall" className="text-ui-fg-subtle">
+        Apple/Google IAP komisyonu abonelik gelirinden, vergi ise komisyon+gider
+        sonrası kârdan düşülür. Reklam geliri zaten net gelir.
+      </Text>
+      <PctField label="Apple komisyonu" hint="App Store IAP (genelde 15–30)" value={f.apple} onChange={(v) => setF({ ...f, apple: v })} />
+      <PctField label="Google komisyonu" hint="Play Store IAP (genelde 15–30)" value={f.google} onChange={(v) => setF({ ...f, google: v })} />
+      <PctField label="Diğer komisyon" hint="Web/Stripe vb." value={f.other} onChange={(v) => setF({ ...f, other: v })} />
+      <div className="border-ui-border-base border-t pt-3">
+        <PctField label="Vergi oranı" hint="Kâr üzerinden (gelir vergisi/stopaj)" value={f.tax} onChange={(v) => setF({ ...f, tax: v })} />
+      </div>
+      <Button
+        size="small"
+        variant="secondary"
+        isLoading={save.isPending}
+        onClick={() =>
+          save.mutate(
+            {
+              apple_commission: Number(f.apple) || 0,
+              google_commission: Number(f.google) || 0,
+              other_commission: Number(f.other) || 0,
+              tax_rate: Number(f.tax) || 0,
+            },
+            {
+              onSuccess: () => toast.success("Finans ayarları kaydedildi"),
+              onError: () => toast.error("Kaydedilemedi"),
+            }
+          )
+        }
+      >
+        Kaydet
+      </Button>
+    </div>
+  )
+}
+
 /* account creds open in a side drawer from the top buttons */
 const AccountDrawer = ({
   kind,
   integrations,
   onClose,
 }: {
-  kind: "admob" | "email"
+  kind: "admob" | "email" | "finance"
   integrations?: Integrations
   onClose: () => void
 }) => {
   const admob = integrations?.admob
   const email = integrations?.email
-  const isAdmob = kind === "admob"
-  const connected = isAdmob ? !!admob?.connected : !!email?.connected
+  const { settings: finance } = useFinanceSettings()
+
+  const meta = {
+    admob: { title: "AdMob hesabı", sub: "Reklam · tek hesap (OAuth)" },
+    email: { title: "Email", sub: "Aylık P&L · Resend" },
+    finance: { title: "Finans", sub: "Komisyon + vergi" },
+  }[kind]
+  const connected =
+    kind === "admob"
+      ? !!admob?.connected
+      : kind === "email"
+        ? !!email?.connected
+        : undefined
 
   return (
     <Drawer open onOpenChange={(o) => !o && onClose()}>
       <Drawer.Content>
         <Drawer.Header>
           <div className="flex w-full items-center gap-x-3">
-            {isAdmob ? (
+            {kind === "admob" ? (
               <Glyph integration={ADMOB_DEF} lit size={36} />
             ) : (
               <div className="bg-ui-bg-component text-ui-fg-base flex h-9 w-9 items-center justify-center rounded-md text-base">
-                ✉
+                {kind === "email" ? "✉" : "₺"}
               </div>
             )}
             <div className="flex flex-col">
-              <Drawer.Title>{isAdmob ? "AdMob hesabı" : "Email"}</Drawer.Title>
+              <Drawer.Title>{meta.title}</Drawer.Title>
               <Text size="small" className="text-ui-fg-subtle">
-                {isAdmob ? "Reklam · tek hesap (OAuth)" : "Aylık P&L · Resend"}
+                {meta.sub}
               </Text>
             </div>
-            <Badge size="2xsmall" color={connected ? "green" : "grey"} className="ml-auto">
-              {connected ? "bağlı" : "bağlı değil"}
-            </Badge>
+            {connected !== undefined ? (
+              <Badge size="2xsmall" color={connected ? "green" : "grey"} className="ml-auto">
+                {connected ? "bağlı" : "bağlı değil"}
+              </Badge>
+            ) : null}
           </div>
         </Drawer.Header>
         <Drawer.Body className="overflow-y-auto">
-          {isAdmob ? (
+          {kind === "admob" ? (
             <AdmobAccountForm
               key={`af:${admob?.publisherId ?? ""}:${admob?.currency ?? ""}:${
                 admob?.secretsSet?.join(",") ?? ""
@@ -691,7 +790,7 @@ const AccountDrawer = ({
               currency={admob?.currency}
               secretsSet={admob?.secretsSet}
             />
-          ) : (
+          ) : kind === "email" ? (
             <EmailAccountForm
               key={`ef:${email?.recipient ?? ""}:${email?.from ?? ""}:${
                 email?.secretsSet?.join(",") ?? ""
@@ -700,6 +799,13 @@ const AccountDrawer = ({
               recipient={email?.recipient}
               from={email?.from}
               secretsSet={email?.secretsSet}
+            />
+          ) : (
+            <FinanceForm
+              key={`fin:${finance?.appleCommission ?? ""}:${
+                finance?.googleCommission ?? ""
+              }:${finance?.otherCommission ?? ""}:${finance?.taxRate ?? ""}`}
+              initial={finance}
             />
           )}
         </Drawer.Body>
@@ -740,12 +846,20 @@ export const Component = () => {
     app: RevApp
     integration: IntegrationDef
   } | null>(null)
-  const [accountDrawer, setAccountDrawer] = useState<"admob" | "email" | null>(
-    null
-  )
+  const [accountDrawer, setAccountDrawer] = useState<
+    "admob" | "email" | "finance" | null
+  >(null)
+  const { settings: finance } = useFinanceSettings()
 
   const activeCount = INTEGRATIONS.filter((i) => i.available).length
   const accountAdmobConnected = !!integrations?.admob.connected
+  const financeSet = !!(
+    finance &&
+    (finance.appleCommission ||
+      finance.googleCommission ||
+      finance.otherCommission ||
+      finance.taxRate)
+  )
 
   const addApp = () =>
     createApp.mutate(
@@ -778,6 +892,11 @@ export const Component = () => {
             label="Email"
             connected={!!integrations?.email.connected}
             onClick={() => setAccountDrawer("email")}
+          />
+          <AccountButton
+            label="Finans"
+            connected={financeSet}
+            onClick={() => setAccountDrawer("finance")}
           />
           <div className="flex flex-col items-end gap-y-1">
             <Button

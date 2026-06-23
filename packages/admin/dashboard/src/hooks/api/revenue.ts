@@ -26,6 +26,8 @@ export type RevenueOverview = {
   adRevenueLastMonth: number
   adImpressions: number
   adEcpm: number
+  commission: number
+  taxTotal: number
   totalRevenue: number
   expenseTotal: number
   net: number
@@ -93,6 +95,34 @@ export type AdBreakdown = {
     impressions: number
     ecpm: number
   }[]
+}
+
+export type FinanceSettings = {
+  appleCommission: number
+  googleCommission: number
+  otherCommission: number
+  taxRate: number
+}
+
+export const useFinanceSettings = () => {
+  const { data, ...rest } = useQuery({
+    queryKey: ["revenue", "settings"],
+    queryFn: async () =>
+      sdk.client.fetch<{ settings: FinanceSettings }>("/admin/revenue/settings"),
+  })
+  return { settings: data?.settings, ...rest }
+}
+
+export const useSaveFinanceSettings = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Partial<Record<string, number>>) =>
+      sdk.client.fetch("/admin/revenue/settings", { method: "POST", body }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["revenue", "settings"] })
+      qc.invalidateQueries({ queryKey: revenueQueryKeys.overview })
+    },
+  })
 }
 
 export const useAdBreakdown = () => {

@@ -113,6 +113,48 @@ export class RevenueCatConnector implements RevenueConnector {
       }))
   }
 
+  // Günlük abonelik geliri MAĞAZA bazında (measure 0) — komisyon hesabı için.
+  async fetchRevenueDailyByStore(
+    startDate: Date,
+    endDate: Date
+  ): Promise<Array<{ date: string; store: string; value: number }>> {
+    const ymd = (d: Date) => d.toISOString().slice(0, 10)
+    const url =
+      `${RC_BASE}/projects/${this.opts.projectId}/charts/revenue` +
+      `?segment=store&start_date=${ymd(startDate)}&end_date=${ymd(endDate)}&resolution=day`
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${this.opts.apiKey}` },
+    })
+    if (!res.ok) {
+      throw new Error(
+        `RevenueCat revenue-by-store failed: ${res.status} ${await res.text()}`
+      )
+    }
+    const body = (await res.json()) as {
+      values?: Array<{
+        cohort: number
+        value: number
+        segment?: number
+        measure?: number
+      }>
+      segments?: Array<{ display_name: string }>
+    }
+    const names = (body.segments ?? []).map((s) => s.display_name)
+    return (body.values ?? [])
+      .filter(
+        (v) =>
+          (v.measure ?? 0) === 0 &&
+          v.segment !== undefined &&
+          names[v.segment] !== undefined &&
+          names[v.segment] !== "Total"
+      )
+      .map((v) => ({
+        date: new Date(v.cohort * 1000).toISOString().slice(0, 10),
+        store: names[v.segment as number],
+        value: Number(v.value) || 0,
+      }))
+  }
+
   parseWebhook(body: unknown): CanonicalEvent[] {
     const e = (body as { event?: Record<string, any> })?.event
     if (!e || !e.id || !e.type) return []

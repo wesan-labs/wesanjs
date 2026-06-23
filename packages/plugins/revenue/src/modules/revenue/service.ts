@@ -202,6 +202,48 @@ class RevenueModuleService extends MedusaService({
     return byApp
   }
 
+  // Abonelik geliri PLATFORM bazında (komisyon için) — [start, end) aralığında.
+  private async subsRevenueByPlatform(
+    start: Date,
+    end?: Date
+  ): Promise<Map<string, { amount: number; currency: string }>> {
+    const snaps = await this.listMetricSnapshots(
+      { source_type: "revenuecat" },
+      { order: { date: "DESC" }, take: 5000 }
+    )
+    const byPlat = new Map<string, { amount: number; currency: string }>()
+    for (const s of snaps) {
+      if (s.platform === "all") {
+        continue
+      }
+      const d = new Date(s.date)
+      if (d < start || (end && d >= end)) {
+        continue
+      }
+      const cur = byPlat.get(s.platform) ?? {
+        amount: 0,
+        currency: s.currency ?? "USD",
+      }
+      cur.amount += Number(s.gross_revenue ?? 0)
+      byPlat.set(s.platform, cur)
+    }
+    return byPlat
+  }
+
+  // Finans ayarları (komisyon yüzdeleri + vergi oranı). Yoksa 0.
+  async getSettings() {
+    const s = (await this.listRevenueSources({}, { take: 500 })).find(
+      (x: any) => x.provider === "settings"
+    )
+    const c = s?.config ?? {}
+    return {
+      appleCommission: Number(c.apple_commission ?? 0),
+      googleCommission: Number(c.google_commission ?? 0),
+      otherCommission: Number(c.other_commission ?? 0),
+      taxRate: Number(c.tax_rate ?? 0),
+    }
+  }
+
   // Verilen para birimleri için display'e kur tablosu (distinct → tek FX çağrısı).
   private async fxMap(
     currencies: Iterable<string>,
@@ -450,7 +492,25 @@ class RevenueModuleService extends MedusaService({
       (a, e) => a + conv(e.amount, e.currency),
       0
     )
-    const totalRevenue = subscriptionRevenue + adRevenue
+
+    // Komisyon: abonelik geliri platform bazında (Apple/Google/diğer %).
+    const settings = await this.getSettings()
+    const subsByPlat = await this.subsRevenueByPlatform(thisStart)
+    let commission = 0
+    for (const [plat, a] of subsByPlat) {
+      const rate =
+        plat === "ios"
+          ? settings.appleCommission
+          : plat === "android"
+            ? settings.googleCommission
+            : settings.otherCommission
+      commission += conv(a.amount, a.currency) * (rate / 100)
+    }
+    // Vergi: komisyon + gider sonrası kâr üzerinden.
+    const totalRevenue = subscriptionRevenue - commission + adRevenue
+    const profitBeforeTax = totalRevenue - expenseTotal
+    const taxTotal =
+      profitBeforeTax > 0 ? profitBeforeTax * (settings.taxRate / 100) : 0
 
     const recentEvents = await this.listRevenueEvents(
       {},
@@ -465,10 +525,12 @@ class RevenueModuleService extends MedusaService({
       adRevenueLastMonth: r2(adRevenueLastMonth),
       adImpressions,
       adEcpm: ecpm(adRevenue, adImpressions),
+      commission: r2(commission),
+      taxTotal: r2(taxTotal),
       totalRevenue: r2(totalRevenue),
       revenue28d: r2(subscriptionRevenue), // geri uyumluluk (abonelik)
       expenseTotal: r2(expenseTotal),
-      net: r2(totalRevenue - expenseTotal),
+      net: r2(profitBeforeTax - taxTotal),
       activeSubscriptions: sumI("active_subscriptions"),
       activeTrials: sumI("active_trials"),
       newCustomers: sumI("new_customers"),

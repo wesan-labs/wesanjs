@@ -183,11 +183,7 @@ export const Component = () => {
   return (
     <div className="flex flex-col gap-y-3">
       {/* P&L ŞERİDİ */}
-      <Container className="flex flex-wrap items-stretch gap-x-7 gap-y-4 p-5">
-        <PnlFig label="Toplam Gelir" strong>
-          <Money amount={overview.totalRevenue} currency={cur} />
-        </PnlFig>
-        <Op>=</Op>
+      <Container className="flex flex-wrap items-stretch gap-x-6 gap-y-4 p-5">
         <PnlFig label="Abonelik">
           <Money amount={overview.subscriptionRevenue} currency={cur} />
         </PnlFig>
@@ -195,10 +191,26 @@ export const Component = () => {
         <PnlFig label="Reklam">
           <Money amount={overview.adRevenue} currency={cur} />
         </PnlFig>
+        {overview.commission > 0 ? (
+          <>
+            <Op>−</Op>
+            <PnlFig label="Komisyon">
+              <Money amount={overview.commission} currency={cur} />
+            </PnlFig>
+          </>
+        ) : null}
         <Op>−</Op>
         <PnlFig label="Gider">
           <Money amount={overview.expenseTotal} currency={cur} />
         </PnlFig>
+        {overview.taxTotal > 0 ? (
+          <>
+            <Op>−</Op>
+            <PnlFig label="Vergi">
+              <Money amount={overview.taxTotal} currency={cur} />
+            </PnlFig>
+          </>
+        ) : null}
         <Op>=</Op>
         <PnlFig
           label="Net"

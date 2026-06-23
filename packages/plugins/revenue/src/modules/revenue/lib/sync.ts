@@ -94,29 +94,35 @@ export async function syncRevenuecatSources(
         },
       })
 
-      // platform bazında gelir (segment=store)
+      // GÜN GÜN platform bazında gelir (segment=store) — komisyon hesabı için.
       try {
-        const chart = await connector.fetchChart("revenue", { segment: "store" })
-        const byStore: Record<string, number> = {}
-        for (const p of chart.points) {
-          if (p.segment && p.segment !== "Total") {
-            byStore[p.segment] = (byStore[p.segment] ?? 0) + p.value
-          }
+        const byStore = await connector.fetchRevenueDailyByStore(
+          monthStart,
+          today
+        )
+        // (platform, gün) bazında topla
+        const agg = new Map<string, { platform: string; day: string; value: number }>()
+        for (const r of byStore) {
+          const platform = platformFromStore(r.store)
+          const key = `${platform}|${r.date}`
+          const cur = agg.get(key) ?? { platform, day: r.date, value: 0 }
+          cur.value += r.value
+          agg.set(key, cur)
         }
-        for (const [store, val] of Object.entries(byStore)) {
+        for (const v of agg.values()) {
           await service.recordSnapshot({
-            date: today,
+            date: new Date(v.day),
             appId: src.app_id,
-            platform: platformFromStore(store),
+            platform: v.platform,
             sourceType: "revenuecat",
             fields: {
-              gross_revenue: Number(val.toFixed(2)),
+              gross_revenue: Number(v.value.toFixed(2)),
               currency: metrics.currency,
             },
           })
         }
       } catch (e: any) {
-        logger.warn(`[revenue] ${src.name} store-chart failed: ${e?.message}`)
+        logger.warn(`[revenue] ${src.name} store-daily failed: ${e?.message}`)
       }
 
       await service.updateRevenueSources({
