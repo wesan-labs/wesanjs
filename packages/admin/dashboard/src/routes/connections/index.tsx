@@ -27,11 +27,20 @@ import {
   type RevSource,
 } from "../../hooks/api/apps"
 
+/* ---- brand logos (simple-icons, viewBox 0 0 24 24, single path) ---- */
+const ICON_REVENUECAT =
+  "M4.3036.3999c-1.5246 0-3.2129.1508-4.303.4136v14.9997c.3083.1722.8432.28 1.5632.28.7404 0 1.2553-.1072 1.5433-.28v-5.2323a14.8588 14.8588 0 0 0 2.121.1512h.3294l2.8604 5.0588c.432.195 1.0288.3024 1.9348.3024.8033 0 1.38-.1104 1.6476-.3024l-3.437-5.8358c1.4195-.8004 2.326-2.2698 2.326-4.4964C10.8894 1.827 8.4232.4 4.3037.4zm15.4543 0c-1.3788 0-2.624.2707-3.6901.7945-2.4552 1.203-3.9609 3.7376-3.9609 7.3627 0 4.8245 2.6552 7.7155 7.1659 7.7155.9 0 1.5868-.3014 2.005.2554.4194.5568-.3582 1.2165-.7746 1.5105-1.6338 1.1544-5.7217-.1024-9.4908-.4804C5.5994 17.015.9264 16.3009.146 19.1928c-.4104 1.5264.1225 2.5013.6421 3.0503 1.044 1.1046 2.882 1.357 4.344 1.357a13.959 13.959 0 0 0 2.0508-.1558 1.311 1.311 0 0 0 1.023-.8063c.1674-.4254.0861-.904-.212-1.2562a1.3464 1.3464 0 0 0-1.2352-.4523c-1.5012.2706-3.6213.8685-4.4343.0105-.2748-.291-.2268-1.0037 0-1.2257.6048-.8748 4.493-.5393 8.4127-.0293 4.329.4344 8.4023 1.8609 10.945.6351.9955-.48 2.318-1.1941 2.318-3.792h-.0012c0-1.1473-.1489-2.274-.4476-3.3797-1.3818.1872-2.4783.2857-3.2883.2941-2.845 0-4.869-1.4484-4.869-5.0963 0-3.648 2.0461-5.1573 5.0179-5.1573 1.2011 0 2.129.2512 3.1405.7336.1062-.9234-.1058-2.1605-.5906-2.8523-.78-.4608-2.0014-.6703-3.2038-.6703zM4.51 3.1889c2.0579 0 3.2108.7111 3.2108 2.4421 0 1.6824-1.0912 2.3554-2.8816 2.3554a10.2838 10.2838 0 0 1-1.7706-.1511V3.3166a7.7782 7.7782 0 0 1 1.4413-.1277z"
+const ICON_ADMOB =
+  "M11.46.033h-.052A11.993 11.993 0 0 0 0 11.922v.052c0 7.475 6.563 11.928 11.447 11.928h.17a3.086 3.086 0 0 0 3.125-3.047c0-1.693-1.433-2.917-3.152-2.917h-.039a6.016 6.016 0 0 1-5.508-6.368v-.052a6.016 6.016 0 0 1 5.573-5.509c1.719 0 3.125-1.237 3.125-2.917A3.086 3.086 0 0 0 11.604.02h-.143zm2.031.026a3.516 3.516 0 0 1 1.746 3.021 3.386 3.386 0 0 1-1.928 3.047c2.865.6 4.532 3.126 4.688 5.378v7.684a3.49 3.49 0 0 1 6.003.026v-7.736A12.046 12.046 0 0 0 13.491.045zm7.475 17.932a2.995 2.995 0 1 0 .04 0z"
+const ICON_SENTRY =
+  "M13.91 2.505c-.873-1.448-2.972-1.448-3.844 0L6.904 7.92a15.478 15.478 0 0 1 8.53 12.811h-2.221A13.301 13.301 0 0 0 5.784 9.814l-2.926 5.06a7.65 7.65 0 0 1 4.435 5.848H2.194a.365.365 0 0 1-.298-.534l1.413-2.402a5.16 5.16 0 0 0-1.614-.913L.296 19.275a2.182 2.182 0 0 0 .812 2.999 2.24 2.24 0 0 0 1.086.288h6.983a9.322 9.322 0 0 0-3.845-8.318l1.11-1.922a11.47 11.47 0 0 1 4.95 10.24h5.915a17.242 17.242 0 0 0-7.885-15.28l2.244-3.845a.37.37 0 0 1 .504-.13c.255.14 9.75 16.708 9.928 16.9a.365.365 0 0 1-.327.543h-2.287c.029.612.029 1.223 0 1.831h2.297a2.206 2.206 0 0 0 1.922-3.31z"
+
 /* ---- single source of truth: columns are derived from this ---- */
 type IntegrationDef = {
   key: string
   label: string
   mono: string
+  icon?: string
   category: string
   color: string
   bg: string
@@ -43,6 +52,7 @@ const INTEGRATIONS: IntegrationDef[] = [
     key: "revenuecat",
     label: "RevenueCat",
     mono: "RC",
+    icon: ICON_REVENUECAT,
     category: "Abonelik",
     color: "#E0483D",
     bg: "rgba(224,72,61,0.14)",
@@ -52,9 +62,10 @@ const INTEGRATIONS: IntegrationDef[] = [
     key: "admob",
     label: "AdMob",
     mono: "Ad",
+    icon: ICON_ADMOB,
     category: "Reklam",
-    color: "#3B82F6",
-    bg: "rgba(59,130,246,0.14)",
+    color: "#34A853",
+    bg: "rgba(52,168,83,0.14)",
     available: true,
   },
   {
@@ -70,6 +81,7 @@ const INTEGRATIONS: IntegrationDef[] = [
     key: "sentry",
     label: "Sentry",
     mono: "Se",
+    icon: ICON_SENTRY,
     category: "Hata",
     color: "#7B51F8",
     bg: "rgba(123,81,248,0.14)",
@@ -87,21 +99,11 @@ const isConnected = (app: RevApp, sources: RevSource[], key: string) => {
   return false
 }
 
-const valueHint = (app: RevApp, sources: RevSource[], key: string) => {
-  if (key === "revenuecat")
-    return (
-      sources.find((s) => s.app_id === app.id && s.type === "revenuecat")
-        ?.external_id ?? undefined
-    )
-  if (key === "admob") return (app.external_ids?.admob as string) || undefined
-  return undefined
-}
-
-/* ---- brand glyph: lit = marka rengi, sönük = gri ---- */
+/* ---- brand glyph: real logo (else monogram); lit = marka rengi, sönük = gri ---- */
 const Glyph = ({
   integration,
   lit,
-  size = 28,
+  size = 24,
 }: {
   integration: IntegrationDef
   lit: boolean
@@ -109,7 +111,7 @@ const Glyph = ({
 }) => (
   <div
     className={
-      "flex items-center justify-center rounded-md font-semibold transition-colors " +
+      "flex shrink-0 items-center justify-center rounded-md font-semibold transition-colors " +
       (lit ? "" : "bg-ui-bg-component text-ui-fg-disabled")
     }
     style={
@@ -124,70 +126,66 @@ const Glyph = ({
         : { width: size, height: size, fontSize: Math.round(size * 0.4) }
     }
   >
-    {integration.mono}
+    {integration.icon ? (
+      <svg
+        viewBox="0 0 24 24"
+        width={Math.round(size * 0.6)}
+        height={Math.round(size * 0.6)}
+        fill="currentColor"
+        aria-hidden
+      >
+        <path d={integration.icon} />
+      </svg>
+    ) : (
+      integration.mono
+    )}
   </div>
 )
 
-/* ---- one matrix cell: compact single line ---- */
-const StatusDot = ({ integration }: { integration: IntegrationDef }) => (
-  <div className="relative shrink-0">
-    <Glyph integration={integration} lit size={20} />
-    <span className="bg-ui-tag-green-bg ring-ui-bg-base absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-2">
-      <Check className="text-ui-tag-green-icon h-2.5 w-2.5" />
-    </span>
-  </div>
-)
-
+/* ---- one matrix cell: icon-only, status via color + green check ---- */
 const MatrixCell = ({
   integration,
   connected,
-  hint,
   onOpen,
 }: {
   integration: IntegrationDef
   connected: boolean
-  hint?: string
   onOpen: () => void
 }) => {
   if (!integration.available) {
     return (
-      <td className="w-44 px-3 py-1.5">
+      <td className="w-28 px-2 py-1.5 text-center">
         <Tooltip content={`${integration.label} · yakında`}>
-          <div className="flex items-center gap-x-2 opacity-40">
-            <Glyph integration={integration} lit={false} size={20} />
-            <Text size="xsmall" className="text-ui-fg-muted">
-              yakında
-            </Text>
-          </div>
+          <span className="inline-flex opacity-40">
+            <Glyph integration={integration} lit={false} size={26} />
+          </span>
         </Tooltip>
       </td>
     )
   }
 
   return (
-    <td className="w-44 px-3 py-1.5">
-      <button
-        type="button"
-        onClick={onOpen}
-        className="group flex w-full items-center gap-x-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-ui-bg-base-hover"
+    <td className="w-28 px-2 py-1.5 text-center">
+      <Tooltip
+        content={`${integration.label} · ${connected ? "bağlı — düzenle" : "bağla"}`}
       >
-        {connected ? (
-          <StatusDot integration={integration} />
-        ) : (
-          <Glyph integration={integration} lit={false} size={20} />
-        )}
-        <Text
-          size="xsmall"
-          className={
-            "truncate " +
-            (connected
-              ? "text-ui-fg-subtle"
-              : "text-ui-fg-muted group-hover:text-ui-fg-subtle")
-          }
+        <button
+          type="button"
+          onClick={onOpen}
+          className="group relative inline-flex rounded-md p-1 transition-colors hover:bg-ui-bg-base-hover"
         >
-          {connected ? hint || "bağlı" : "bağla"}
-        </Text>
-      </button>
+          <Glyph integration={integration} lit={connected} size={26} />
+          {connected ? (
+            <span className="bg-ui-tag-green-bg ring-ui-bg-base absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full ring-2">
+              <Check className="text-ui-tag-green-icon h-2.5 w-2.5" />
+            </span>
+          ) : (
+            <span className="bg-ui-bg-component text-ui-fg-muted ring-ui-bg-base absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full opacity-0 ring-2 transition-opacity group-hover:opacity-100">
+              <Plus className="h-3 w-3" />
+            </span>
+          )}
+        </button>
+      </Tooltip>
     </td>
   )
 }
@@ -570,9 +568,9 @@ export const Component = () => {
                   </Text>
                 </th>
                 {INTEGRATIONS.map((i) => (
-                  <th key={i.key} className="w-44 px-3 py-2.5 text-left">
+                  <th key={i.key} className="w-28 px-2 py-2.5 text-center">
                     <Tooltip content={i.category}>
-                      <div className="flex items-center gap-x-2">
+                      <div className="flex items-center justify-center gap-x-1.5">
                         <Glyph integration={i} lit size={18} />
                         <Text size="xsmall" weight="plus" className="text-ui-fg-base">
                           {i.label}
@@ -609,7 +607,6 @@ export const Component = () => {
                         key={i.key}
                         integration={i}
                         connected={isConnected(app, sources, i.key)}
-                        hint={valueHint(app, sources, i.key)}
                         onOpen={() => setEditing({ app, integration: i })}
                       />
                     ))}
