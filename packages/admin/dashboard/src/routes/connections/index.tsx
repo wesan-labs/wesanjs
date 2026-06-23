@@ -874,7 +874,7 @@ export const Component = () => {
 
   return (
     <div className="flex w-full flex-col gap-y-3">
-      <Container className="flex items-start justify-between gap-x-4 p-6">
+      <Container className="flex flex-col gap-y-3 p-6 sm:flex-row sm:items-start sm:justify-between sm:gap-x-4">
         <div>
           <Heading level="h2">Entegrasyonlar</Heading>
           <Text size="small" className="text-ui-fg-subtle">
@@ -882,7 +882,7 @@ export const Component = () => {
             bağla. Anahtarlar şifreli saklanır.
           </Text>
         </div>
-        <div className="flex shrink-0 items-center gap-x-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <AccountButton
             label="AdMob hesabı"
             connected={!!integrations?.admob.connected}

@@ -29,33 +29,41 @@ export const DataTable = <T,>({
   }
 
   return (
-    <Table>
-      <Table.Header>
-        <Table.Row>
-          {columns.map((col) => (
-            <Table.HeaderCell
-              key={col.key}
-              className={clx(col.align === "right" && "text-right")}
-            >
-              {col.header}
-            </Table.HeaderCell>
-          ))}
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {rows.map((row, index) => (
-          <Table.Row key={index}>
+    <div className="-mx-1 overflow-x-auto">
+      <Table>
+        <Table.Header>
+          <Table.Row>
             {columns.map((col) => (
-              <Table.Cell
+              <Table.HeaderCell
                 key={col.key}
-                className={clx(col.align === "right" && "text-right")}
+                className={clx(
+                  "whitespace-nowrap",
+                  col.align === "right" && "text-right"
+                )}
               >
-                {col.render(row)}
-              </Table.Cell>
+                {col.header}
+              </Table.HeaderCell>
             ))}
           </Table.Row>
-        ))}
-      </Table.Body>
-    </Table>
+        </Table.Header>
+        <Table.Body>
+          {rows.map((row, index) => (
+            <Table.Row key={index}>
+              {columns.map((col) => (
+                <Table.Cell
+                  key={col.key}
+                  className={clx(
+                    "whitespace-nowrap",
+                    col.align === "right" && "text-right"
+                  )}
+                >
+                  {col.render(row)}
+                </Table.Cell>
+              ))}
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table>
+    </div>
   )
 }

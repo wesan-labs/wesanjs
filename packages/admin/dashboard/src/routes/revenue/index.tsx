@@ -69,7 +69,7 @@ const PnlFig = ({
   accent?: "positive" | "negative"
   strong?: boolean
 }) => (
-  <div className="flex flex-col gap-y-0.5">
+  <div className="flex w-full items-baseline justify-between gap-x-3 sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:gap-y-0.5">
     <Text size="xsmall" className="text-ui-fg-muted uppercase tracking-wider">
       {label}
     </Text>
@@ -89,7 +89,9 @@ const PnlFig = ({
 )
 
 const Op = ({ children }: { children: ReactNode }) => (
-  <span className="text-ui-fg-muted self-center text-lg">{children}</span>
+  <span className="text-ui-fg-muted hidden self-center text-lg sm:inline">
+    {children}
+  </span>
 )
 
 export const Component = () => {
@@ -183,7 +185,7 @@ export const Component = () => {
   return (
     <div className="flex flex-col gap-y-3">
       {/* P&L ŞERİDİ */}
-      <Container className="flex flex-wrap items-stretch gap-x-6 gap-y-4 p-5">
+      <Container className="flex flex-col gap-y-2 p-5 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-x-6 sm:gap-y-4">
         <PnlFig label="Abonelik">
           <Money amount={overview.subscriptionRevenue} currency={cur} />
         </PnlFig>

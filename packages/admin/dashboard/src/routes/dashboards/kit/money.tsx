@@ -66,13 +66,20 @@ export const Money = ({ amount, currency }: MoneyProps) => {
 
   // Aynı para birimi → gerçek fiyat
   if (sameCurrency) {
-    return <>{getStylizedAmount(amount, from)}</>
+    return (
+      <span className="whitespace-nowrap tabular-nums">
+        {getStylizedAmount(amount, from)}
+      </span>
+    )
   }
 
   // Farklı + kur geldi → çevrilmiş, "≈" ile (orijinali title'da)
   if (rate != null) {
     return (
-      <span title={getStylizedAmount(amount, from)}>
+      <span
+        className="whitespace-nowrap tabular-nums"
+        title={getStylizedAmount(amount, from)}
+      >
         ≈ {getStylizedAmount(amount * rate, to as string)}
       </span>
     )
@@ -80,7 +87,10 @@ export const Money = ({ amount, currency }: MoneyProps) => {
 
   // Kur yükleniyor / alınamadı → ham fiyat (bozma)
   return (
-    <span title={isLoading ? "kur yükleniyor…" : "kur alınamadı"}>
+    <span
+      className="whitespace-nowrap tabular-nums"
+      title={isLoading ? "kur yükleniyor…" : "kur alınamadı"}
+    >
       {getStylizedAmount(amount, from)}
     </span>
   )
