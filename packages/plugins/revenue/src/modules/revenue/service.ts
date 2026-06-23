@@ -291,12 +291,20 @@ class RevenueModuleService extends MedusaService({
       mrr += conv(s.mrr, s.currency)
     }
     let adRevenue = 0
-    const platAgg = new Map<string, number>()
+    let adImpressions = 0
+    const platAgg = new Map<string, { amount: number; impressions: number }>()
     for (const s of adSnaps) {
       const v = conv(s.ad_revenue, s.currency)
+      const imp = Number(s.ad_impressions ?? 0)
       adRevenue += v
-      platAgg.set(s.platform, (platAgg.get(s.platform) ?? 0) + v)
+      adImpressions += imp
+      const p = platAgg.get(s.platform) ?? { amount: 0, impressions: 0 }
+      p.amount += v
+      p.impressions += imp
+      platAgg.set(s.platform, p)
     }
+    const ecpm = (amount: number, imp: number) =>
+      imp > 0 ? Number(((amount / imp) * 1000).toFixed(2)) : 0
     const expenseTotal = expenses.reduce(
       (a, e) => a + conv(e.amount, e.currency),
       0
@@ -312,6 +320,8 @@ class RevenueModuleService extends MedusaService({
       mrr: r2(mrr),
       subscriptionRevenue: r2(subscriptionRevenue),
       adRevenue: r2(adRevenue),
+      adImpressions,
+      adEcpm: ecpm(adRevenue, adImpressions),
       totalRevenue: r2(totalRevenue),
       revenue28d: r2(subscriptionRevenue), // geri uyumluluk (abonelik)
       expenseTotal: r2(expenseTotal),
@@ -321,7 +331,12 @@ class RevenueModuleService extends MedusaService({
       newCustomers: sumI("new_customers"),
       activeUsers: sumI("active_users"),
       adByPlatform: [...platAgg.entries()]
-        .map(([platform, amount]) => ({ platform, amount: r2(amount) }))
+        .map(([platform, d]) => ({
+          platform,
+          amount: r2(d.amount),
+          impressions: d.impressions,
+          ecpm: ecpm(d.amount, d.impressions),
+        }))
         .sort((a, b) => b.amount - a.amount),
       recentEvents,
       mrrTrend: [],

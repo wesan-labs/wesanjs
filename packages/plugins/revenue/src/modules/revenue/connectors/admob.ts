@@ -7,6 +7,7 @@ export type AdRow = {
   appName: string
   platform: string
   amount: number
+  impressions: number
   currency: string
 }
 
@@ -71,7 +72,7 @@ export class AdMobConnector {
           reportSpec: {
             dateRange: { startDate: ymd(start), endDate: ymd(end) },
             dimensions: ["DATE", "APP", "PLATFORM"],
-            metrics: ["ESTIMATED_EARNINGS"],
+            metrics: ["ESTIMATED_EARNINGS", "IMPRESSIONS"],
             // İstenen para birimi (boşsa AdMob hesabının yerel birimi, ör. TRY).
             ...(this.opts.currency
               ? { localizationSettings: { currencyCode: this.opts.currency } }
@@ -104,12 +105,18 @@ export function parseAdmobReport(body: any): AdRow[] {
     const app = dv.APP ?? {}
     const platform = admobPlatform(dv.PLATFORM?.value ?? "")
     const micros = r.metricValues?.ESTIMATED_EARNINGS?.microsValue ?? 0
+    const impressions = Number(
+      r.metricValues?.IMPRESSIONS?.integerValue ??
+        r.metricValues?.IMPRESSIONS?.doubleValue ??
+        0
+    )
     rows.push({
       date,
       appExternalId: app.value ?? "",
       appName: app.displayLabel ?? app.value ?? "",
       platform,
       amount: microsToAmount(micros),
+      impressions,
       currency,
     })
   }

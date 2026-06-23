@@ -22,6 +22,8 @@ export type RevenueOverview = {
   revenue28d: number
   subscriptionRevenue: number
   adRevenue: number
+  adImpressions: number
+  adEcpm: number
   totalRevenue: number
   expenseTotal: number
   net: number
@@ -29,7 +31,12 @@ export type RevenueOverview = {
   activeTrials: number
   newCustomers: number
   activeUsers: number
-  adByPlatform: { platform: string; amount: number }[]
+  adByPlatform: {
+    platform: string
+    amount: number
+    impressions: number
+    ecpm: number
+  }[]
   recentEvents: RevenueEventRow[]
   mrrTrend: { date: string; mrr: number }[]
 }

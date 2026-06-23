@@ -78,7 +78,14 @@ export async function syncAdmob(
   // (app, platform) bazında topla
   const agg = new Map<
     string,
-    { appId: string | null; platform: string; amount: number; currency: string; name: string }
+    {
+      appId: string | null
+      platform: string
+      amount: number
+      impressions: number
+      currency: string
+      name: string
+    }
   >()
   for (const r of rows) {
     const appId =
@@ -89,10 +96,12 @@ export async function syncAdmob(
         appId,
         platform: r.platform,
         amount: 0,
+        impressions: 0,
         currency: r.currency,
         name: r.appName,
       }
     cur.amount += r.amount
+    cur.impressions += r.impressions
     agg.set(key, cur)
   }
 
@@ -110,7 +119,11 @@ export async function syncAdmob(
       appId: v.appId,
       platform: v.platform,
       sourceType: "admob",
-      fields: { ad_revenue: Number(v.amount.toFixed(2)), currency: v.currency },
+      fields: {
+        ad_revenue: Number(v.amount.toFixed(2)),
+        ad_impressions: v.impressions,
+        currency: v.currency,
+      },
     })
     synced++
   }

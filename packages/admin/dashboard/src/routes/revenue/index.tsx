@@ -6,6 +6,7 @@ import {
   useRevenueChart,
   useRevenueOverview,
   type RevenueEventRow,
+  type RevenueOverview,
 } from "../../hooks/api/revenue"
 import {
   AreaChartPanel,
@@ -127,11 +128,6 @@ export const Component = () => {
     display: <Money amount={value} currency={RC} />,
   }))
 
-  const adPlatformItems = (overview.adByPlatform ?? []).map((p) => ({
-    label: prettyPlatform(p.platform),
-    value: p.amount,
-    display: <Money amount={p.amount} currency={cur} />,
-  }))
   const adByAppItems = apps
     .filter((a) => a.adRevenue > 0)
     .map((a) => ({
@@ -308,35 +304,60 @@ export const Component = () => {
 
         {/* REKLAM: AdMob dünyası */}
         <Tabs.Content value="reklam" className="mt-3 flex flex-col gap-y-3">
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+          <div className="grid grid-cols-3 gap-2">
             <StatCard
               label="Reklam Geliri"
               sub="Son 28 gün"
               value={<Money amount={overview.adRevenue} currency={cur} />}
             />
-            {(overview.adByPlatform ?? []).map((p) => (
-              <StatCard
-                key={p.platform}
-                label={prettyPlatform(p.platform)}
-                sub="Reklam"
-                value={<Money amount={p.amount} currency={cur} />}
-              />
-            ))}
+            <StatCard
+              label="eCPM"
+              sub="1000 gösterim başına"
+              value={<Money amount={overview.adEcpm} currency={cur} />}
+            />
+            <StatCard
+              label="Gösterim"
+              sub="Son 28 gün"
+              value={num(overview.adImpressions)}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-            <Widget title="Platforma Göre Reklam">
-              <BarList items={adPlatformItems} emptyLabel="Reklam platform verisi yok" />
+            <Widget title="Platforma Göre">
+              <DataTable<RevenueOverview["adByPlatform"][number]>
+                columns={[
+                  {
+                    key: "platform",
+                    header: "Platform",
+                    render: (p) => prettyPlatform(p.platform),
+                  },
+                  {
+                    key: "amount",
+                    header: "Gelir",
+                    align: "right",
+                    render: (p) => <Money amount={p.amount} currency={cur} />,
+                  },
+                  {
+                    key: "imp",
+                    header: "Gösterim",
+                    align: "right",
+                    render: (p) => p.impressions.toLocaleString(),
+                  },
+                  {
+                    key: "ecpm",
+                    header: "eCPM",
+                    align: "right",
+                    render: (p) => <Money amount={p.ecpm} currency={cur} />,
+                  },
+                ]}
+                rows={overview.adByPlatform ?? []}
+                emptyLabel="Reklam platform verisi yok"
+              />
             </Widget>
             <Widget title="Ürüne Göre Reklam">
               <BarList items={adByAppItems} emptyLabel="Reklam verisi yok" />
             </Widget>
           </div>
-
-          <Text size="xsmall" className="text-ui-fg-muted px-1">
-            AdMob şu an gelir (ESTIMATED_EARNINGS) çekiyor. eCPM / gösterim
-            istersen rapor metriklerine ekleyebiliriz.
-          </Text>
         </Tabs.Content>
       </Tabs>
     </div>

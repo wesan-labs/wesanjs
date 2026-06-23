@@ -17,6 +17,7 @@ export default model
       gross_revenue: model.bigNumber().default(0),
       net_revenue: model.bigNumber().default(0),
       ad_revenue: model.bigNumber().default(0),
+      ad_impressions: model.number().default(0),
       expense_total: model.bigNumber().default(0),
       net_profit: model.bigNumber().default(0),
       currency: model.text(),
