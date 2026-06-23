@@ -81,6 +81,32 @@ export const useRevenueOverview = () => {
   return { overview: data?.overview, ...rest }
 }
 
+export type AdBreakdown = {
+  currency: string
+  daily: { date: string; ios: number; android: number; total: number }[]
+  rows: {
+    appId: string
+    appName: string
+    platform: string
+    amount: number
+    impressions: number
+    ecpm: number
+  }[]
+}
+
+export const useAdBreakdown = () => {
+  const display = useDisplayCurrency()
+  const { data, ...rest } = useQuery({
+    queryKey: ["revenue", "ad-breakdown", display ?? null],
+    queryFn: async () =>
+      sdk.client.fetch<{ breakdown: AdBreakdown }>(
+        `/admin/revenue/ad-breakdown${display ? `?display=${display}` : ""}`
+      ),
+    staleTime: 5 * 60 * 1000,
+  })
+  return { breakdown: data?.breakdown, ...rest }
+}
+
 export const useRevenueChart = (metric: string, segment?: string) => {
   return useQuery({
     queryKey: ["revenue", "chart", metric, segment ?? null],

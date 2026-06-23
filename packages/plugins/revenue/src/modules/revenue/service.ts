@@ -274,6 +274,85 @@ class RevenueModuleService extends MedusaService({
     }
   }
 
+  // Reklam detayı: günlük seri (platform kırılımlı) + ürün×platform satırları (bu ay).
+  async getAdBreakdown(display = "USD") {
+    display = (display || "USD").toUpperCase()
+    const snaps = await this.admobSnaps()
+    const apps = await this.listApps({}, { take: 200 })
+    const nameById = new Map(apps.map((a) => [a.id, a.name]))
+    const rates = await this.fxMap(
+      snaps.map((s) => s.currency ?? display),
+      display
+    )
+    const conv = (amt: any, cur?: string) =>
+      Number(amt ?? 0) * (rates.get((cur || display).toUpperCase()) ?? 1)
+    const r2 = (n: number) => Number(n.toFixed(2))
+    const { thisStart } = this.monthBounds()
+
+    const dayMap = new Map<
+      string,
+      { ios: number; android: number; total: number }
+    >()
+    const rowMap = new Map<
+      string,
+      {
+        appId: string
+        appName: string
+        platform: string
+        amount: number
+        impressions: number
+      }
+    >()
+    for (const s of snaps) {
+      const d = new Date(s.date)
+      const dateStr = d.toISOString().slice(0, 10)
+      const v = conv(s.ad_revenue, s.currency)
+      const day = dayMap.get(dateStr) ?? { ios: 0, android: 0, total: 0 }
+      if (s.platform === "ios") {
+        day.ios += v
+      } else if (s.platform === "android") {
+        day.android += v
+      }
+      day.total += v
+      dayMap.set(dateStr, day)
+
+      if (d >= thisStart && s.app_id) {
+        const key = `${s.app_id}|${s.platform}`
+        const row = rowMap.get(key) ?? {
+          appId: s.app_id,
+          appName: nameById.get(s.app_id) ?? s.app_id,
+          platform: s.platform,
+          amount: 0,
+          impressions: 0,
+        }
+        row.amount += v
+        row.impressions += Number(s.ad_impressions ?? 0)
+        rowMap.set(key, row)
+      }
+    }
+
+    const daily = [...dayMap.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([date, d]) => ({
+        date,
+        ios: r2(d.ios),
+        android: r2(d.android),
+        total: r2(d.total),
+      }))
+    const rows = [...rowMap.values()]
+      .map((r) => ({
+        appId: r.appId,
+        appName: r.appName,
+        platform: r.platform,
+        amount: r2(r.amount),
+        impressions: r.impressions,
+        ecpm: r.impressions > 0 ? r2((r.amount / r.impressions) * 1000) : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount)
+
+    return { currency: display, daily, rows }
+  }
+
   // Genel P&L — abonelik + reklam + gider, hepsi display birimine FX-normalize.
   async getOverview(display = "USD") {
     display = (display || "USD").toUpperCase()
