@@ -19,6 +19,7 @@ import {
   useIntegrations,
   useSaveIntegration,
   useSources,
+  useSync,
   useUpdateApp,
   type RevApp,
   type RevSource,
@@ -307,17 +308,36 @@ export const Component = () => {
   const { apps } = useApps()
   const { sources } = useSources()
   const createApp = useCreateApp()
+  const sync = useSync()
   const [name, setName] = useState("")
 
   return (
     <div className="flex w-full flex-col gap-y-3">
       <Container className="flex flex-col gap-y-3 p-6">
-        <div>
-          <Heading level="h2">Entegrasyonlar</Heading>
-          <Text size="small" className="text-ui-fg-subtle">
-            Her ürünü ekle ve gelir kaynaklarını ürün altında bağla. Anahtarlar
-            şifreli saklanır — <code>.env</code> gerekmez.
-          </Text>
+        <div className="flex items-start justify-between gap-x-4">
+          <div>
+            <Heading level="h2">Entegrasyonlar</Heading>
+            <Text size="small" className="text-ui-fg-subtle">
+              Her ürünü ekle ve gelir kaynaklarını ürün altında bağla.
+              Anahtarlar şifreli saklanır — <code>.env</code> gerekmez.
+            </Text>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-y-1">
+            <Button
+              variant="secondary"
+              size="small"
+              isLoading={sync.isPending}
+              onClick={() => sync.mutate()}
+            >
+              Şimdi senkronla
+            </Button>
+            {sync.data ? (
+              <Text size="xsmall" className="text-ui-fg-muted">
+                abonelik {sync.data.revenuecat.synced} · reklam{" "}
+                {sync.data.admob.synced}
+              </Text>
+            ) : null}
+          </div>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex min-w-64 flex-1 flex-col gap-y-1">

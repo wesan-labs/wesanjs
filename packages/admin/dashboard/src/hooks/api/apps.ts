@@ -60,6 +60,20 @@ export const useIntegrations = () => {
   return { integrations: data?.integrations, ...rest }
 }
 
+export type SyncResult = {
+  revenuecat: { synced: number; skipped: number }
+  admob: { synced: number; skipped: number }
+}
+
+export const useSync = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      sdk.client.fetch<SyncResult>("/admin/revenue/sync", { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["revenue"] }),
+  })
+}
+
 export const useSaveIntegration = () => {
   const qc = useQueryClient()
   return useMutation({
