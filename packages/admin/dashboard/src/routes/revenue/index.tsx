@@ -1,5 +1,5 @@
 import { Container, Select, Tabs, Text } from "@medusajs/ui"
-import { ReactNode, useState } from "react"
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAppsOverview, type AppOverviewRow } from "../../hooks/api/apps"
 import {
@@ -8,6 +8,7 @@ import {
   useRevenueOverview,
   type AdBreakdown,
   type RevenueEventRow,
+  type RevenueOverview,
 } from "../../hooks/api/revenue"
 import {
   AreaChartPanel,
@@ -57,42 +58,136 @@ const PLATFORM_SERIES = [
   { key: "android", label: "Android", color: "#3DDC84" },
 ]
 
-/* P&L denklemi: Toplam (Abonelik+Reklam) − Gider = Net */
-const PnlFig = ({
+/* ---- modern P&L özeti: NET hero + kompozisyon + Gelir/Kesinti ---- */
+const INCOME_GREEN = "#10b981"
+const AD_BLUE = "#0ea5e9"
+const DEDUCT_GREY = "#9ca3af"
+
+const monthLabel = () =>
+  new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" })
+
+const PnlRow = ({
   label,
-  children,
-  accent,
-  strong,
+  amount,
+  currency,
+  deduction,
 }: {
   label: string
-  children: ReactNode
-  accent?: "positive" | "negative"
-  strong?: boolean
+  amount: number
+  currency: string
+  deduction?: boolean
 }) => (
-  <div className="flex w-full items-baseline justify-between gap-x-3 sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:gap-y-0.5">
-    <Text size="xsmall" className="text-ui-fg-muted uppercase tracking-wider">
-      {label}
-    </Text>
-    <span
-      className={
-        (strong ? "text-xl font-semibold " : "text-base font-medium ") +
-        (accent === "positive"
-          ? "text-ui-tag-green-text"
-          : accent === "negative"
-            ? "text-ui-tag-red-text"
-            : "text-ui-fg-base")
-      }
-    >
-      {children}
+  <div className="border-ui-border-base flex items-center justify-between gap-x-3 border-b py-2 last:border-0">
+    <div className="flex items-center gap-x-2">
+      <span
+        className="h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{ background: deduction ? DEDUCT_GREY : INCOME_GREEN }}
+      />
+      <Text size="small" className="text-ui-fg-subtle">
+        {label}
+      </Text>
+    </div>
+    <span className="text-ui-fg-base text-sm font-medium tabular-nums">
+      {deduction ? "−" : ""}
+      <Money amount={amount} currency={currency} />
     </span>
   </div>
 )
 
-const Op = ({ children }: { children: ReactNode }) => (
-  <span className="text-ui-fg-muted hidden self-center text-lg sm:inline">
-    {children}
-  </span>
-)
+const PnlSummary = ({
+  overview,
+  cur,
+}: {
+  overview: RevenueOverview
+  cur: string
+}) => {
+  const income = overview.subscriptionRevenue + overview.adRevenue
+  const deductions =
+    overview.commission + overview.expenseTotal + overview.taxTotal
+  const positive = overview.net >= 0
+  const margin = income > 0 ? Math.round((overview.net / income) * 100) : null
+  const subPct = income > 0 ? (overview.subscriptionRevenue / income) * 100 : 0
+  const adPct = income > 0 ? (overview.adRevenue / income) * 100 : 0
+
+  return (
+    <Container className="overflow-hidden p-0">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 p-5 pb-4">
+        <div className="flex flex-col gap-y-1">
+          <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
+            Net Kâr
+          </Text>
+          <div className="flex items-baseline gap-x-2">
+            <span
+              className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl"
+              style={{ color: positive ? "#059669" : "#dc2626" }}
+            >
+              <Money amount={overview.net} currency={cur} />
+            </span>
+            {margin != null ? (
+              <span className="bg-ui-bg-component text-ui-fg-subtle rounded-full px-2 py-0.5 text-xs tabular-nums">
+                %{margin} marj
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <Text size="small" className="text-ui-fg-muted capitalize">
+          {monthLabel()}
+        </Text>
+      </div>
+
+      {income > 0 ? (
+        <div className="px-5 pb-4">
+          <div className="bg-ui-bg-component flex h-2 w-full overflow-hidden rounded-full">
+            <div style={{ width: `${subPct}%`, background: INCOME_GREEN }} />
+            <div style={{ width: `${adPct}%`, background: AD_BLUE }} />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="flex items-center gap-x-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: INCOME_GREEN }} />
+              <Text size="xsmall" className="text-ui-fg-muted">Abonelik %{Math.round(subPct)}</Text>
+            </span>
+            <span className="flex items-center gap-x-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: AD_BLUE }} />
+              <Text size="xsmall" className="text-ui-fg-muted">Reklam %{Math.round(adPct)}</Text>
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="border-ui-border-base grid grid-cols-1 border-t sm:grid-cols-2">
+        <div className="border-ui-border-base p-5 sm:border-r">
+          <div className="mb-1 flex items-center justify-between">
+            <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
+              Gelir
+            </Text>
+            <span className="text-ui-fg-base text-sm font-semibold tabular-nums">
+              <Money amount={income} currency={cur} />
+            </span>
+          </div>
+          <PnlRow label="Abonelik" amount={overview.subscriptionRevenue} currency={cur} />
+          <PnlRow label="Reklam" amount={overview.adRevenue} currency={cur} />
+        </div>
+        <div className="border-ui-border-base border-t p-5 sm:border-t-0">
+          <div className="mb-1 flex items-center justify-between">
+            <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
+              Kesintiler
+            </Text>
+            <span className="text-ui-fg-base text-sm font-semibold tabular-nums">
+              −<Money amount={deductions} currency={cur} />
+            </span>
+          </div>
+          {overview.commission > 0 ? (
+            <PnlRow label="Komisyon" amount={overview.commission} currency={cur} deduction />
+          ) : null}
+          <PnlRow label="Gider" amount={overview.expenseTotal} currency={cur} deduction />
+          {overview.taxTotal > 0 ? (
+            <PnlRow label="Vergi" amount={overview.taxTotal} currency={cur} deduction />
+          ) : null}
+        </div>
+      </div>
+    </Container>
+  )
+}
 
 export const Component = () => {
   const { overview, isLoading, isError } = useRevenueOverview()
@@ -185,43 +280,7 @@ export const Component = () => {
   return (
     <div className="flex flex-col gap-y-3">
       {/* P&L ŞERİDİ */}
-      <Container className="flex flex-col gap-y-2 p-5 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-x-6 sm:gap-y-4">
-        <PnlFig label="Abonelik">
-          <Money amount={overview.subscriptionRevenue} currency={cur} />
-        </PnlFig>
-        <Op>+</Op>
-        <PnlFig label="Reklam">
-          <Money amount={overview.adRevenue} currency={cur} />
-        </PnlFig>
-        {overview.commission > 0 ? (
-          <>
-            <Op>−</Op>
-            <PnlFig label="Komisyon">
-              <Money amount={overview.commission} currency={cur} />
-            </PnlFig>
-          </>
-        ) : null}
-        <Op>−</Op>
-        <PnlFig label="Gider">
-          <Money amount={overview.expenseTotal} currency={cur} />
-        </PnlFig>
-        {overview.taxTotal > 0 ? (
-          <>
-            <Op>−</Op>
-            <PnlFig label="Vergi">
-              <Money amount={overview.taxTotal} currency={cur} />
-            </PnlFig>
-          </>
-        ) : null}
-        <Op>=</Op>
-        <PnlFig
-          label="Net"
-          strong
-          accent={overview.net >= 0 ? "positive" : "negative"}
-        >
-          <Money amount={overview.net} currency={cur} />
-        </PnlFig>
-      </Container>
+      <PnlSummary overview={overview} cur={cur} />
 
       <Tabs defaultValue="genel">
         <Tabs.List>
