@@ -127,29 +127,37 @@ class RevenueModuleService extends MedusaService({
     return [...byApp.values()]
   }
 
-  // AdMob snapshot'larının (app|platform) en güncel hali.
-  private async latestAdmobSnaps(): Promise<any[]> {
-    const snaps = await this.listMetricSnapshots(
+  // Tüm AdMob günlük snapshot'ları (gün gün saklanır).
+  private async admobSnaps(): Promise<any[]> {
+    return this.listMetricSnapshots(
       { source_type: "admob" },
       { order: { date: "DESC" }, take: 5000 }
     )
-    const latest = new Map<string, any>()
-    for (const s of snaps) {
-      const k = `${s.app_id}|${s.platform}`
-      if (!latest.has(k)) {
-        latest.set(k, s)
-      }
-    }
-    return [...latest.values()]
   }
 
-  // Reklam geliri (app başına son hali) — kendi para birimiyle.
-  private async adRevenueByApp(): Promise<
-    Map<string, { amount: number; currency: string }>
-  > {
+  // Takvim-ayı sınırları (UTC): bu ayın 1'i ve geçen ayın 1'i.
+  private monthBounds(): { thisStart: Date; lastStart: Date } {
+    const now = new Date()
+    return {
+      thisStart: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+      lastStart: new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)
+      ),
+    }
+  }
+
+  // Reklam geliri (app başına) — [start, end) takvim aralığında, kendi birimiyle.
+  private async adRevenueByApp(
+    start: Date,
+    end?: Date
+  ): Promise<Map<string, { amount: number; currency: string }>> {
     const byApp = new Map<string, { amount: number; currency: string }>()
-    for (const s of await this.latestAdmobSnaps()) {
+    for (const s of await this.admobSnaps()) {
       if (!s.app_id) {
+        continue
+      }
+      const d = new Date(s.date)
+      if (d < start || (end && d >= end)) {
         continue
       }
       const cur = byApp.get(s.app_id) ?? {
@@ -182,7 +190,8 @@ class RevenueModuleService extends MedusaService({
     display = (display || "USD").toUpperCase()
     const apps = await this.listApps({}, { order: { name: "ASC" }, take: 200 })
     const latest = await this.latestPerApp()
-    const adByApp = await this.adRevenueByApp()
+    const { thisStart } = this.monthBounds()
+    const adByApp = await this.adRevenueByApp(thisStart)
     const byId = new Map(latest.map((s) => [s.app_id, s]))
     const rates = await this.fxMap(
       [
@@ -246,7 +255,8 @@ class RevenueModuleService extends MedusaService({
         currency: s.currency,
       }))
       .sort((a, b) => b.revenue - a.revenue)
-    const ad = (await this.adRevenueByApp()).get(appId)
+    const { thisStart } = this.monthBounds()
+    const ad = (await this.adRevenueByApp(thisStart)).get(appId)
     return {
       id: appId,
       name: app?.name ?? appId,
@@ -268,7 +278,8 @@ class RevenueModuleService extends MedusaService({
   async getOverview(display = "USD") {
     display = (display || "USD").toUpperCase()
     const subs = await this.latestPerApp()
-    const adSnaps = await this.latestAdmobSnaps()
+    const adSnaps = await this.admobSnaps()
+    const { thisStart, lastStart } = this.monthBounds()
     const expenses = await this.listExpenses({}, { take: 1000 })
 
     const rates = await this.fxMap(
@@ -290,18 +301,25 @@ class RevenueModuleService extends MedusaService({
       subscriptionRevenue += conv(s.gross_revenue, s.currency)
       mrr += conv(s.mrr, s.currency)
     }
+    // Reklam: bu ay (takvim 1→bugün) ana sayı; geçen ay karşılaştırma için.
     let adRevenue = 0
     let adImpressions = 0
+    let adRevenueLastMonth = 0
     const platAgg = new Map<string, { amount: number; impressions: number }>()
     for (const s of adSnaps) {
+      const d = new Date(s.date)
       const v = conv(s.ad_revenue, s.currency)
-      const imp = Number(s.ad_impressions ?? 0)
-      adRevenue += v
-      adImpressions += imp
-      const p = platAgg.get(s.platform) ?? { amount: 0, impressions: 0 }
-      p.amount += v
-      p.impressions += imp
-      platAgg.set(s.platform, p)
+      if (d >= thisStart) {
+        adRevenue += v
+        const imp = Number(s.ad_impressions ?? 0)
+        adImpressions += imp
+        const p = platAgg.get(s.platform) ?? { amount: 0, impressions: 0 }
+        p.amount += v
+        p.impressions += imp
+        platAgg.set(s.platform, p)
+      } else if (d >= lastStart) {
+        adRevenueLastMonth += v
+      }
     }
     const ecpm = (amount: number, imp: number) =>
       imp > 0 ? Number(((amount / imp) * 1000).toFixed(2)) : 0
@@ -320,6 +338,7 @@ class RevenueModuleService extends MedusaService({
       mrr: r2(mrr),
       subscriptionRevenue: r2(subscriptionRevenue),
       adRevenue: r2(adRevenue),
+      adRevenueLastMonth: r2(adRevenueLastMonth),
       adImpressions,
       adEcpm: ecpm(adRevenue, adImpressions),
       totalRevenue: r2(totalRevenue),

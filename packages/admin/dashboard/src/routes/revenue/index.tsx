@@ -304,11 +304,16 @@ export const Component = () => {
 
         {/* REKLAM: AdMob dünyası */}
         <Tabs.Content value="reklam" className="mt-3 flex flex-col gap-y-3">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             <StatCard
-              label="Reklam Geliri"
-              sub="Son 28 gün"
+              label="Bu Ay"
+              sub="Takvim ayı (1→bugün)"
               value={<Money amount={overview.adRevenue} currency={cur} />}
+            />
+            <StatCard
+              label="Geçen Ay"
+              sub="Tam ay"
+              value={<Money amount={overview.adRevenueLastMonth} currency={cur} />}
             />
             <StatCard
               label="eCPM"
@@ -317,7 +322,7 @@ export const Component = () => {
             />
             <StatCard
               label="Gösterim"
-              sub="Son 28 gün"
+              sub="Bu ay"
               value={num(overview.adImpressions)}
             />
           </div>

@@ -22,6 +22,7 @@ export type RevenueOverview = {
   revenue28d: number
   subscriptionRevenue: number
   adRevenue: number
+  adRevenueLastMonth: number
   adImpressions: number
   adEcpm: number
   totalRevenue: number

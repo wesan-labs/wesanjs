@@ -73,14 +73,27 @@ export async function syncAdmob(
     publisherId,
     currency,
   })
-  const rows = await connector.fetchReport(28)
+  // Geçen ayın 1'inden bugüne — takvim-ayı (Bu ay / Geçen ay) için yeterli.
+  const now = new Date()
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+  const rows = await connector.fetchReport(start, now)
 
-  // (app, platform) bazında topla
+  // AdMob DATE "YYYYMMDD" → Date (gün başı).
+  const parseDay = (s: string): Date | null => {
+    if (/^\d{8}$/.test(s)) {
+      return new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`)
+    }
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? null : d
+  }
+
+  // GÜN GÜN sakla: (app, platform, gün) bazında — takvim-ayı doğru toplansın.
   const agg = new Map<
     string,
     {
       appId: string | null
       platform: string
+      day: Date
       amount: number
       impressions: number
       currency: string
@@ -90,11 +103,16 @@ export async function syncAdmob(
   for (const r of rows) {
     const appId =
       byExt.get(r.appExternalId) ?? byName.get(r.appName.toLowerCase()) ?? null
-    const key = `${appId ?? "?" + r.appName}|${r.platform}`
+    const day = parseDay(r.date)
+    if (!day) {
+      continue
+    }
+    const key = `${appId ?? "?" + r.appName}|${r.platform}|${r.date}`
     const cur =
       agg.get(key) ?? {
         appId,
         platform: r.platform,
+        day,
         amount: 0,
         impressions: 0,
         currency: r.currency,
@@ -105,17 +123,17 @@ export async function syncAdmob(
     agg.set(key, cur)
   }
 
-  const today = new Date()
   let synced = 0
   let skipped = 0
+  const unmatched = new Set<string>()
   for (const v of agg.values()) {
     if (!v.appId) {
-      logger.warn(`[revenue] AdMob app eşleşmedi: ${v.name}`)
+      unmatched.add(v.name)
       skipped++
       continue
     }
     await service.recordSnapshot({
-      date: today,
+      date: v.day,
       appId: v.appId,
       platform: v.platform,
       sourceType: "admob",
@@ -126,6 +144,9 @@ export async function syncAdmob(
       },
     })
     synced++
+  }
+  for (const name of unmatched) {
+    logger.warn(`[revenue] AdMob app eşleşmedi: ${name}`)
   }
   logger.info(`[revenue] AdMob sync: ${synced} app/platform, ${skipped} unmatched`)
   return { synced, skipped }

@@ -50,11 +50,14 @@ export class AdMobConnector {
     return data.access_token
   }
 
-  // Son `days` günün app×platform reklam gelirini döner.
-  async fetchReport(days = 28): Promise<AdRow[]> {
+  // [startDate, endDate] aralığının GÜNLÜK app×platform reklam gelirini döner.
+  async fetchReport(
+    startDate: Date,
+    endDate: Date = new Date()
+  ): Promise<AdRow[]> {
     const token = await this.accessToken()
-    const end = new Date()
-    const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000)
+    const start = startDate
+    const end = endDate
     const ymd = (d: Date) => ({
       year: d.getUTCFullYear(),
       month: d.getUTCMonth() + 1,
