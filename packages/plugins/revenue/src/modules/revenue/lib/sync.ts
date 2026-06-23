@@ -52,8 +52,33 @@ export async function syncRevenuecatSources(
       })
       const metrics = await connector.fetchMetrics()
       const today = new Date()
+      const monthStart = new Date(
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1)
+      )
 
-      // app toplamı
+      // GÜN GÜN abonelik geliri (measure 0) — geçen ay başından bugüne.
+      // Reklamla aynı desen: takvim-ayına toplanabilsin.
+      try {
+        const daily = await connector.fetchRevenueDaily(monthStart, today)
+        for (const d of daily) {
+          await service.recordSnapshot({
+            date: new Date(d.date),
+            appId: src.app_id,
+            platform: "all",
+            sourceType: "revenuecat",
+            fields: {
+              gross_revenue: Number(d.value.toFixed(2)),
+              currency: metrics.currency,
+            },
+          })
+        }
+      } catch (e: any) {
+        logger.warn(
+          `[revenue] ${src.name} revenue-daily failed: ${e?.message ?? e}`
+        )
+      }
+
+      // Güncel durum (MRR/abone) bugünün satırına — gross_revenue'ye DOKUNMA.
       await service.recordSnapshot({
         date: today,
         appId: src.app_id,
@@ -65,7 +90,6 @@ export async function syncRevenuecatSources(
           active_trials: metrics.activeTrials,
           new_customers: metrics.newCustomers,
           active_users: metrics.activeUsers,
-          gross_revenue: metrics.revenue28d,
           currency: metrics.currency,
         },
       })

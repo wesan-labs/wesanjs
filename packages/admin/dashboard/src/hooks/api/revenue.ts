@@ -21,6 +21,7 @@ export type RevenueOverview = {
   activeSubscriptions: number
   revenue28d: number
   subscriptionRevenue: number
+  subscriptionRevenueLastMonth: number
   adRevenue: number
   adRevenueLastMonth: number
   adImpressions: number

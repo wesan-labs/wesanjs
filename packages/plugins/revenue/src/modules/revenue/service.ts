@@ -170,6 +170,38 @@ class RevenueModuleService extends MedusaService({
     return byApp
   }
 
+  // Tüm abonelik (revenuecat, platform=all) günlük snapshot'ları.
+  private async subsSnaps(): Promise<any[]> {
+    return this.listMetricSnapshots(
+      { platform: "all", source_type: "revenuecat" },
+      { order: { date: "DESC" }, take: 5000 }
+    )
+  }
+
+  // Abonelik geliri (app başına) — [start, end) takvim aralığında, kendi birimiyle.
+  private async subsRevenueByApp(
+    start: Date,
+    end?: Date
+  ): Promise<Map<string, { amount: number; currency: string }>> {
+    const byApp = new Map<string, { amount: number; currency: string }>()
+    for (const s of await this.subsSnaps()) {
+      if (!s.app_id) {
+        continue
+      }
+      const d = new Date(s.date)
+      if (d < start || (end && d >= end)) {
+        continue
+      }
+      const cur = byApp.get(s.app_id) ?? {
+        amount: 0,
+        currency: s.currency ?? "USD",
+      }
+      cur.amount += Number(s.gross_revenue ?? 0)
+      byApp.set(s.app_id, cur)
+    }
+    return byApp
+  }
+
   // Verilen para birimleri için display'e kur tablosu (distinct → tek FX çağrısı).
   private async fxMap(
     currencies: Iterable<string>,
@@ -192,6 +224,7 @@ class RevenueModuleService extends MedusaService({
     const latest = await this.latestPerApp()
     const { thisStart } = this.monthBounds()
     const adByApp = await this.adRevenueByApp(thisStart)
+    const subsByApp = await this.subsRevenueByApp(thisStart)
     const byId = new Map(latest.map((s) => [s.app_id, s]))
     const rates = await this.fxMap(
       [
@@ -206,10 +239,11 @@ class RevenueModuleService extends MedusaService({
     return apps.map((a) => {
       const s = byId.get(a.id)
       const ad = adByApp.get(a.id)
-      const revenue28d = s ? Number(s.gross_revenue) : 0
+      const sub = subsByApp.get(a.id)
+      const revenue28d = sub?.amount ?? 0 // artık bu ay (takvim)
       const adRevenue = ad?.amount ?? 0
       const adCurrency = ad?.currency ?? display
-      const subCurrency = s?.currency ?? "USD"
+      const subCurrency = sub?.currency ?? s?.currency ?? "USD"
       return {
         id: a.id,
         name: a.name,
@@ -257,11 +291,12 @@ class RevenueModuleService extends MedusaService({
       .sort((a, b) => b.revenue - a.revenue)
     const { thisStart } = this.monthBounds()
     const ad = (await this.adRevenueByApp(thisStart)).get(appId)
+    const sub = (await this.subsRevenueByApp(thisStart)).get(appId)
     return {
       id: appId,
       name: app?.name ?? appId,
       mrr: Number(all?.mrr ?? 0),
-      revenue28d: Number(all?.gross_revenue ?? 0),
+      revenue28d: sub?.amount ?? 0, // bu ay (takvim)
       adRevenue: ad?.amount ?? 0,
       adCurrency: ad?.currency ?? (all?.currency ?? "USD"),
       activeSubscriptions: all?.active_subscriptions ?? 0,
@@ -374,11 +409,20 @@ class RevenueModuleService extends MedusaService({
     const r2 = (n: number) => Number(n.toFixed(2))
     const sumI = (f: string) => subs.reduce((a, s) => a + (s[f] ?? 0), 0)
 
-    let subscriptionRevenue = 0
+    // Abonelik: bu ay / geçen ay (takvim) — reklamla aynı pencere.
+    const subsThis = await this.subsRevenueByApp(thisStart)
+    const subsLast = await this.subsRevenueByApp(lastStart, thisStart)
     let mrr = 0
     for (const s of subs) {
-      subscriptionRevenue += conv(s.gross_revenue, s.currency)
       mrr += conv(s.mrr, s.currency)
+    }
+    let subscriptionRevenue = 0
+    for (const a of subsThis.values()) {
+      subscriptionRevenue += conv(a.amount, a.currency)
+    }
+    let subscriptionRevenueLastMonth = 0
+    for (const a of subsLast.values()) {
+      subscriptionRevenueLastMonth += conv(a.amount, a.currency)
     }
     // Reklam: bu ay (takvim 1→bugün) ana sayı; geçen ay karşılaştırma için.
     let adRevenue = 0
@@ -416,6 +460,7 @@ class RevenueModuleService extends MedusaService({
       currency: display,
       mrr: r2(mrr),
       subscriptionRevenue: r2(subscriptionRevenue),
+      subscriptionRevenueLastMonth: r2(subscriptionRevenueLastMonth),
       adRevenue: r2(adRevenue),
       adRevenueLastMonth: r2(adRevenueLastMonth),
       adImpressions,

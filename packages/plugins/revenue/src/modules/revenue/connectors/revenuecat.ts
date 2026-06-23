@@ -60,21 +60,57 @@ export class RevenueCatConnector implements RevenueConnector {
       throw new Error(`RevenueCat chart failed: ${res.status} ${await res.text()}`)
     }
     const body = (await res.json()) as {
-      values?: Array<{ cohort: number; value: number; segment?: number }>
+      values?: Array<{
+        cohort: number
+        value: number
+        segment?: number
+        measure?: number
+      }>
       segments?: Array<{ display_name: string }>
     }
     const segmentNames = (body.segments ?? []).map((s) => s.display_name)
-    const points: ChartPoint[] = (body.values ?? []).map((v) => {
-      const point: ChartPoint = {
-        date: new Date(v.cohort * 1000).toISOString().slice(0, 10),
-        value: v.value,
-      }
-      if (v.segment !== undefined && segmentNames[v.segment] !== undefined) {
-        point.segment = segmentNames[v.segment]
-      }
-      return point
-    })
+    // measure 0 = "Revenue"; measure 1 = "Transactions" (adet) — geliri kirletmesin.
+    const points: ChartPoint[] = (body.values ?? [])
+      .filter((v) => (v.measure ?? 0) === 0)
+      .map((v) => {
+        const point: ChartPoint = {
+          date: new Date(v.cohort * 1000).toISOString().slice(0, 10),
+          value: v.value,
+        }
+        if (v.segment !== undefined && segmentNames[v.segment] !== undefined) {
+          point.segment = segmentNames[v.segment]
+        }
+        return point
+      })
     return { points, segments: segmentNames }
+  }
+
+  // Günlük abonelik geliri (measure 0) — [start, end] takvim aralığında.
+  async fetchRevenueDaily(
+    startDate: Date,
+    endDate: Date
+  ): Promise<Array<{ date: string; value: number }>> {
+    const ymd = (d: Date) => d.toISOString().slice(0, 10)
+    const url =
+      `${RC_BASE}/projects/${this.opts.projectId}/charts/revenue` +
+      `?start_date=${ymd(startDate)}&end_date=${ymd(endDate)}&resolution=day`
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${this.opts.apiKey}` },
+    })
+    if (!res.ok) {
+      throw new Error(
+        `RevenueCat revenue-daily failed: ${res.status} ${await res.text()}`
+      )
+    }
+    const body = (await res.json()) as {
+      values?: Array<{ cohort: number; value: number; measure?: number }>
+    }
+    return (body.values ?? [])
+      .filter((v) => (v.measure ?? 0) === 0)
+      .map((v) => ({
+        date: new Date(v.cohort * 1000).toISOString().slice(0, 10),
+        value: Number(v.value) || 0,
+      }))
   }
 
   parseWebhook(body: unknown): CanonicalEvent[] {

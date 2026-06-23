@@ -293,13 +293,28 @@ export const Component = () => {
         <Tabs.Content value="abonelik" className="mt-3 flex flex-col gap-y-3">
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             <StatCard
+              label="Bu Ay"
+              sub="Takvim ayı (1→bugün)"
+              value={<Money amount={overview.subscriptionRevenue} currency={cur} />}
+            />
+            <StatCard
+              label="Geçen Ay"
+              sub="Tam ay"
+              value={
+                <Money amount={overview.subscriptionRevenueLastMonth} currency={cur} />
+              }
+            />
+            <StatCard
               label="MRR"
               sub="Aylık yinelenen"
               value={<Money amount={overview.mrr} currency={cur} />}
             />
             <StatCard label="Aktif Abonelik" sub="Şu an" value={num(overview.activeSubscriptions)} />
+          </div>
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
             <StatCard label="Trial" sub="Şu an" value={num(overview.activeTrials)} />
             <StatCard label="Yeni Müşteri" sub="Son 28 gün" value={num(overview.newCustomers)} />
+            <StatCard label="Aktif Kullanıcı" sub="Son 28 gün" value={num(overview.activeUsers)} />
           </div>
 
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
