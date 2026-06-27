@@ -3745,6 +3745,57 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@medusajs/content-plugin@workspace:packages/plugins/content":
+  version: 0.0.0-use.local
+  resolution: "@medusajs/content-plugin@workspace:packages/plugins/content"
+  dependencies:
+    "@medusajs/admin-sdk": 2.15.5
+    "@medusajs/cli": 2.15.5
+    "@medusajs/dashboard": 2.15.5
+    "@medusajs/framework": 2.15.5
+    "@medusajs/icons": 2.15.5
+    "@medusajs/test-utils": 2.15.5
+    "@medusajs/types": 2.15.5
+    "@medusajs/ui": 4.1.15
+    "@medusajs/ui-preset": 2.15.5
+    "@swc/core": 1.5.7
+    "@types/node": ^20.0.0
+    cross-env: ^7.0.3
+    ts-node: ^10.9.2
+    typescript: ^5.7.3
+  peerDependencies:
+    "@medusajs/admin-sdk": 2.15.5
+    "@medusajs/cli": 2.15.5
+    "@medusajs/dashboard": 2.15.5
+    "@medusajs/framework": 2.15.5
+    "@medusajs/icons": 2.15.5
+    "@medusajs/test-utils": 2.15.5
+    "@medusajs/ui": 4.1.15
+    react: ^18.3.1
+    react-dom: ^18.3.1
+    react-router-dom: 6.30.4
+  peerDependenciesMeta:
+    "@medusajs/admin-sdk":
+      optional: true
+    "@medusajs/cli":
+      optional: true
+    "@medusajs/dashboard":
+      optional: true
+    "@medusajs/icons":
+      optional: true
+    "@medusajs/test-utils":
+      optional: true
+    "@medusajs/ui":
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    react-router-dom:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "@medusajs/core-flows@2.15.5, @medusajs/core-flows@workspace:*, @medusajs/core-flows@workspace:^, @medusajs/core-flows@workspace:packages/core/core-flows":
   version: 0.0.0-use.local
   resolution: "@medusajs/core-flows@workspace:packages/core/core-flows"
