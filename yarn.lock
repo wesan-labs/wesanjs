@@ -2621,6 +2621,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@imgly/background-removal@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "@imgly/background-removal@npm:1.7.0"
+  dependencies:
+    lodash-es: ^4.17.21
+    ndarray: ~1.0.0
+    zod: ^3.23.8
+  peerDependencies:
+    onnxruntime-web: 1.21.0
+  checksum: b8040fc2bd8faa62a5a5167f43134bedb34245b63fb802493c3883a00406cb56718e8080d37a5d25ed0a7108d5942b2a8192d7696d17d5f470072a9bec93749e
+  languageName: node
+  linkType: hard
+
 "@inquirer/ansi@npm:^1.0.2":
   version: 1.0.2
   resolution: "@inquirer/ansi@npm:1.0.2"
@@ -3681,6 +3694,57 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@medusajs/cms-plugin@workspace:packages/plugins/cms":
+  version: 0.0.0-use.local
+  resolution: "@medusajs/cms-plugin@workspace:packages/plugins/cms"
+  dependencies:
+    "@medusajs/admin-sdk": 2.15.5
+    "@medusajs/cli": 2.15.5
+    "@medusajs/dashboard": 2.15.5
+    "@medusajs/framework": 2.15.5
+    "@medusajs/icons": 2.15.5
+    "@medusajs/test-utils": 2.15.5
+    "@medusajs/types": 2.15.5
+    "@medusajs/ui": 4.1.15
+    "@medusajs/ui-preset": 2.15.5
+    "@swc/core": 1.5.7
+    "@types/node": ^20.0.0
+    cross-env: ^7.0.3
+    ts-node: ^10.9.2
+    typescript: ^5.7.3
+  peerDependencies:
+    "@medusajs/admin-sdk": 2.15.5
+    "@medusajs/cli": 2.15.5
+    "@medusajs/dashboard": 2.15.5
+    "@medusajs/framework": 2.15.5
+    "@medusajs/icons": 2.15.5
+    "@medusajs/test-utils": 2.15.5
+    "@medusajs/ui": 4.1.15
+    react: ^18.3.1
+    react-dom: ^18.3.1
+    react-router-dom: 6.30.4
+  peerDependenciesMeta:
+    "@medusajs/admin-sdk":
+      optional: true
+    "@medusajs/cli":
+      optional: true
+    "@medusajs/dashboard":
+      optional: true
+    "@medusajs/icons":
+      optional: true
+    "@medusajs/test-utils":
+      optional: true
+    "@medusajs/ui":
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    react-router-dom:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "@medusajs/core-flows@2.15.5, @medusajs/core-flows@workspace:*, @medusajs/core-flows@workspace:^, @medusajs/core-flows@workspace:packages/core/core-flows":
   version: 0.0.0-use.local
   resolution: "@medusajs/core-flows@workspace:packages/core/core-flows"
@@ -3726,6 +3790,7 @@ __metadata:
     "@dnd-kit/utilities": ^3.2.2
     "@hookform/error-message": ^2.0.1
     "@hookform/resolvers": 3.4.2
+    "@imgly/background-removal": ^1.7.0
     "@medusajs/admin-shared": 2.15.5
     "@medusajs/admin-vite-plugin": 2.15.5
     "@medusajs/icons": 2.15.5
@@ -3752,6 +3817,7 @@ __metadata:
     maplibre-gl: ^5.24.0
     match-sorter: ^6.3.4
     motion: ^11.15.0
+    onnxruntime-web: 1.21.0
     qrcode: ^1.5.4
     qs: ^6.12.1
     radix-ui: 1.1.2
@@ -5706,10 +5772,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@protobufjs/codegen@npm:^2.0.5":
+  version: 2.0.5
+  resolution: "@protobufjs/codegen@npm:2.0.5"
+  checksum: 1b8a2ae56ee60a56e9d205cd4b6072a1503c5069b8ebb905710f974ff0098a0d0700641c137e0a8d98dedf14423156a106a9433695cbf52574810f55000fdcab
+  languageName: node
+  linkType: hard
+
 "@protobufjs/eventemitter@npm:^1.1.0":
   version: 1.1.0
   resolution: "@protobufjs/eventemitter@npm:1.1.0"
   checksum: 1eb0a75180e5206d1033e4138212a8c7089a3d418c6dfa5a6ce42e593a4ae2e5892c4ef7421f38092badba4040ea6a45f0928869989411001d8c1018ea9a6e70
+  languageName: node
+  linkType: hard
+
+"@protobufjs/eventemitter@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@protobufjs/eventemitter@npm:1.1.1"
+  checksum: 8e06193d4629c5e7c09d4f8c2ddba8fc4dfa739f0149f33a1d901568d35bb7b8b5277a4e8452baf3bdd0b302fd599cf255d193267aa93a0a4747e23cd073c4ac
   languageName: node
   linkType: hard
 
@@ -5720,6 +5800,15 @@ __metadata:
     "@protobufjs/aspromise": ^1.1.1
     "@protobufjs/inquire": ^1.1.0
   checksum: cda6a3dc2d50a182c5865b160f72077aac197046600091dbb005dd0a66db9cce3c5eaed6d470ac8ed49d7bcbeef6ee5f0bc288db5ff9a70cbd003e5909065233
+  languageName: node
+  linkType: hard
+
+"@protobufjs/fetch@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@protobufjs/fetch@npm:1.1.1"
+  dependencies:
+    "@protobufjs/aspromise": ^1.1.1
+  checksum: a497ff5433854e8577f0427983ea39b9113b49a8120f94515291d763327061d2c3013e60e24ea436d091dafae01a0f6eb1867e3b1616045d96a31d8b3c646ed4
   languageName: node
   linkType: hard
 
@@ -5755,6 +5844,13 @@ __metadata:
   version: 1.1.0
   resolution: "@protobufjs/utf8@npm:1.1.0"
   checksum: a3fe31fe3fa29aa3349e2e04ee13dc170cc6af7c23d92ad49e3eeaf79b9766264544d3da824dba93b7855bd6a2982fb40032ef40693da98a136d835752beb487
+  languageName: node
+  linkType: hard
+
+"@protobufjs/utf8@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@protobufjs/utf8@npm:1.1.1"
+  checksum: 641fc145f00626405e8984b6e90b9edcbcc072ffc82d0647ca3176e09c730b2d022f988e65f011a7a17e2e4d77cde7733643aa10d8ac2bfa30f134dbcad553fd
   languageName: node
   linkType: hard
 
@@ -18608,6 +18704,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"flatbuffers@npm:^25.1.24":
+  version: 25.9.23
+  resolution: "flatbuffers@npm:25.9.23"
+  checksum: 957c4ae2a02be1703c98b36b4dc8ceb81613cf8e2333026afc95a7b68b088bed5458056dc29d0ab7ce8bc403b8c003732b0968d24aba46f5e7c8f71789a6bd9e
+  languageName: node
+  linkType: hard
+
 "flatted@npm:^3.2.9":
   version: 3.3.3
   resolution: "flatted@npm:3.3.3"
@@ -19204,6 +19307,13 @@ __metadata:
   version: 1.3.0
   resolution: "growly@npm:1.3.0"
   checksum: 3043bd5c064e87f89e8c9b66894ed09fd882c7fa645621a543b45b72f040c7241e25061207a858ab191be2fbdac34795ff57c2a40962b154a6b2908a5e509252
+  languageName: node
+  linkType: hard
+
+"guid-typescript@npm:^1.0.9":
+  version: 1.0.9
+  resolution: "guid-typescript@npm:1.0.9"
+  checksum: fa0a2b2b4e06e0976a81c947b74e114b92f6647e84b52e24ab0981d2fdbaa1a640641d8fd269004dd7c581baebeb4f9d9782b74391e717e47c9b822bea4b3be6
   languageName: node
   linkType: hard
 
@@ -19964,6 +20074,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"iota-array@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "iota-array@npm:1.0.0"
+  checksum: a6bfc7d5bf0338ade227b302eda52cea3db44cc6dd5803154147cdcee28e9cb65ca76c5859ab2bfe21d91ecc945c57a0dd446bbc657581bbdf92cda9c24def56
+  languageName: node
+  linkType: hard
+
 "ip-address@npm:^10.0.1":
   version: 10.1.0
   resolution: "ip-address@npm:10.1.0"
@@ -20054,6 +20171,13 @@ __metadata:
     call-bound: ^1.0.3
     has-tostringtag: ^1.0.2
   checksum: 36ff6baf6bd18b3130186990026f5a95c709345c39cd368468e6c1b6ab52201e9fd26d8e1f4c066357b4938b0f0401e1a5000e08257787c1a02f3a719457001e
+  languageName: node
+  linkType: hard
+
+"is-buffer@npm:^1.0.2":
+  version: 1.1.6
+  resolution: "is-buffer@npm:1.1.6"
+  checksum: ae18aa0b6e113d6c490ad1db5e8df9bdb57758382b313f5a22c9c61084875c6396d50bbf49315f5b1926d142d74dfb8d31b40d993a383e0a158b15fea7a82234
   languageName: node
   linkType: hard
 
@@ -21820,6 +21944,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash-es@npm:^4.17.21":
+  version: 4.18.1
+  resolution: "lodash-es@npm:4.18.1"
+  checksum: 35d4dcf87ef07f8d090f409447575800108057e360b445f590d0d25d09e3d1e33a163d2fc100d4d072b0f901d5e2fc533cd7c4bfd8eeb38a06abec693823c8b8
+  languageName: node
+  linkType: hard
+
 "lodash.camelcase@npm:^4.3.0":
   version: 4.3.0
   resolution: "lodash.camelcase@npm:4.3.0"
@@ -22003,7 +22134,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"long@npm:^5.0.0":
+"long@npm:^5.0.0, long@npm:^5.2.3, long@npm:^5.3.2":
   version: 5.3.2
   resolution: "long@npm:5.3.2"
   checksum: 7130fe1cbce2dca06734b35b70d380ca3f70271c7f8852c922a7c62c86c4e35f0c39290565eca7133c625908d40e126ac57c02b1b1a4636b9457d77e1e60b981
@@ -23049,6 +23180,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ndarray@npm:~1.0.0":
+  version: 1.0.19
+  resolution: "ndarray@npm:1.0.19"
+  dependencies:
+    iota-array: ^1.0.0
+    is-buffer: ^1.0.2
+  checksum: e5929a845dae326052ff024f4f624b5f81e0be750224495baa0c7a02afd4e1117198452465c052f0bd111358b05c15655a797ec959dbbbe042c6ae573de09046
+  languageName: node
+  linkType: hard
+
 "negotiator@npm:0.6.3":
   version: 0.6.3
   resolution: "negotiator@npm:0.6.3"
@@ -23613,6 +23754,27 @@ __metadata:
   dependencies:
     mimic-fn: ^4.0.0
   checksum: 4eef7c6abfef697dd4479345a4100c382d73c149d2d56170a54a07418c50816937ad09500e1ed1e79d235989d073a9bade8557122aee24f0576ecde0f392bb6c
+  languageName: node
+  linkType: hard
+
+"onnxruntime-common@npm:1.21.0":
+  version: 1.21.0
+  resolution: "onnxruntime-common@npm:1.21.0"
+  checksum: 424a83ad21b770fbf69e85f9736911ef238ea5b3ace73fa9a49fc584c98eed0a2f2fe977d2277fe725f8f6ec65d1fce3ad635c2d0a908163c6a7a03cc7478775
+  languageName: node
+  linkType: hard
+
+"onnxruntime-web@npm:1.21.0":
+  version: 1.21.0
+  resolution: "onnxruntime-web@npm:1.21.0"
+  dependencies:
+    flatbuffers: ^25.1.24
+    guid-typescript: ^1.0.9
+    long: ^5.2.3
+    onnxruntime-common: 1.21.0
+    platform: ^1.3.6
+    protobufjs: ^7.2.4
+  checksum: 368436584da7aabda00804825aafaaec5f24704c9b4779fa9ddc76628e3079105405e1576b3a1158c51e26d6e2ce674eb6ac61bb05b4266dfe9e39e939c05e70
   languageName: node
   linkType: hard
 
@@ -24413,6 +24575,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"platform@npm:^1.3.6":
+  version: 1.3.6
+  resolution: "platform@npm:1.3.6"
+  checksum: 69f2eb692e15f1a343dd0d9347babd9ca933824c8673096be746ff66f99f2bdc909fadd8609076132e6ec768349080babb7362299f2a7f885b98f1254ae6224b
+  languageName: node
+  linkType: hard
+
 "please-upgrade-node@npm:^3.2.0":
   version: 3.2.0
   resolution: "please-upgrade-node@npm:3.2.0"
@@ -24937,6 +25106,25 @@ __metadata:
     object-assign: ^4.1.1
     react-is: ^16.13.1
   checksum: 59ece7ca2fb9838031d73a48d4becb9a7cc1ed10e610517c7d8f19a1e02fa47f7c27d557d8a5702bec3cfeccddc853579832b43f449e54635803f277b1c78077
+  languageName: node
+  linkType: hard
+
+"protobufjs@npm:^7.2.4":
+  version: 7.6.4
+  resolution: "protobufjs@npm:7.6.4"
+  dependencies:
+    "@protobufjs/aspromise": ^1.1.2
+    "@protobufjs/base64": ^1.1.2
+    "@protobufjs/codegen": ^2.0.5
+    "@protobufjs/eventemitter": ^1.1.1
+    "@protobufjs/fetch": ^1.1.1
+    "@protobufjs/float": ^1.0.2
+    "@protobufjs/path": ^1.1.2
+    "@protobufjs/pool": ^1.1.0
+    "@protobufjs/utf8": ^1.1.1
+    "@types/node": ">=13.7.0"
+    long: ^5.3.2
+  checksum: 6403eaa9c5a72cc6450c11f38fefafdde243fd806e7ac606ac8d591bc3fdaec45ae764febf83181a2d9aac51aca624e0f46dec368ceea191f7e85e2d6ccaaf93
   languageName: node
   linkType: hard
 
@@ -30210,5 +30398,12 @@ __metadata:
   version: 4.2.0
   resolution: "zod@npm:4.2.0"
   checksum: c9fa563f4866f5554c84728f69fe01979d5ab41a104176a4b9f1a182fa670b6e55ffe1be81863dc03d8b36c90ee9e917353b429f4aa3615b5f63dc4c8d5d92d3
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.23.8":
+  version: 3.25.76
+  resolution: "zod@npm:3.25.76"
+  checksum: 5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
   languageName: node
   linkType: hard

@@ -43,5 +43,10 @@ export default defineConfig(({ mode }) => {
     server: {
       open: true,
     },
+    // @imgly/background-removal ships heavy WASM; don't pre-bundle it (avoids
+    // Vite's "Outdated Optimize Dep" 504 and serves it as native ESM).
+    optimizeDeps: {
+      exclude: ["@imgly/background-removal", "onnxruntime-web"],
+    },
   }
 })

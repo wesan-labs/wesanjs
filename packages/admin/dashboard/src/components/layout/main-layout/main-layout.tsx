@@ -12,7 +12,6 @@ import {
   MinusMini,
   Newspaper,
   OpenRectArrowOut,
-  PencilSquare,
   ShoppingBag,
   SquaresPlus,
   UserGroup,
@@ -231,14 +230,14 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       to: "/cms",
     },
     {
-      icon: <PencilSquare />,
-      label: "Content",
-      to: "/content",
-    },
-    {
       icon: <ChatBubbleLeftRight />,
       label: "Social Media",
       to: "/social-media",
+      isGroup: true,
+      items: [
+        { label: "Content", to: "/content" },
+        { label: "Analiz", to: "/social-media" },
+      ],
     },
     {
       icon: <BellAlert />,
