@@ -21,14 +21,16 @@ import { useEffect, useState } from "react"
 import {
   Bar,
   BarChart,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
 } from "recharts"
 import { PlatformGlyph } from "../content/components/prompt-meta"
+import {
+  DonutChart,
+  GradientBar,
+  StatCard,
+} from "../../components/common/analytics"
 import {
   PostAnalytics,
   SocialAccount,
@@ -74,7 +76,6 @@ const GREEN = "#10B981"
 const RED = "#EF4444"
 const PRIMARY = "#8B5CF6"
 const ORANGE = "#F59E0B"
-const PALETTE = ["#8B5CF6", "#F59E0B", "#3B82F6", "#10B981", "#EC4899", "#14B8A6"]
 
 const fmtNum = (n: number): string => {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.?0+$/, "") + "M"
@@ -91,45 +92,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "profile", label: "Profil" },
   { id: "post", label: "Gönderiler" },
 ]
-
-// ── KPI card ──────────────────────────────────────────────
-const KpiCard = ({
-  label,
-  value,
-  sub,
-  trend,
-  loading,
-}: {
-  label: string
-  value: string
-  sub?: string
-  trend?: { up: boolean; text: string }
-  loading?: boolean
-}) => (
-  <div className="border-ui-border-base bg-ui-bg-base shadow-elevation-card-rest flex flex-col gap-y-2 rounded-xl border p-4">
-    <Text size="xsmall" className="text-ui-fg-muted">
-      {label}
-    </Text>
-    <Text size="xlarge" weight="plus" className="tabular-nums leading-none">
-      {loading ? "···" : value}
-    </Text>
-    {trend ? (
-      <span
-        className="flex w-fit items-center gap-x-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium"
-        style={{
-          color: trend.up ? GREEN : RED,
-          backgroundColor: (trend.up ? GREEN : RED) + "1a",
-        }}
-      >
-        {trend.up ? "▲" : "▼"} {trend.text}
-      </span>
-    ) : sub ? (
-      <Text size="xsmall" className="text-ui-fg-subtle">
-        {sub}
-      </Text>
-    ) : null}
-  </div>
-)
 
 // ── Highlight card with gradient progress (Daily Activity analog) ──
 const HighlightCard = ({
@@ -157,15 +119,7 @@ const HighlightCard = ({
     <Text size="xlarge" weight="plus" className="tabular-nums leading-none">
       {loading ? "···" : value}
     </Text>
-    <div className="bg-ui-bg-subtle relative h-2.5 w-full overflow-hidden rounded-full">
-      <div
-        className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out"
-        style={{
-          width: `${Math.max(2, Math.min(100, fillPct))}%`,
-          background: `linear-gradient(90deg, ${PRIMARY}, ${ORANGE})`,
-        }}
-      />
-    </div>
+    <GradientBar pct={fillPct} from={PRIMARY} to={ORANGE} height={10} />
     {footer}
   </div>
 )
@@ -260,7 +214,7 @@ const ViewsChart = ({
   )
 }
 
-// ── Content distribution donut ────────────────────────────
+// ── Content distribution donut (views share across posts) ──
 const ContentDonut = ({ posts, total }: { posts: PostAnalytics[]; total: number }) => {
   const sorted = posts.slice().sort((a, b) => b.views - a.views)
   const top = sorted.slice(0, 5)
@@ -270,57 +224,13 @@ const ContentDonut = ({ posts, total }: { posts: PostAnalytics[]; total: number 
     ...(rest > 0 ? [{ name: "diğer", value: rest }] : []),
   ].filter((d) => d.value > 0)
 
-  if (!data.length) {
-    return (
-      <div className="text-ui-fg-muted flex h-[160px] items-center justify-center">
-        <Text size="small">Veri yok.</Text>
-      </div>
-    )
-  }
   return (
-    <div className="flex items-center gap-x-3">
-      <div className="relative" style={{ width: 128, height: 128 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={40}
-              outerRadius={60}
-              paddingAngle={2}
-              stroke="none"
-            >
-              {data.map((_, i) => (
-                <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <Text size="small" weight="plus" className="tabular-nums leading-none">
-            {fmtNum(total)}
-          </Text>
-          <Text size="xsmall" className="text-ui-fg-muted leading-none">
-            görüntüleme
-          </Text>
-        </div>
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-y-1">
-        {data.map((d, i) => (
-          <div key={i} className="flex items-center gap-x-1.5 text-xs">
-            <span
-              className="size-2 shrink-0 rounded-full"
-              style={{ backgroundColor: PALETTE[i % PALETTE.length] }}
-            />
-            <span className="text-ui-fg-subtle truncate">{d.name}</span>
-            <span className="text-ui-fg-muted ml-auto tabular-nums">
-              {total ? Math.round((d.value / total) * 100) : 0}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <DonutChart
+      data={data}
+      total={total}
+      centerValue={fmtNum(total)}
+      centerLabel="görüntüleme"
+    />
   )
 }
 
@@ -447,13 +357,12 @@ const HashtagInsight = ({ posts, bm }: { posts: PostAnalytics[]; bm: number }) =
             <Text size="small" className="w-28 shrink-0 truncate font-medium">
               {r.tag}
             </Text>
-            <div className="bg-ui-bg-subtle relative h-2 flex-1 overflow-hidden rounded-full">
-              <div
-                className="absolute inset-y-0 left-0 rounded-full"
-                style={{
-                  width: `${Math.max(4, (r.avgEngagement / max) * 100)}%`,
-                  background: `linear-gradient(90deg, ${PRIMARY}, ${ORANGE})`,
-                }}
+            <div className="flex-1">
+              <GradientBar
+                pct={(r.avgEngagement / max) * 100}
+                from={PRIMARY}
+                to={ORANGE}
+                height={8}
               />
             </div>
             <Text
@@ -592,15 +501,15 @@ const AccountDashboard = ({
     return (
       <div className="flex flex-col gap-y-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <KpiCard
+          <StatCard
             label="Etkileşim oranı"
             value={`%${er}`}
             trend={o ? { up: er >= bm, text: `hedef %${bm}` } : undefined}
             loading={isLoading}
           />
-          <KpiCard label="Kaydetme /1K" value={String(o?.saveRate ?? 0)} sub="görüntüleme başına" loading={isLoading} />
-          <KpiCard label="Paylaşım /1K" value={String(o?.shareRate ?? 0)} sub="görüntüleme başına" loading={isLoading} />
-          <KpiCard
+          <StatCard label="Kaydetme /1K" value={String(o?.saveRate ?? 0)} sub="görüntüleme başına" loading={isLoading} />
+          <StatCard label="Paylaşım /1K" value={String(o?.shareRate ?? 0)} sub="görüntüleme başına" loading={isLoading} />
+          <StatCard
             label="İzlenme"
             value={o && o.avgWatchTime > 0 ? `${o.avgWatchTime}sn` : "—"}
             sub="ortalama süre"
@@ -627,7 +536,7 @@ const AccountDashboard = ({
     <div className="flex flex-col gap-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {kpis.map((k) => (
-          <KpiCard key={k.label} {...k} loading={isLoading} />
+          <StatCard key={k.label} {...k} loading={isLoading} />
         ))}
       </div>
 
