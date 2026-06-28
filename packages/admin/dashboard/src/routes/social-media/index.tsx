@@ -11,6 +11,8 @@ import {
   Container,
   Drawer,
   Heading,
+  Table,
+  Tabs,
   Text,
   clx,
   toast,
@@ -340,49 +342,49 @@ const PostsTable = ({
       </Text>
     </div>
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead className="text-ui-fg-muted border-ui-border-base border-y text-xs uppercase">
-          <tr>
-            <th className="px-4 py-2 font-medium">İçerik</th>
-            <th className="px-4 py-2 text-right font-medium">Görüntüleme</th>
-            <th className="px-4 py-2 text-right font-medium">Beğeni</th>
-            <th className="px-4 py-2 text-right font-medium">Paylaşım</th>
-            <th className="px-4 py-2 text-right font-medium">Kaydetme</th>
-            <th className="px-4 py-2 text-right font-medium">Etkileşim</th>
-          </tr>
-        </thead>
-        <tbody className="divide-ui-border-base divide-y">
+      <Table>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>İçerik</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">Görüntüleme</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">Beğeni</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">Paylaşım</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">Kaydetme</Table.HeaderCell>
+            <Table.HeaderCell className="text-right">Etkileşim</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {posts.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="text-ui-fg-muted px-4 py-6 text-center">
+            <Table.Row>
+              <Table.Cell className="text-ui-fg-muted text-center">
                 Henüz gönderi yok.
-              </td>
-            </tr>
+              </Table.Cell>
+            </Table.Row>
           ) : (
             posts.slice(0, limit).map((p) => (
-              <tr key={p.id} className="hover:bg-ui-bg-base-hover">
-                <td className="px-4 py-2.5">
+              <Table.Row key={p.id}>
+                <Table.Cell>
                   <span className="line-clamp-1 max-w-[320px]">
                     {p.content || "(başlıksız)"}
                   </span>
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtNum(p.views)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtNum(p.likes)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtNum(p.shares)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtNum(p.saves)}</td>
-                <td className="px-4 py-2.5 text-right">
+                </Table.Cell>
+                <Table.Cell className="text-right tabular-nums">{fmtNum(p.views)}</Table.Cell>
+                <Table.Cell className="text-right tabular-nums">{fmtNum(p.likes)}</Table.Cell>
+                <Table.Cell className="text-right tabular-nums">{fmtNum(p.shares)}</Table.Cell>
+                <Table.Cell className="text-right tabular-nums">{fmtNum(p.saves)}</Table.Cell>
+                <Table.Cell className="text-right">
                   <span
                     className="font-medium tabular-nums"
                     style={{ color: p.engagementRate >= bm ? GREEN : RED }}
                   >
                     %{p.engagementRate}
                   </span>
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ))
           )}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table>
     </div>
   </div>
 )
@@ -781,25 +783,17 @@ export const Component = () => {
             })}
           </div>
 
-          {/* tab bar */}
+          {/* tab bar — design-system Tabs */}
           <div className="flex items-center justify-between gap-x-3">
-            <div className="bg-ui-bg-subtle inline-flex items-center gap-x-1 rounded-lg p-1">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  className={clx(
-                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                    tab === t.id
-                      ? "bg-ui-bg-base text-ui-fg-base shadow-elevation-card-rest"
-                      : "text-ui-fg-muted hover:text-ui-fg-base"
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            <Tabs value={tab} onValueChange={(v) => setTab(v as TabId)}>
+              <Tabs.List>
+                {TABS.map((t) => (
+                  <Tabs.Trigger key={t.id} value={t.id}>
+                    {t.label}
+                  </Tabs.Trigger>
+                ))}
+              </Tabs.List>
+            </Tabs>
             <div className="border-ui-border-base text-ui-fg-subtle hidden items-center gap-x-1.5 rounded-lg border px-3 py-1.5 text-xs sm:flex">
               Tüm gönderiler
             </div>
