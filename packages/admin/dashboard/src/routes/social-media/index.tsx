@@ -167,16 +167,19 @@ const PostTooltip = ({
   )
 }
 
-// ── Views-per-post bar chart ──────────────────────────────
-const ViewsChart = ({
+// ── Stacked metric bars per post (views/likes/shares/saves) + legend ──
+const STACK = [
+  { key: "views" as const, label: "Görüntüleme", color: PRIMARY },
+  { key: "likes" as const, label: "Beğeni", color: ORANGE },
+  { key: "shares" as const, label: "Paylaşım", color: "#3B82F6" },
+  { key: "saves" as const, label: "Kaydetme", color: GREEN },
+]
+
+const PostsBars = ({
   posts,
-  color,
-  id,
   height = 220,
 }: {
   posts: PostAnalytics[]
-  color: string
-  id: string
   height?: number
 }) => {
   const data = posts
@@ -194,25 +197,47 @@ const ViewsChart = ({
     )
   }
   return (
-    <div style={{ width: "100%", height }}>
-      <ResponsiveContainer>
-        <BarChart data={data} margin={{ top: 12, right: 4, bottom: 0, left: 4 }}>
-          <defs>
-            <linearGradient id={`bar-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={1} />
-              <stop offset="100%" stopColor={PRIMARY} stopOpacity={0.7} />
-            </linearGradient>
-          </defs>
-          <XAxis
-            dataKey="idx"
-            tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: 11, fill: "#71717a" }}
-          />
-          <Tooltip content={<PostTooltip />} cursor={{ fill: color, fillOpacity: 0.06 }} />
-          <Bar dataKey="views" radius={[6, 6, 0, 0]} maxBarSize={48} fill={`url(#bar-${id})`} />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="flex flex-col gap-y-2">
+      <div style={{ width: "100%", height }}>
+        <ResponsiveContainer>
+          <BarChart data={data} margin={{ top: 12, right: 4, bottom: 0, left: 4 }}>
+            <XAxis
+              dataKey="idx"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 11, fill: "#71717a" }}
+            />
+            <Tooltip
+              content={<PostTooltip />}
+              cursor={{ fill: PRIMARY, fillOpacity: 0.06 }}
+            />
+            {STACK.map((s, i) => (
+              <Bar
+                key={s.key}
+                dataKey={s.key}
+                stackId="a"
+                fill={s.color}
+                maxBarSize={48}
+                radius={i === STACK.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {STACK.map((s) => (
+          <span
+            key={s.key}
+            className="text-ui-fg-subtle flex items-center gap-x-1.5 text-xs"
+          >
+            <span
+              className="size-2.5 rounded-sm"
+              style={{ backgroundColor: s.color }}
+            />
+            {s.label}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -553,7 +578,7 @@ const AccountDashboard = ({
               görüntüleme / gönderi
             </Text>
           </div>
-          <ViewsChart posts={posts} color={color} id={account.id} height={260} />
+          <PostsBars posts={posts} height={260} />
         </div>
         <HashtagInsight posts={posts} bm={bm} />
         <PostsTable posts={posts} bm={bm} limit={50} />
@@ -580,7 +605,7 @@ const AccountDashboard = ({
               </Text>
             </div>
           </div>
-          <ViewsChart posts={posts} color={color} id={account.id} />
+          <PostsBars posts={posts} />
         </div>
 
         <div className="flex flex-col gap-y-4">
