@@ -26,6 +26,7 @@ import {
   XAxis,
 } from "recharts"
 import { PlatformGlyph } from "../content/components/prompt-meta"
+import { AreaChartPanel } from "../dashboards/kit/area-chart"
 import { PublishComposer } from "./components/publish-composer"
 import {
   DonutChart,
@@ -38,6 +39,7 @@ import {
   useConnectSocial,
   useSocialAccounts,
   useSocialAnalytics,
+  useSocialTrends,
 } from "../../hooks/api/social"
 
 const PLATFORMS = [
@@ -396,6 +398,9 @@ const AccountDashboard = ({
   tab: TabId
 }) => {
   const { data, isLoading, isError, error } = useSocialAnalytics(account.id)
+  const { data: trendsData } = useSocialTrends(
+    tab === "profile" ? account.id : undefined
+  )
   const o = data?.analytics.overview
   const posts = data?.analytics.posts ?? []
   const color = colorOf(account.platform)
@@ -481,12 +486,36 @@ const AccountDashboard = ({
             </Button>
           )}
         </div>
-        <div className="border-ui-border-base bg-ui-bg-base shadow-elevation-card-rest flex flex-col items-start justify-center gap-y-1 rounded-xl border border-dashed p-5 lg:col-span-2">
-          <Text weight="plus">Takipçi büyüme eğrisi</Text>
-          <Text size="small" className="text-ui-fg-subtle">
-            Büyüme grafiği için günlük snapshot gerekiyor. Snapshot job'u eklendiğinde
-            takipçi/erişim trendi burada zaman serisi olarak çizilecek.
-          </Text>
+        <div className="border-ui-border-base bg-ui-bg-base shadow-elevation-card-rest flex flex-col gap-y-2 rounded-xl border p-5 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <Text weight="plus">Görüntüleme trendi</Text>
+            <Text size="xsmall" className="text-ui-fg-muted">
+              günlük snapshot
+            </Text>
+          </div>
+          {(() => {
+            const snaps = trendsData?.snapshots ?? []
+            return snaps.length >= 2 ? (
+              <AreaChartPanel
+                data={snaps.map((s) => ({
+                  date: s.date.slice(5),
+                  views: s.metrics.totalViews,
+                }))}
+                xKey="date"
+                yKey="views"
+                color={color}
+                height={220}
+                valueFormatter={fmtNum}
+              />
+            ) : (
+              <div className="text-ui-fg-muted flex h-[180px] flex-col items-center justify-center gap-y-1 text-center">
+                <Text size="small">Veri birikiyor — {snaps.length} gün kayıtlı.</Text>
+                <Text size="xsmall">
+                  Trend grafiği 2. günden itibaren çizilir (snapshot 6 saatte bir).
+                </Text>
+              </div>
+            )
+          })()}
         </div>
       </div>
     )

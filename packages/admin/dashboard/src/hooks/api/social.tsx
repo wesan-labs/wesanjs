@@ -78,6 +78,32 @@ export const useSocialAnalytics = (accountId?: string) =>
     staleTime: 60_000,
   })
 
+export interface SocialSnapshot {
+  date: string
+  metrics: {
+    followers: number
+    totalViews: number
+    totalLikes: number
+    totalShares: number
+    totalSaves: number
+    engagementRate: number
+    [k: string]: number
+  }
+}
+
+/** Daily metric history (snapshot job) for trend lines; empty until ≥1 day captured. */
+export const useSocialTrends = (accountId?: string) =>
+  useQuery({
+    queryKey: ["social", "trends", accountId],
+    queryFn: () =>
+      sdk.client.fetch<{
+        snapshots: SocialSnapshot[]
+        trend: Record<string, number> | null
+      }>(`/admin/content/social/trends?accountId=${accountId}`),
+    enabled: !!accountId,
+    staleTime: 60_000,
+  })
+
 /** Returns the hosted OAuth URL for a platform so the caller can open it. */
 export const useConnectSocial = () =>
   useMutation({
