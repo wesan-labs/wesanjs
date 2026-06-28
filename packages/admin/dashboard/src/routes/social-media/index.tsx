@@ -799,11 +799,7 @@ export const Component = () => {
         </Drawer.Content>
       </Drawer>
 
-      <PublishComposer
-        open={composerOpen}
-        onOpenChange={setComposerOpen}
-        accounts={accounts}
-      />
+      <PublishComposer open={composerOpen} onOpenChange={setComposerOpen} />
     </Container>
   )
 }

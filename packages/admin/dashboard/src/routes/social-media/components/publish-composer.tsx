@@ -1,37 +1,52 @@
 import {
   Button,
   Checkbox,
+  DatePicker,
   Drawer,
   Input,
   Label,
-  Switch,
+  Select,
   Text,
   Textarea,
   toast,
 } from "@medusajs/ui"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { PlatformGlyph } from "../../content/components/prompt-meta"
-import { SocialAccount, usePublishSocial } from "../../../hooks/api/social"
+import { usePublishSocial, useSocialAccounts } from "../../../hooks/api/social"
+
+type Mode = "draft" | "schedule" | "now"
 
 /**
  * Compose a post and send it to selected connected accounts via the provider.
- * Defaults to DRAFT (no live post) so nothing publishes by accident; flip the
- * switch off to publish immediately.
+ * Self-contained (fetches its own accounts) so it can be dropped into the studio
+ * too. Defaults to DRAFT — nothing publishes by accident. Accepts initial caption
+ * + image preview for the generate→publish loop.
  */
 export const PublishComposer = ({
   open,
   onOpenChange,
-  accounts,
+  initialContent,
+  initialImage,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
-  accounts: SocialAccount[]
+  initialContent?: string
+  initialImage?: string
 }) => {
+  const { data } = useSocialAccounts()
+  const accounts = data?.accounts ?? []
   const publish = usePublishSocial()
-  const [content, setContent] = useState("")
+
+  const [content, setContent] = useState(initialContent ?? "")
   const [mediaUrl, setMediaUrl] = useState("")
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [isDraft, setIsDraft] = useState(true)
+  const [mode, setMode] = useState<Mode>("draft")
+  const [when, setWhen] = useState<Date | null>(null)
+
+  // Sync the caption when the drawer opens with fresh studio content.
+  useEffect(() => {
+    if (open && initialContent != null) setContent(initialContent)
+  }, [open, initialContent])
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -52,24 +67,39 @@ export const PublishComposer = ({
       toast.error("En az bir hesap seç")
       return
     }
+    if (mode === "schedule" && !when) {
+      toast.error("Tarih ve saat seç")
+      return
+    }
     try {
       const { result } = await publish.mutateAsync({
         content,
         targets,
         mediaUrls: mediaUrl.trim() ? [mediaUrl.trim()] : undefined,
-        isDraft,
+        isDraft: mode === "draft",
+        scheduledFor: mode === "schedule" && when ? when.toISOString() : undefined,
       })
-      toast.success(isDraft ? "Taslak oluşturuldu" : "Gönderildi", {
-        description: `Durum: ${result.status}`,
-      })
+      toast.success(
+        mode === "draft"
+          ? "Taslak oluşturuldu"
+          : mode === "schedule"
+            ? "Zamanlandı"
+            : "Gönderildi",
+        { description: `Durum: ${result.status}` }
+      )
       setContent("")
       setMediaUrl("")
       setSelected(new Set())
+      setWhen(null)
+      setMode("draft")
       onOpenChange(false)
     } catch (e) {
       toast.error("Gönderilemedi", { description: (e as Error)?.message })
     }
   }
+
+  const cta =
+    mode === "draft" ? "Taslak oluştur" : mode === "schedule" ? "Zamanla" : "Yayınla"
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -78,6 +108,21 @@ export const PublishComposer = ({
           <Drawer.Title>Paylaş</Drawer.Title>
         </Drawer.Header>
         <Drawer.Body className="flex flex-col gap-y-4 overflow-y-auto">
+          {initialImage && (
+            <div className="flex flex-col gap-y-1.5">
+              <Label size="small">Stüdyo görseli</Label>
+              <img
+                src={initialImage}
+                alt="Stüdyo görseli"
+                className="border-ui-border-base max-h-48 w-full rounded-lg border object-contain"
+              />
+              <Text size="xsmall" className="text-ui-fg-muted">
+                Önizleme. Görseli yayınlamak için sağlayıcı herkese açık URL ister —
+                aşağıdaki alana yapıştır (hosting entegrasyonu sonra).
+              </Text>
+            </div>
+          )}
+
           <div className="flex flex-col gap-y-1.5">
             <Label size="small">Metin</Label>
             <Textarea
@@ -95,10 +140,6 @@ export const PublishComposer = ({
               onChange={(e) => setMediaUrl(e.target.value)}
               placeholder="https://… herkese açık URL"
             />
-            <Text size="xsmall" className="text-ui-fg-muted">
-              Sağlayıcı herkese açık URL ister; stüdyo görselini barındırınca
-              otomatik buraya gelecek.
-            </Text>
           </div>
 
           <div className="flex flex-col gap-y-2">
@@ -126,16 +167,33 @@ export const PublishComposer = ({
             )}
           </div>
 
-          <div className="border-ui-border-base flex items-center justify-between gap-x-3 rounded-lg border p-3">
-            <div className="flex min-w-0 flex-col">
-              <Text size="small" weight="plus">
-                Taslak olarak kaydet
-              </Text>
-              <Text size="xsmall" className="text-ui-fg-muted">
-                Açık: sağlayıcıda taslak (canlı post YOK). Kapalı: hemen yayınla.
-              </Text>
-            </div>
-            <Switch checked={isDraft} onCheckedChange={setIsDraft} />
+          <div className="flex flex-col gap-y-1.5">
+            <Label size="small">Yayın</Label>
+            <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
+              <Select.Trigger>
+                <Select.Value />
+              </Select.Trigger>
+              <Select.Content>
+                <Select.Item value="draft">Taslak olarak kaydet (önerilen)</Select.Item>
+                <Select.Item value="schedule">Zamanla</Select.Item>
+                <Select.Item value="now">Hemen yayınla</Select.Item>
+              </Select.Content>
+            </Select>
+            {mode === "schedule" && (
+              <DatePicker
+                granularity="minute"
+                value={when}
+                onChange={setWhen}
+                placeholder="Tarih ve saat seç"
+              />
+            )}
+            <Text size="xsmall" className="text-ui-fg-muted">
+              {mode === "draft"
+                ? "Sağlayıcıda taslak — canlı post YOK."
+                : mode === "schedule"
+                  ? "Seçilen zamanda otomatik yayınlanır."
+                  : "Seçili hesaplara hemen gönderilir."}
+            </Text>
           </div>
         </Drawer.Body>
         <Drawer.Footer>
@@ -143,7 +201,7 @@ export const PublishComposer = ({
             İptal
           </Button>
           <Button onClick={submit} isLoading={publish.isPending}>
-            {isDraft ? "Taslak oluştur" : "Yayınla"}
+            {cta}
           </Button>
         </Drawer.Footer>
       </Drawer.Content>

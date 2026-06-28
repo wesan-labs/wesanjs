@@ -3,7 +3,6 @@ import {
   Buildings,
   CheckMini,
   ChevronRightMini,
-  Clock,
   DocumentText,
   GlobeEurope,
   Language,
@@ -60,6 +59,7 @@ import { ASPECTS } from "./components/prompt-meta"
 import { PromptLibrarySection } from "./components/prompt-library-section"
 import { TextMethod, TextTab } from "./components/text-tab"
 import { VariantCard } from "./components/variant-card"
+import { PublishComposer } from "../social-media/components/publish-composer"
 
 /** Nearest aspect preset for a w×h source (log-ratio = perceptual nearest). */
 const ratioOf = (id: string): number => {
@@ -156,6 +156,8 @@ export const Component = () => {
     () => localStorage.getItem("content-auto-analyze") !== "off"
   )
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null)
+  const [composerOpen, setComposerOpen] = useState(false)
+  const [pubTextIdx, setPubTextIdx] = useState(0)
   const analyzeMut = useAnalyzeImage()
 
   const toggleAutoAnalyze = (on: boolean) => {
@@ -602,55 +604,65 @@ export const Component = () => {
             <div className="flex items-center gap-x-2">
               <PaperPlane className="text-ui-fg-interactive" />
               <Text weight="plus">Yayınla</Text>
-              <Badge size="2xsmall" color="orange" className="ml-auto">
-                Yakında
-              </Badge>
             </div>
             <Text size="small" className="text-ui-fg-subtle">
-              Ürettiğin içeriği doğrudan buradan paylaşacaksın.
+              Ürettiğin görsel + metni seçili sosyal hesaplara gönder — taslak,
+              zamanla ya da hemen.
             </Text>
-            <div className="flex flex-col gap-y-2">
-              {[
-                {
-                  icon: GlobeEurope,
-                  title: "Hesap bağla",
-                  desc: "Instagram & TikTok'u tek seferde bağla.",
-                },
-                {
-                  icon: Clock,
-                  title: "Zamanla",
-                  desc: "İçeriği takvime koy, otomatik paylaşılsın.",
-                },
-                {
-                  icon: PaperPlane,
-                  title: "Paylaş",
-                  desc: "Tek panelden tüm platformlara gönder.",
-                },
-              ].map((s) => {
-                const Icon = s.icon
-                return (
-                  <div
-                    key={s.title}
-                    className="border-ui-border-base flex items-start gap-x-3 rounded-lg border p-3"
+
+            {source ? (
+              <img
+                src={source.url}
+                alt="Yayınlanacak görsel"
+                className="border-ui-border-base max-h-44 w-full rounded-lg border object-contain"
+              />
+            ) : (
+              <Text size="small" className="text-ui-fg-muted">
+                Görsel opsiyonel — metinle de paylaşabilirsin.
+              </Text>
+            )}
+
+            {texts.length > 0 && (
+              <div className="flex flex-col gap-y-1.5">
+                <Text size="xsmall" className="text-ui-fg-muted uppercase tracking-wide">
+                  Metin seç
+                </Text>
+                {texts.map((t, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setPubTextIdx(i)}
+                    className={clx(
+                      "rounded-lg border p-2.5 text-left transition-colors",
+                      i === pubTextIdx
+                        ? "border-ui-border-interactive bg-ui-bg-base"
+                        : "border-ui-border-base bg-ui-bg-subtle hover:bg-ui-bg-base"
+                    )}
                   >
-                    <div className="bg-ui-bg-subtle text-ui-fg-subtle mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md">
-                      <Icon />
-                    </div>
-                    <div className="flex flex-col">
-                      <Text size="small" weight="plus">
-                        {s.title}
-                      </Text>
-                      <Text size="xsmall" className="text-ui-fg-subtle">
-                        {s.desc}
-                      </Text>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                    <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
+                      {t.title}
+                    </Text>
+                    <Text size="small" className="line-clamp-2">
+                      {t.text}
+                    </Text>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <Button onClick={() => setComposerOpen(true)} className="w-fit">
+              <PaperPlane />
+              Paylaş
+            </Button>
           </div>
         </div>
       </div>
+      <PublishComposer
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        initialContent={texts[pubTextIdx]?.text}
+        initialImage={source?.url}
+      />
     </Container>
   )
 }
