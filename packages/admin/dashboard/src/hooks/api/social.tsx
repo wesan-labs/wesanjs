@@ -61,9 +61,11 @@ export const useSocialAccounts = () =>
   useQuery({
     queryKey: ["social", "accounts"],
     queryFn: () =>
-      sdk.client.fetch<{ accounts: SocialAccount[]; configured: boolean }>(
-        "/admin/content/social/accounts"
-      ),
+      sdk.client.fetch<{
+        accounts: SocialAccount[]
+        configured: boolean
+        imageHost?: boolean
+      }>("/admin/content/social/accounts"),
     staleTime: 30_000,
   })
 
@@ -121,6 +123,8 @@ export interface PublishInput {
   content: string
   targets: PublishTarget[]
   mediaUrls?: string[]
+  /** local data URLs hosted publicly server-side before publishing */
+  mediaDataUrls?: string[]
   isDraft?: boolean
   scheduledFor?: string
 }

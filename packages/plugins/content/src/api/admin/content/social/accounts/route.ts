@@ -6,6 +6,7 @@ import {
   getSocialProvider,
   SocialProviderError,
 } from "../../../../../lib/social"
+import { isImageHostConfigured } from "../../../../../lib/social/image-host"
 
 /**
  * GET /admin/content/social/accounts
@@ -17,13 +18,14 @@ export const GET = async (
   res: MedusaResponse
 ) => {
   const provider = getSocialProvider()
+  const imageHost = isImageHostConfigured()
   if (!provider.isConfigured()) {
-    res.json({ accounts: [], configured: false })
+    res.json({ accounts: [], configured: false, imageHost })
     return
   }
   try {
     const accounts = await provider.listAccounts()
-    res.json({ accounts, configured: true })
+    res.json({ accounts, configured: true, imageHost })
   } catch (e) {
     const err = e as SocialProviderError
     res.status(err.status ?? 502).json({ error: err.message })

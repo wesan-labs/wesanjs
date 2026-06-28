@@ -6,6 +6,7 @@ import {
   Input,
   Label,
   Select,
+  Switch,
   Text,
   Textarea,
   toast,
@@ -35,6 +36,7 @@ export const PublishComposer = ({
 }) => {
   const { data } = useSocialAccounts()
   const accounts = data?.accounts ?? []
+  const imageHost = data?.imageHost ?? false
   const publish = usePublishSocial()
 
   const [content, setContent] = useState(initialContent ?? "")
@@ -42,11 +44,14 @@ export const PublishComposer = ({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [mode, setMode] = useState<Mode>("draft")
   const [when, setWhen] = useState<Date | null>(null)
+  const [sendImage, setSendImage] = useState(false)
 
-  // Sync the caption when the drawer opens with fresh studio content.
+  // Sync caption + default the image toggle when the drawer opens.
   useEffect(() => {
-    if (open && initialContent != null) setContent(initialContent)
-  }, [open, initialContent])
+    if (!open) return
+    if (initialContent != null) setContent(initialContent)
+    setSendImage(!!initialImage && imageHost)
+  }, [open, initialContent, initialImage, imageHost])
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -76,6 +81,7 @@ export const PublishComposer = ({
         content,
         targets,
         mediaUrls: mediaUrl.trim() ? [mediaUrl.trim()] : undefined,
+        mediaDataUrls: sendImage && initialImage ? [initialImage] : undefined,
         isDraft: mode === "draft",
         scheduledFor: mode === "schedule" && when ? when.toISOString() : undefined,
       })
@@ -109,17 +115,30 @@ export const PublishComposer = ({
         </Drawer.Header>
         <Drawer.Body className="flex flex-col gap-y-4 overflow-y-auto">
           {initialImage && (
-            <div className="flex flex-col gap-y-1.5">
+            <div className="flex flex-col gap-y-2">
               <Label size="small">Stüdyo görseli</Label>
               <img
                 src={initialImage}
                 alt="Stüdyo görseli"
                 className="border-ui-border-base max-h-48 w-full rounded-lg border object-contain"
               />
-              <Text size="xsmall" className="text-ui-fg-muted">
-                Önizleme. Görseli yayınlamak için sağlayıcı herkese açık URL ister —
-                aşağıdaki alana yapıştır (hosting entegrasyonu sonra).
-              </Text>
+              <div className="border-ui-border-base flex items-center justify-between gap-x-3 rounded-lg border p-3">
+                <div className="flex min-w-0 flex-col">
+                  <Text size="small" weight="plus">
+                    Görseli de gönder
+                  </Text>
+                  <Text size="xsmall" className="text-ui-fg-muted">
+                    {imageHost
+                      ? "Yayınlarken otomatik herkese açık URL'e yüklenir."
+                      : "Görsel barındırma (IMAGE_HOST) yok — public URL gir ya da kapalı bırak."}
+                  </Text>
+                </div>
+                <Switch
+                  checked={sendImage}
+                  onCheckedChange={setSendImage}
+                  disabled={!imageHost}
+                />
+              </div>
             </div>
           )}
 
