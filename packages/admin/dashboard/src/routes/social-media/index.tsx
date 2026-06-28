@@ -387,6 +387,94 @@ const PostsTable = ({
   </div>
 )
 
+// ── Content pattern analysis — which hashtag/theme drives engagement ──
+interface TagStat {
+  tag: string
+  posts: number
+  avgEngagement: number
+  totalViews: number
+}
+const analyzeHashtags = (posts: PostAnalytics[]): TagStat[] => {
+  const map = new Map<string, { posts: number; sumEng: number; views: number }>()
+  for (const p of posts) {
+    const tags = (p.content.match(/#[\p{L}\w]+/gu) || []).map((t) => t.toLowerCase())
+    for (const t of [...new Set(tags)]) {
+      const e = map.get(t) || { posts: 0, sumEng: 0, views: 0 }
+      e.posts++
+      e.sumEng += p.engagementRate
+      e.views += p.views
+      map.set(t, e)
+    }
+  }
+  return [...map.entries()]
+    .map(([tag, e]) => ({
+      tag,
+      posts: e.posts,
+      avgEngagement: Number((e.sumEng / e.posts).toFixed(2)),
+      totalViews: e.views,
+    }))
+    .sort((a, b) => b.avgEngagement - a.avgEngagement || b.totalViews - a.totalViews)
+}
+
+const HashtagInsight = ({ posts, bm }: { posts: PostAnalytics[]; bm: number }) => {
+  const ranked = analyzeHashtags(posts)
+  if (ranked.length === 0) {
+    return (
+      <div className="border-ui-border-base bg-ui-bg-base shadow-elevation-card-rest rounded-xl border p-4">
+        <Text weight="plus">İçerik analizi</Text>
+        <Text size="small" className="text-ui-fg-muted">
+          Hashtag yok — etiketli gönderiler geldikçe hangi temanın işe yaradığını
+          burada göreceksin.
+        </Text>
+      </div>
+    )
+  }
+  const max = Math.max(...ranked.map((r) => r.avgEngagement)) || 1
+  const best = ranked[0]
+  return (
+    <div className="border-ui-border-base bg-ui-bg-base shadow-elevation-card-rest flex flex-col gap-y-3 rounded-xl border p-4">
+      <div className="flex flex-col gap-y-0.5">
+        <Text weight="plus">İçerik analizi — ne işe yarıyor</Text>
+        <Text size="xsmall" className="text-ui-fg-muted">
+          Tema/hashtag başına ortalama etkileşim oranı; en iyi performans üstte.
+        </Text>
+      </div>
+      <div className="flex flex-col gap-y-2">
+        {ranked.slice(0, 6).map((r) => (
+          <div key={r.tag} className="flex items-center gap-x-3">
+            <Text size="small" className="w-28 shrink-0 truncate font-medium">
+              {r.tag}
+            </Text>
+            <div className="bg-ui-bg-subtle relative h-2 flex-1 overflow-hidden rounded-full">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{
+                  width: `${Math.max(4, (r.avgEngagement / max) * 100)}%`,
+                  background: `linear-gradient(90deg, ${PRIMARY}, ${ORANGE})`,
+                }}
+              />
+            </div>
+            <Text
+              size="xsmall"
+              className="w-20 shrink-0 text-right tabular-nums"
+              style={{ color: r.avgEngagement >= bm ? GREEN : undefined }}
+            >
+              %{r.avgEngagement} · {r.posts}g
+            </Text>
+          </div>
+        ))}
+      </div>
+      <div className="bg-ui-bg-subtle flex items-start gap-x-2 rounded-lg p-3">
+        <ChartBar className="text-ui-tag-purple-icon mt-0.5 shrink-0" />
+        <Text size="small">
+          <span className="font-medium">{best.tag}</span> en yüksek etkileşimi
+          getiriyor (%{best.avgEngagement}). Yeni içerikte bu temayı öne çıkar.
+        </Text>
+      </div>
+    </div>
+  )
+}
+
 // ── Per-account dashboard (tab-aware) ─────────────────────
 const AccountDashboard = ({
   account,
@@ -526,6 +614,7 @@ const AccountDashboard = ({
           </div>
           <ViewsChart posts={posts} color={color} id={account.id} height={260} />
         </div>
+        <HashtagInsight posts={posts} bm={bm} />
         <PostsTable posts={posts} bm={bm} limit={50} />
       </div>
     )
