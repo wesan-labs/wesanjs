@@ -11,6 +11,7 @@ interface PublishBody {
   content?: string
   targets?: { platform: string; accountId: string }[]
   mediaUrls?: string[]
+  isDraft?: boolean
   scheduledFor?: string
   timezone?: string
 }
@@ -23,7 +24,7 @@ export const POST = async (
   req: AuthenticatedMedusaRequest<PublishBody>,
   res: MedusaResponse
 ) => {
-  const { content, targets, mediaUrls, scheduledFor, timezone } =
+  const { content, targets, mediaUrls, isDraft, scheduledFor, timezone } =
     (req.body as PublishBody) ?? {}
 
   if (!content || !content.trim()) {
@@ -49,6 +50,7 @@ export const POST = async (
       content,
       targets,
       mediaUrls,
+      isDraft,
       scheduledFor,
       timezone,
     })

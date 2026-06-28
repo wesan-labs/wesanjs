@@ -198,7 +198,9 @@ export const lateProvider: SocialProvider = {
       content: input.content,
       platforms: input.targets,
     }
-    if (input.scheduledFor) {
+    if (input.isDraft) {
+      body.isDraft = true
+    } else if (input.scheduledFor) {
       body.scheduledFor = input.scheduledFor
       if (input.timezone) body.timezone = input.timezone
     } else {

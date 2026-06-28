@@ -26,6 +26,7 @@ import {
   XAxis,
 } from "recharts"
 import { PlatformGlyph } from "../content/components/prompt-meta"
+import { PublishComposer } from "./components/publish-composer"
 import {
   DonutChart,
   GradientBar,
@@ -585,6 +586,7 @@ export const Component = () => {
   const { data, isLoading, refetch } = useSocialAccounts()
   const connect = useConnectSocial()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [composerOpen, setComposerOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tab, setTab] = useState<TabId>("overview")
 
@@ -628,6 +630,11 @@ export const Component = () => {
             <Plus />
             Hesap bağla
           </Button>
+          {configured && accounts.length > 0 && (
+            <Button variant="primary" onClick={() => setComposerOpen(true)}>
+              Paylaş
+            </Button>
+          )}
         </div>
       </div>
 
@@ -762,6 +769,12 @@ export const Component = () => {
           </Drawer.Body>
         </Drawer.Content>
       </Drawer>
+
+      <PublishComposer
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        accounts={accounts}
+      />
     </Container>
   )
 }

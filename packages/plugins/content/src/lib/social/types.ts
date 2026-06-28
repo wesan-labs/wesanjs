@@ -63,7 +63,9 @@ export interface PublishInput {
   content: string
   targets: { platform: string; accountId: string }[]
   mediaUrls?: string[]
-  /** ISO datetime; when omitted the post is published immediately. */
+  /** save as draft (no live post) — the safe default for the composer */
+  isDraft?: boolean
+  /** ISO datetime; when set (and not draft) the post is scheduled. */
   scheduledFor?: string
   timezone?: string
 }

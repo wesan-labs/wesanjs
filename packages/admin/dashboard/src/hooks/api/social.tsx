@@ -86,3 +86,25 @@ export const useConnectSocial = () =>
         `/admin/content/social/connect/${platform}`
       ),
   })
+
+export interface PublishTarget {
+  platform: string
+  accountId: string
+}
+export interface PublishInput {
+  content: string
+  targets: PublishTarget[]
+  mediaUrls?: string[]
+  isDraft?: boolean
+  scheduledFor?: string
+}
+
+/** Publish (or draft/schedule) a post to selected connected accounts. */
+export const usePublishSocial = () =>
+  useMutation({
+    mutationFn: (input: PublishInput) =>
+      sdk.client.fetch<{ result: { id: string | null; status: string } }>(
+        "/admin/content/social/publish",
+        { method: "POST", body: input }
+      ),
+  })
