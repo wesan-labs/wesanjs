@@ -1,0 +1,98 @@
+{
+  "name": "@medusajs/tenant-plugin",
+  "version": "2.15.5",
+  "description": "Wesan Plugin: Tenant foundation — Tenant + TenantMembership (multi-tenant spine for tenant_id/RLS + per-tenant RBAC)",
+  "author": "Wesan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medusajs/medusa",
+    "directory": "packages/plugins/tenant"
+  },
+  "files": [
+    ".medusa/server"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./modules/tenant": "./.medusa/server/src/modules/tenant/index.js",
+    "./.medusa/server/src/modules/tenant": "./.medusa/server/src/modules/tenant/index.js",
+    "./.medusa/server/src/*": "./.medusa/server/src/**/*.js"
+  },
+  "keywords": [
+    "postgres",
+    "typescript",
+    "headless",
+    "medusa",
+    "plugin",
+    "tenant",
+    "multi-tenant"
+  ],
+  "scripts": {
+    "build": "medusa plugin:build",
+    "dev": "medusa plugin:develop",
+    "prepare": "cross-env NODE_ENV=production yarn run build",
+    "link:watch": "medusa plugin:publish && medusa plugin:develop",
+    "watch": "medusa plugin:develop"
+  },
+  "devDependencies": {
+    "@medusajs/admin-sdk": "2.15.5",
+    "@medusajs/cli": "2.15.5",
+    "@medusajs/dashboard": "2.15.5",
+    "@medusajs/framework": "2.15.5",
+    "@medusajs/icons": "2.15.5",
+    "@medusajs/test-utils": "2.15.5",
+    "@medusajs/types": "2.15.5",
+    "@medusajs/ui": "4.1.15",
+    "@medusajs/ui-preset": "2.15.5",
+    "@swc/core": "1.5.7",
+    "@types/node": "^20.0.0",
+    "cross-env": "^7.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "@medusajs/admin-sdk": "2.15.5",
+    "@medusajs/cli": "2.15.5",
+    "@medusajs/dashboard": "2.15.5",
+    "@medusajs/framework": "2.15.5",
+    "@medusajs/icons": "2.15.5",
+    "@medusajs/test-utils": "2.15.5",
+    "@medusajs/ui": "4.1.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "6.30.4"
+  },
+  "peerDependenciesMeta": {
+    "@medusajs/admin-sdk": {
+      "optional": true
+    },
+    "@medusajs/cli": {
+      "optional": true
+    },
+    "@medusajs/dashboard": {
+      "optional": true
+    },
+    "@medusajs/icons": {
+      "optional": true
+    },
+    "@medusajs/test-utils": {
+      "optional": true
+    },
+    "@medusajs/ui": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "react-router-dom": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "yarn@3.2.1"
+}
