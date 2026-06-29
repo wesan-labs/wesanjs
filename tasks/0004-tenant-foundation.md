@@ -13,10 +13,10 @@ Multi-tenant omurgasını kur ve **TEK plugin'de** (content-plugin — bizim, k�
 uçtan uca kanıtla. Sosyal-arkın modeli: bir dilim end-to-end + canlı doğrulama, sonra yay.
 
 ## Kapsam (kanıt dilimi)
-- [ ] `Tenant`/`Organization` modülü (entity: id, slug, name, status) — yeni plugin modülü (package.json `exports`'a 2 satır!)
-- [ ] `TenantMembership` (user_id ↔ tenant_id ↔ role) — kullanıcı hangi tenant'ta hangi rol
+- [x] `Tenant`/`Organization` modülü (entity: id, slug, name, status) — **`@medusajs/tenant-plugin`** kuruldu, helm'e wire, migrate (tablolar gerçek DB'de), boot temiz ✓ (commit 77afeb5af8)
+- [x] `TenantMembership` (user_id ↔ tenant_id ↔ role) — model + tablo hazır ✓
 - [ ] **Tenant-context middleware:** her admin request'te aktif tenant'ı çöz (header/subdomain/JWT claim) → Postgres session var set (`SET app.current_tenant = ...`) RLS için
-- [ ] content-plugin tablolarına `tenant_id` ekle (`content_item`, `social_snapshot`) + migration
+- [ ] content-plugin tablolarına `tenant_id` ekle (`content_item`, `social_snapshot`) + migration + mevcut veriyi default tenant'a backfill
 - [ ] Bu iki tabloda **Postgres RLS policy** (`USING (tenant_id = current_setting('app.current_tenant')::text)`)
 - [ ] Yazma yolunda tenant_id otomatik enjekte (workflow/route)
 
