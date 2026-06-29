@@ -7,6 +7,9 @@ import { model } from "@medusajs/framework/utils"
  */
 const ContentItem = model.define("content_item", {
   id: model.id().primaryKey(),
+  // Multi-tenant key (ADR-0001). Nullable during rollout; backfilled to the
+  // default tenant, then RLS-scoped + app-layer filtered.
+  tenant_id: model.text().nullable(),
   kind: model.text(), // "image" | "text"
   title: model.text().nullable(),
   value: model.text(), // image → data URL; text → the body

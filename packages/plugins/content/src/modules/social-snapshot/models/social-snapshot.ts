@@ -8,6 +8,8 @@ import { model } from "@medusajs/framework/utils"
  */
 const SocialSnapshot = model.define("social_snapshot", {
   id: model.id().primaryKey(),
+  // Multi-tenant key (ADR-0001). Backfilled to default tenant, then RLS-scoped.
+  tenant_id: model.text().nullable(),
   account_id: model.text(),
   platform: model.text(),
   /** snapshot day, UTC YYYY-MM-DD — unique per account for idempotent upsert */

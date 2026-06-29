@@ -39,6 +39,14 @@
   request'te RLS session var'ını set eden **tenant-context middleware**; auth'a tenant.
 - 🚪 Kaçış kapısı: büyük enterprise tenant → dedicated schema/instance, sonradan.
 
+## Güncelleme 2026-06-29 — defense-in-depth + dev/prod rol ayrımı (araştırma sonrası)
+İzolasyon "RLS **ya da** app-layer" değil, **ikisi birden (defense-in-depth)** — sektör 2026 standardı:
+- **App-layer scoping = primary** (connection patch `app.current_tenant` set eder, query'ler ona göre; her ortamda test edilebilir).
+- **RLS = DB-sigortası** (juniorların unuttuğu WHERE, refactor, **cron'lar** için). Policy'ler **ilk migration'dan itibaren** yazılır (retrofit acısını önler — biz küçükken ucuz).
+- **Dev runtime: `postgres` (superuser)** kalır → rahat dev (RLS policy'leri var ama dormant).
+- **Test/Prod runtime: non-superuser `app_user`** → RLS aktif. RLS, ayrı bir `app_user` **test rolüyle** doğrulanır (dev runtime'ı değiştirmeden çalıştığı kanıtlanır).
+- **3 gotcha (şimdi tasarla):** `tenant_id` her index'in baş kolonu (perf) · arka plan job'ları context'i açıkça set eder · view/function `security_invoker`.
+
 ## Sıralama
 1. Tenant + üyelik + RBAC temeli (entity, user-tenant-role, middleware→RLS var)
 2. `tenant_id` + RLS rollout (önce kendi plugin'ler, sonra core/store_id)
