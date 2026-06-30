@@ -339,3 +339,8 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 ```
+
+### 6. Modül/Eklenti Karar ve Değişiklik Notlandırma Kuralı
+
+Verilen her karar veya yapılan her iş (geliştirme/değişiklik), ilgili modülü ya da eklentiyi (plugin) nasıl etkiliyorsa, bu durumun etkisi ilgili dokümantasyona veya kayıtlara not edilmelidir. Eğer o modül/eklenti üzerinde doğrudan veya dolaylı bir etki/değişim yoksa not alınmasına gerek yoktur.
+
