@@ -22,6 +22,7 @@ export type RevenueOverview = {
   revenue28d: number
   subscriptionRevenue: number
   subscriptionRevenueLastMonth: number
+  adRevenueNow: number
   adRevenue: number
   adRevenueLastMonth: number
   adImpressions: number
@@ -108,7 +109,9 @@ export const useFinanceSettings = () => {
   const { data, ...rest } = useQuery({
     queryKey: ["revenue", "settings"],
     queryFn: async () =>
-      sdk.client.fetch<{ settings: FinanceSettings }>("/admin/revenue/settings"),
+      sdk.client.fetch<{ settings: FinanceSettings }>(
+        "/admin/revenue/settings"
+      ),
   })
   return { settings: data?.settings, ...rest }
 }
@@ -143,9 +146,7 @@ export const useRevenueChart = (metric: string, segment?: string) => {
     queryKey: ["revenue", "chart", metric, segment ?? null],
     queryFn: async () =>
       sdk.client.fetch<{ points: ChartPoint[]; segments: string[] }>(
-        `/admin/revenue/charts/${metric}${
-          segment ? `?segment=${segment}` : ""
-        }`
+        `/admin/revenue/charts/${metric}${segment ? `?segment=${segment}` : ""}`
       ),
     staleTime: 5 * 60 * 1000,
   })

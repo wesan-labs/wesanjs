@@ -3344,5 +3344,129 @@
       "authenticationFailed": "Kimlik doğrulama başarısız oldu",
       "cloud": "Medusa Cloud ile giriş yapın"
     }
+  },
+  "revenue": {
+    "tabs": {
+      "general": "Genel",
+      "subscription": "Abonelik",
+      "ads": "Reklam"
+    },
+    "period": {
+      "d7": "7g",
+      "d28": "28g",
+      "month": "Bu ay",
+      "last7": "Son 7 gün",
+      "last28": "Son 28 gün"
+    },
+    "addExpense": "Gider ekle",
+    "loading": "Yükleniyor…",
+    "loadError": "Revenue verisi alınamadı. Backend çalışıyor mu kontrol et.",
+    "noData": "Henüz veri yok",
+    "pnl": {
+      "netProfit": "Net Kâr",
+      "margin": "%{{value}} net marj",
+      "income": "Gelir",
+      "deduction": "Kesinti",
+      "mrr": "MRR"
+    },
+    "composition": {
+      "title": "Gelir Kompozisyonu",
+      "income": "Gelir",
+      "subscription": "Abonelik",
+      "ad": "Reklam"
+    },
+    "kpi": {
+      "totalRevenue": "Toplam Gelir",
+      "totalRevenueSub": "Abonelik + reklam",
+      "mrr": "MRR",
+      "mrrSub": "Aylık yinelenen",
+      "activeSubs": "Aktif Abonelik",
+      "now": "Şu an",
+      "adThisMonth": "Reklam · Bu Ay",
+      "calendarMonth": "Takvim ayı"
+    },
+    "trend": {
+      "totalTitle": "Toplam Gelir Trendi"
+    },
+    "regions": {
+      "title": "Ödeme Bölgeleri",
+      "empty": "Henüz ödeme bölgesi yok",
+      "byCountry": "Ülkeye Göre",
+      "countryEmpty": "Ülke verisi yok",
+      "unmapped": "Haritada gösterilemeyen: {{list}}"
+    },
+    "apps": {
+      "title": "Uygulamalar",
+      "app": "Uygulama",
+      "subscription": "Abonelik",
+      "ad": "Reklam",
+      "total": "Toplam",
+      "subscribers": "Abone",
+      "empty": "Henüz ürün yok — Ayarlar → Entegrasyonlar'dan ekle",
+      "product": "Ürün"
+    },
+    "recent": {
+      "title": "Son İşlemler",
+      "kind": "Tür",
+      "date": "Tarih",
+      "amount": "Tutar",
+      "empty": "Henüz işlem yok — webhook bağlanınca dolacak"
+    },
+    "sub": {
+      "thisMonth": "Bu Ay",
+      "thisMonthSub": "Takvim ayı (1→bugün)",
+      "lastMonth": "Geçen Ay",
+      "lastMonthSub": "Tam ay",
+      "mrr": "MRR",
+      "mrrSub": "Aylık yinelenen",
+      "activeSubs": "Aktif Abonelik",
+      "now": "Şu an",
+      "trial": "Trial",
+      "newCustomers": "Yeni Müşteri",
+      "last28d": "Son 28 gün",
+      "activeUsers": "Aktif Kullanıcı",
+      "byProduct": "Ürüne Göre",
+      "trendTitle": "Abonelik Geliri Trendi",
+      "byPlatform": "Platforma Göre",
+      "platformEmpty": "Platform verisi yok",
+      "productEmpty": "Henüz ürün yok"
+    },
+    "ad": {
+      "today": "Bugün",
+      "todaySub": "Bugünkü reklam geliri · düne göre",
+      "thisMonth": "Bu Ay",
+      "thisMonthSub": "Takvim ayı (1→bugün)",
+      "lastMonth": "Geçen Ay",
+      "lastMonthSub": "Tam ay",
+      "ecpm": "eCPM",
+      "ecpmSub": "1000 gösterim başına",
+      "impressions": "Gösterim",
+      "impressionsSub": "Bu ay",
+      "dailyTitle": "Günlük Reklam Geliri",
+      "dailyEmpty": "Henüz günlük veri yok",
+      "breakdown": "Kırılım",
+      "allProducts": "Tüm ürünler",
+      "allPlatforms": "Tüm platformlar",
+      "product": "Ürün",
+      "platform": "Platform",
+      "revenue": "Gelir",
+      "emptyFilter": "Bu filtrede reklam verisi yok"
+    },
+    "expense": {
+      "cancel": "İptal",
+      "save": "Kaydet",
+      "title": "Yeni gider",
+      "hint": "Net kâr ve kesintiler bu gideri içerir.",
+      "description": "Açıklama",
+      "descriptionPh": "ör. sunucu maliyeti",
+      "amount": "Tutar ({{currency}})",
+      "date": "Tarih",
+      "category": "Kategori",
+      "categoryPh": "ör. altyapı, pazarlama",
+      "recurring": "Tekrarlı",
+      "recurringHint": "Her ay tekrar eden gider",
+      "created": "Gider eklendi",
+      "createError": "Gider eklenemedi"
+    }
   }
 }

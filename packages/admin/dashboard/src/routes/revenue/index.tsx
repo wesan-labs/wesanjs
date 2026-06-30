@@ -1,9 +1,22 @@
-import { Container, Select, Tabs, Text } from "@medusajs/ui"
+import {
+  Button,
+  Container,
+  FocusModal,
+  Input,
+  Label,
+  Select,
+  Switch,
+  Tabs,
+  Text,
+  toast,
+} from "@medusajs/ui"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { useAppsOverview, type AppOverviewRow } from "../../hooks/api/apps"
 import {
   useAdBreakdown,
+  useCreateExpense,
   useRevenueChart,
   useRevenueOverview,
   type AdBreakdown,
@@ -15,6 +28,7 @@ import {
   BarList,
   centroidFor,
   DataTable,
+  Donut,
   MapPanel,
   Money,
   StackedAreaChart,
@@ -22,8 +36,20 @@ import {
   Widget,
   type MapMarker,
 } from "../dashboards/kit"
+import { getLocaleAmount } from "../../lib/money-amount-helpers"
 
 const usd = (v: number) => `$${Number(v).toLocaleString()}`
+
+// Dar alan (donut merkezi) için kompakt tutar — getLocaleAmount ile AYNI yaklaşım
+// (tarayıcı-locale [], narrowSymbol, kod yok) + compact notasyon. 100k→₺100K, 10M→₺10M.
+const compactAmount = (amount: number, currency: string) =>
+  new Intl.NumberFormat([], {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount)
 // RevenueCat grafik/segment verisi USD (abonelik native) — Money buradan display'e çevirir.
 const RC = "USD"
 
@@ -45,7 +71,12 @@ const PlatformIcon = ({ platform }: { platform: string }) => {
   }
   if (platform === "android") {
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" style={{ fill: "#3DDC84" }} aria-hidden>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        style={{ fill: "#3DDC84" }}
+        aria-hidden
+      >
         <path d={ICON_ANDROID} />
       </svg>
     )
@@ -58,38 +89,32 @@ const PLATFORM_SERIES = [
   { key: "android", label: "Android", color: "#3DDC84" },
 ]
 
-/* ---- modern P&L özeti: NET hero + kompozisyon + Gelir/Kesinti ---- */
+/* ---- P&L hero (tasarım): NET büyük + %marj, altta Gelir/Kesinti/MRR ---- */
 const INCOME_GREEN = "#10b981"
 const AD_BLUE = "#0ea5e9"
-const DEDUCT_GREY = "#9ca3af"
 
+// Ay etiketi — tarayıcı/uygulama locale'i (i18n ile aynı kaynak), hardcode yok.
 const monthLabel = () =>
-  new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric" })
+  new Date().toLocaleDateString(undefined, { month: "long", year: "numeric" })
 
-const PnlRow = ({
+const HeroStat = ({
   label,
   amount,
-  currency,
-  deduction,
+  cur,
+  negative,
 }: {
   label: string
   amount: number
-  currency: string
-  deduction?: boolean
+  cur: string
+  negative?: boolean
 }) => (
-  <div className="border-ui-border-base flex items-center justify-between gap-x-3 border-b py-2 last:border-0">
-    <div className="flex items-center gap-x-2">
-      <span
-        className="h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: deduction ? DEDUCT_GREY : INCOME_GREEN }}
-      />
-      <Text size="small" className="text-ui-fg-subtle">
-        {label}
-      </Text>
-    </div>
-    <span className="text-ui-fg-base text-sm font-medium tabular-nums">
-      {deduction ? "−" : ""}
-      <Money amount={amount} currency={currency} />
+  <div className="flex flex-col gap-y-0.5">
+    <Text size="xsmall" className="text-ui-fg-muted">
+      {label}
+    </Text>
+    <span className="text-ui-fg-base text-lg font-semibold tabular-nums">
+      {negative ? "−" : ""}
+      {getLocaleAmount(amount, cur)}
     </span>
   </div>
 )
@@ -101,95 +126,120 @@ const PnlSummary = ({
   overview: RevenueOverview
   cur: string
 }) => {
+  const { t } = useTranslation()
   const income = overview.subscriptionRevenue + overview.adRevenue
   const deductions =
     overview.commission + overview.expenseTotal + overview.taxTotal
   const positive = overview.net >= 0
   const margin = income > 0 ? Math.round((overview.net / income) * 100) : null
-  const subPct = income > 0 ? (overview.subscriptionRevenue / income) * 100 : 0
-  const adPct = income > 0 ? (overview.adRevenue / income) * 100 : 0
 
   return (
-    <Container className="overflow-hidden p-0">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 p-5 pb-4">
-        <div className="flex flex-col gap-y-1">
-          <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
-            Net Kâr
-          </Text>
-          <div className="flex items-baseline gap-x-2">
-            <span
-              className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl"
-              style={{ color: positive ? "#059669" : "#dc2626" }}
-            >
-              <Money amount={overview.net} currency={cur} />
-            </span>
-            {margin != null ? (
-              <span className="bg-ui-bg-component text-ui-fg-subtle rounded-full px-2 py-0.5 text-xs tabular-nums">
-                %{margin} marj
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <Text size="small" className="text-ui-fg-muted capitalize">
-          {monthLabel()}
+    <Container className="flex h-full flex-col overflow-hidden p-0">
+      <div className="flex flex-1 flex-col justify-center gap-y-2 p-6">
+        <Text
+          size="xsmall"
+          weight="plus"
+          className="text-ui-fg-muted uppercase tracking-wider"
+        >
+          {t("revenue.pnl.netProfit")} · {monthLabel()}
         </Text>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span
+            className="text-3xl font-semibold tabular-nums tracking-tight sm:text-4xl"
+            style={{ color: positive ? "#059669" : "#dc2626" }}
+          >
+            {getLocaleAmount(overview.net, cur)}
+          </span>
+          {margin != null ? (
+            <span className="bg-ui-bg-component text-ui-fg-subtle rounded-full px-2 py-0.5 text-xs tabular-nums">
+              {t("revenue.pnl.margin", { value: margin })}
+            </span>
+          ) : null}
+        </div>
       </div>
-
-      {income > 0 ? (
-        <div className="px-5 pb-4">
-          <div className="bg-ui-bg-component flex h-2 w-full overflow-hidden rounded-full">
-            <div style={{ width: `${subPct}%`, background: INCOME_GREEN }} />
-            <div style={{ width: `${adPct}%`, background: AD_BLUE }} />
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-            <span className="flex items-center gap-x-1.5">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: INCOME_GREEN }} />
-              <Text size="xsmall" className="text-ui-fg-muted">Abonelik %{Math.round(subPct)}</Text>
-            </span>
-            <span className="flex items-center gap-x-1.5">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: AD_BLUE }} />
-              <Text size="xsmall" className="text-ui-fg-muted">Reklam %{Math.round(adPct)}</Text>
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="border-ui-border-base grid grid-cols-1 border-t sm:grid-cols-2">
-        <div className="border-ui-border-base p-5 sm:border-r">
-          <div className="mb-1 flex items-center justify-between">
-            <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
-              Gelir
-            </Text>
-            <span className="text-ui-fg-base text-sm font-semibold tabular-nums">
-              <Money amount={income} currency={cur} />
-            </span>
-          </div>
-          <PnlRow label="Abonelik" amount={overview.subscriptionRevenue} currency={cur} />
-          <PnlRow label="Reklam" amount={overview.adRevenue} currency={cur} />
-        </div>
-        <div className="border-ui-border-base border-t p-5 sm:border-t-0">
-          <div className="mb-1 flex items-center justify-between">
-            <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wider">
-              Kesintiler
-            </Text>
-            <span className="text-ui-fg-base text-sm font-semibold tabular-nums">
-              −<Money amount={deductions} currency={cur} />
-            </span>
-          </div>
-          {overview.commission > 0 ? (
-            <PnlRow label="Komisyon" amount={overview.commission} currency={cur} deduction />
-          ) : null}
-          <PnlRow label="Gider" amount={overview.expenseTotal} currency={cur} deduction />
-          {overview.taxTotal > 0 ? (
-            <PnlRow label="Vergi" amount={overview.taxTotal} currency={cur} deduction />
-          ) : null}
-        </div>
+      <div className="border-ui-border-base flex flex-wrap gap-x-10 gap-y-3 border-t p-6">
+        <HeroStat label={t("revenue.pnl.income")} amount={income} cur={cur} />
+        <HeroStat
+          label={t("revenue.pnl.deduction")}
+          amount={deductions}
+          cur={cur}
+          negative
+        />
+        <HeroStat
+          label={t("revenue.pnl.mrr")}
+          amount={overview.mrr}
+          cur={cur}
+        />
       </div>
     </Container>
   )
 }
 
+/* ---- Gelir kompozisyonu: donut (abonelik vs reklam) + değerli legend ---- */
+const RevenueComposition = ({
+  overview,
+  cur,
+}: {
+  overview: RevenueOverview
+  cur: string
+}) => {
+  const { t } = useTranslation()
+  const income = overview.subscriptionRevenue + overview.adRevenue
+  const pct = (v: number) => (income > 0 ? Math.round((v / income) * 100) : 0)
+  const legend = [
+    {
+      id: "sub",
+      label: t("revenue.composition.subscription"),
+      value: overview.subscriptionRevenue,
+      color: INCOME_GREEN,
+    },
+    {
+      id: "ad",
+      label: t("revenue.composition.ad"),
+      value: overview.adRevenue,
+      color: AD_BLUE,
+    },
+  ]
+
+  return (
+    <Widget title={t("revenue.composition.title")}>
+      <div className="flex h-full flex-1 items-center gap-x-6">
+        <Donut
+          segments={legend}
+          center={
+            <>
+              <span className="text-ui-fg-muted text-[10px] uppercase tracking-wider">
+                {t("revenue.composition.income")}
+              </span>
+              <span className="text-ui-fg-base text-sm font-semibold tabular-nums">
+                {compactAmount(income, cur)}
+              </span>
+            </>
+          }
+        />
+        <div className="flex flex-1 flex-col gap-y-4">
+          {legend.map((s) => (
+            <div key={s.id} className="flex flex-col gap-y-0.5">
+              <div className="text-ui-fg-muted flex items-center gap-x-2 text-xs">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: s.color }}
+                />
+                {s.label}
+              </div>
+              <div className="text-ui-fg-base text-sm font-semibold tabular-nums">
+                {getLocaleAmount(s.value, cur)} · %{pct(s.value)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Widget>
+  )
+}
+
 export const Component = () => {
+  const { t } = useTranslation()
   const { overview, isLoading, isError } = useRevenueOverview()
   const revenueChart = useRevenueChart("revenue")
   const platformChart = useRevenueChart("revenue", "store")
@@ -198,12 +248,22 @@ export const Component = () => {
   const { breakdown } = useAdBreakdown()
   const [fApp, setFApp] = useState("all")
   const [fPlatform, setFPlatform] = useState("all")
+  const [period, setPeriod] = useState("28g")
+  const [expenseOpen, setExpenseOpen] = useState(false)
+  const [expense, setExpense] = useState({
+    description: "",
+    amount: "",
+    category: "",
+    occurred_at: new Date().toISOString().slice(0, 10),
+    recurring: false,
+  })
+  const createExpense = useCreateExpense()
 
   if (isLoading) {
     return (
       <Container className="p-6">
         <Text size="small" className="text-ui-fg-muted">
-          Yükleniyor…
+          {t("revenue.loading")}
         </Text>
       </Container>
     )
@@ -213,7 +273,7 @@ export const Component = () => {
     return (
       <Container className="p-6">
         <Text size="small" className="text-ui-fg-error">
-          Revenue verisi alınamadı. Backend çalışıyor mu kontrol et.
+          {t("revenue.loadError")}
         </Text>
       </Container>
     )
@@ -247,7 +307,13 @@ export const Component = () => {
   countryEntries.forEach(([name, value]) => {
     const c = centroidFor(name)
     if (c) {
-      mapMarkers.push({ lng: c[0], lat: c[1], label: name, value, display: usd(value) })
+      mapMarkers.push({
+        lng: c[0],
+        lat: c[1],
+        label: name,
+        value,
+        display: usd(value),
+      })
     } else {
       unmappedCountries.push(name)
     }
@@ -260,9 +326,55 @@ export const Component = () => {
 
   const num = (n?: number) => (n ?? 0).toLocaleString()
 
+  // Genel: gerçek seriler (uydurma yok — yoksa sparkline çizilmez)
+  const income = overview.subscriptionRevenue + overview.adRevenue
+  const mrrTrend = (overview.mrrTrend ?? []).map((m) => m.mrr)
+  const adDailyTotals = (breakdown?.daily ?? []).map((d) => d.total)
+  // "Bugün" kartı için gerçek delta: bugün vs dün (aylık trend değil).
+  const adNowDelta = (() => {
+    const n = adDailyTotals.length
+    if (n < 2) {
+      return null
+    }
+    const today = adDailyTotals[n - 1]
+    const prev = adDailyTotals[n - 2]
+    return prev > 0 ? ((today - prev) / prev) * 100 : null
+  })()
+  // Abonelik günlük geliri (revenuePoints = "revenue" metric = abonelik).
+  const subTrend = revenuePoints.map((p) => p.value)
+  // Toplam günlük gelir = abonelik (revenuePoints) + reklam (breakdown.daily),
+  // gün bazında birleştir. Her ikisi de ISO YYYY-MM-DD. İki gerçek seriyi
+  // toplamak — uydurma değil. O(n+m) time, O(g) space (g = benzersiz gün).
+  const totalByDay = new Map<string, number>()
+  revenuePoints.forEach((p) => {
+    const k = String(p.date).slice(0, 10)
+    totalByDay.set(k, (totalByDay.get(k) ?? 0) + p.value)
+  })
+  ;(breakdown?.daily ?? []).forEach((d) => {
+    const k = String(d.date).slice(0, 10)
+    totalByDay.set(k, (totalByDay.get(k) ?? 0) + d.total)
+  })
+  const totalDailyPoints = Array.from(totalByDay.entries())
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([date, value]) => ({ date, value }))
+  const totalTrend = totalDailyPoints.map((p) => p.value)
+  // Dönem seçimi trend görünümünü kırpar (gerçek, client-side — günlük seri elde).
+  const periodDays =
+    period === "7g" ? 7 : period === "28g" ? 28 : totalDailyPoints.length
+  const visibleTrend = totalDailyPoints.slice(-periodDays)
+  const periodLabel =
+    period === "7g"
+      ? t("revenue.period.last7")
+      : period === "28g"
+      ? t("revenue.period.last28")
+      : t("revenue.period.month")
+
   // Reklam: günlük seri (platform kırılımlı) + filtrelenebilir kırılım
   const fmtDay = (s: string) =>
-    new Date(s).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" })
+    new Date(s).toLocaleDateString(undefined, {
+      day: "2-digit",
+      month: "short",
+    })
   const adDaily = (breakdown?.daily ?? []).map((d) => ({
     label: fmtDay(d.date),
     ios: d.ios,
@@ -279,24 +391,119 @@ export const Component = () => {
 
   return (
     <div className="flex flex-col gap-y-3">
-      {/* P&L ŞERİDİ */}
-      <PnlSummary overview={overview} cur={cur} />
-
       <Tabs defaultValue="genel">
-        <Tabs.List>
-          <Tabs.Trigger value="genel">Genel</Tabs.Trigger>
-          <Tabs.Trigger value="abonelik">Abonelik</Tabs.Trigger>
-          <Tabs.Trigger value="reklam">Reklam</Tabs.Trigger>
-        </Tabs.List>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Tabs.List>
+            <Tabs.Trigger value="genel">
+              {t("revenue.tabs.general")}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="abonelik">
+              {t("revenue.tabs.subscription")}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="reklam">{t("revenue.tabs.ads")}</Tabs.Trigger>
+          </Tabs.List>
+          <div className="flex items-center gap-x-2">
+            <Tabs value={period} onValueChange={setPeriod}>
+              <Tabs.List>
+                <Tabs.Trigger value="7g">{t("revenue.period.d7")}</Tabs.Trigger>
+                <Tabs.Trigger value="28g">
+                  {t("revenue.period.d28")}
+                </Tabs.Trigger>
+                <Tabs.Trigger value="month">
+                  {t("revenue.period.month")}
+                </Tabs.Trigger>
+              </Tabs.List>
+            </Tabs>
+            <Button size="small" onClick={() => setExpenseOpen(true)}>
+              {t("revenue.addExpense")}
+            </Button>
+          </div>
+        </div>
 
-        {/* GENEL: ürün kırılımı + defter */}
-        <Tabs.Content value="genel" className="mt-3 flex flex-col gap-y-3">
-          <Widget title="Uygulamalar">
+        {/* GENEL: hero + donut → KPI → trend → harita → tablolar (tasarım sırası) */}
+        <Tabs.Content value="genel" className="mt-2 flex flex-col gap-y-3">
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[1.4fr_1fr]">
+            <PnlSummary overview={overview} cur={cur} />
+            <RevenueComposition overview={overview} cur={cur} />
+          </div>
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+            <StatCard
+              label={t("revenue.kpi.totalRevenue")}
+              sub={t("revenue.kpi.totalRevenueSub")}
+              accent="positive"
+              value={<Money amount={income} currency={cur} />}
+              trend={totalTrend}
+            />
+            <StatCard
+              label={t("revenue.kpi.mrr")}
+              sub={t("revenue.kpi.mrrSub")}
+              accent="positive"
+              value={<Money amount={overview.mrr} currency={cur} />}
+              trend={mrrTrend}
+            />
+            <StatCard
+              label={t("revenue.kpi.activeSubs")}
+              sub={t("revenue.kpi.now")}
+              value={num(overview.activeSubscriptions)}
+            />
+            <StatCard
+              label={t("revenue.kpi.adThisMonth")}
+              sub={t("revenue.kpi.calendarMonth")}
+              accent="positive"
+              value={<Money amount={overview.adRevenue} currency={cur} />}
+              trend={adDailyTotals}
+            />
+          </div>
+
+          <Widget title={`${t("revenue.trend.totalTitle")} · ${periodLabel}`}>
+            {visibleTrend.length ? (
+              <AreaChartPanel
+                data={visibleTrend}
+                xKey="date"
+                yKey="value"
+                valueFormatter={usd}
+              />
+            ) : (
+              <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
+                {t("revenue.noData")}
+              </div>
+            )}
+          </Widget>
+
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
+            <Widget
+              title={t("revenue.regions.title")}
+              className="xl:col-span-2"
+            >
+              {mapMarkers.length ? (
+                <MapPanel markers={mapMarkers} />
+              ) : (
+                <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
+                  {t("revenue.regions.empty")}
+                </div>
+              )}
+            </Widget>
+            <Widget title={t("revenue.regions.byCountry")}>
+              <BarList
+                items={countryItems}
+                emptyLabel={t("revenue.regions.countryEmpty")}
+              />
+              {unmappedCountries.length ? (
+                <Text size="xsmall" className="text-ui-fg-muted mt-2">
+                  {t("revenue.regions.unmapped", {
+                    list: unmappedCountries.join(", "),
+                  })}
+                </Text>
+              ) : null}
+            </Widget>
+          </div>
+
+          <Widget title={t("revenue.apps.title")}>
             <DataTable<AppOverviewRow>
               columns={[
                 {
                   key: "name",
-                  header: "Uygulama",
+                  header: t("revenue.apps.app"),
                   render: (a) => (
                     <Link
                       to={`/apps/${a.id}`}
@@ -308,94 +515,132 @@ export const Component = () => {
                 },
                 {
                   key: "rev",
-                  header: "Abonelik",
+                  header: t("revenue.apps.subscription"),
                   align: "right",
-                  render: (a) => <Money amount={a.revenue28d} currency={a.currency} />,
+                  render: (a) => (
+                    <Money amount={a.revenue28d} currency={a.currency} />
+                  ),
                 },
                 {
                   key: "ad",
-                  header: "Reklam",
+                  header: t("revenue.apps.ad"),
                   align: "right",
-                  render: (a) => <Money amount={a.adRevenue} currency={a.adCurrency} />,
+                  render: (a) => (
+                    <Money amount={a.adRevenue} currency={a.adCurrency} />
+                  ),
                 },
                 {
                   key: "total",
-                  header: "Toplam",
+                  header: t("revenue.apps.total"),
                   align: "right",
                   render: (a) => (
                     <span className="font-medium">
-                      <Money amount={a.totalDisplay} currency={a.displayCurrency} />
+                      <Money
+                        amount={a.totalDisplay}
+                        currency={a.displayCurrency}
+                      />
                     </span>
                   ),
                 },
                 {
                   key: "subs",
-                  header: "Abone",
+                  header: t("revenue.apps.subscribers"),
                   align: "right",
                   render: (a) => a.activeSubscriptions.toLocaleString(),
                 },
               ]}
               rows={apps}
-              emptyLabel="Henüz ürün yok — Ayarlar → Entegrasyonlar'dan ekle"
+              emptyLabel={t("revenue.apps.empty")}
             />
           </Widget>
 
-          <Widget title="Son İşlemler">
+          <Widget title={t("revenue.recent.title")}>
             <DataTable<RevenueEventRow>
               columns={[
-                { key: "kind", header: "Tür", render: (r) => r.kind },
+                {
+                  key: "kind",
+                  header: t("revenue.recent.kind"),
+                  render: (r) => r.kind,
+                },
                 {
                   key: "date",
-                  header: "Tarih",
+                  header: t("revenue.recent.date"),
                   render: (r) => new Date(r.occurred_at).toLocaleDateString(),
                 },
                 {
                   key: "amount",
-                  header: "Tutar",
+                  header: t("revenue.recent.amount"),
                   align: "right",
-                  render: (r) => <Money amount={r.gross_amount} currency={r.currency} />,
+                  render: (r) => (
+                    <Money amount={r.gross_amount} currency={r.currency} />
+                  ),
                 },
               ]}
               rows={overview.recentEvents}
-              emptyLabel="Henüz işlem yok — webhook bağlanınca dolacak"
+              emptyLabel={t("revenue.recent.empty")}
             />
           </Widget>
         </Tabs.Content>
 
         {/* ABONELİK: RevenueCat dünyası */}
-        <Tabs.Content value="abonelik" className="mt-3 flex flex-col gap-y-3">
+        <Tabs.Content value="abonelik" className="flex flex-col gap-y-3">
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             <StatCard
-              label="Bu Ay"
-              sub="Takvim ayı (1→bugün)"
-              value={<Money amount={overview.subscriptionRevenue} currency={cur} />}
+              label={t("revenue.sub.thisMonth")}
+              sub={t("revenue.sub.thisMonthSub")}
+              accent="positive"
+              value={
+                <Money amount={overview.subscriptionRevenue} currency={cur} />
+              }
+              trend={subTrend}
             />
             <StatCard
-              label="Geçen Ay"
-              sub="Tam ay"
+              label={t("revenue.sub.lastMonth")}
+              sub={t("revenue.sub.lastMonthSub")}
               value={
-                <Money amount={overview.subscriptionRevenueLastMonth} currency={cur} />
+                <Money
+                  amount={overview.subscriptionRevenueLastMonth}
+                  currency={cur}
+                />
               }
             />
             <StatCard
-              label="MRR"
-              sub="Aylık yinelenen"
+              label={t("revenue.sub.mrr")}
+              sub={t("revenue.sub.mrrSub")}
+              accent="positive"
               value={<Money amount={overview.mrr} currency={cur} />}
+              trend={mrrTrend}
             />
-            <StatCard label="Aktif Abonelik" sub="Şu an" value={num(overview.activeSubscriptions)} />
+            <StatCard
+              label={t("revenue.sub.activeSubs")}
+              sub={t("revenue.sub.now")}
+              value={num(overview.activeSubscriptions)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
-            <StatCard label="Trial" sub="Şu an" value={num(overview.activeTrials)} />
-            <StatCard label="Yeni Müşteri" sub="Son 28 gün" value={num(overview.newCustomers)} />
-            <StatCard label="Aktif Kullanıcı" sub="Son 28 gün" value={num(overview.activeUsers)} />
+            <StatCard
+              label={t("revenue.sub.trial")}
+              sub={t("revenue.sub.now")}
+              value={num(overview.activeTrials)}
+            />
+            <StatCard
+              label={t("revenue.sub.newCustomers")}
+              sub={t("revenue.sub.last28d")}
+              value={num(overview.newCustomers)}
+            />
+            <StatCard
+              label={t("revenue.sub.activeUsers")}
+              sub={t("revenue.sub.last28d")}
+              value={num(overview.activeUsers)}
+            />
           </div>
 
-          <Widget title="Ürüne Göre">
+          <Widget title={t("revenue.sub.byProduct")}>
             <DataTable<AppOverviewRow>
               columns={[
                 {
                   key: "name",
-                  header: "Ürün",
+                  header: t("revenue.apps.product"),
                   render: (a) => (
                     <Link
                       to={`/apps/${a.id}`}
@@ -407,30 +652,35 @@ export const Component = () => {
                 },
                 {
                   key: "rev",
-                  header: "Bu Ay",
+                  header: t("revenue.sub.thisMonth"),
                   align: "right",
-                  render: (a) => <Money amount={a.revenue28d} currency={a.currency} />,
+                  render: (a) => (
+                    <Money amount={a.revenue28d} currency={a.currency} />
+                  ),
                 },
                 {
                   key: "mrr",
-                  header: "MRR",
+                  header: t("revenue.sub.mrr"),
                   align: "right",
                   render: (a) => <Money amount={a.mrr} currency={a.currency} />,
                 },
                 {
                   key: "subs",
-                  header: "Aktif Abonelik",
+                  header: t("revenue.sub.activeSubs"),
                   align: "right",
                   render: (a) => a.activeSubscriptions.toLocaleString(),
                 },
               ]}
               rows={apps}
-              emptyLabel="Henüz ürün yok"
+              emptyLabel={t("revenue.sub.productEmpty")}
             />
           </Widget>
 
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
-            <Widget title="Abonelik Geliri Trendi" className="xl:col-span-2">
+            <Widget
+              title={t("revenue.sub.trendTitle")}
+              className="xl:col-span-2"
+            >
               {revenuePoints.length ? (
                 <AreaChartPanel
                   data={revenuePoints}
@@ -440,30 +690,41 @@ export const Component = () => {
                 />
               ) : (
                 <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
-                  Henüz veri yok
+                  {t("revenue.noData")}
                 </div>
               )}
             </Widget>
-            <Widget title="Platforma Göre">
-              <BarList items={platformItems} emptyLabel="Platform verisi yok" />
+            <Widget title={t("revenue.sub.byPlatform")}>
+              <BarList
+                items={platformItems}
+                emptyLabel={t("revenue.sub.platformEmpty")}
+              />
             </Widget>
           </div>
 
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
-            <Widget title="Ödeme Bölgeleri" className="xl:col-span-2">
+            <Widget
+              title={t("revenue.regions.title")}
+              className="xl:col-span-2"
+            >
               {mapMarkers.length ? (
                 <MapPanel markers={mapMarkers} />
               ) : (
                 <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
-                  Henüz ödeme bölgesi yok
+                  {t("revenue.regions.empty")}
                 </div>
               )}
             </Widget>
-            <Widget title="Ülkeye Göre">
-              <BarList items={countryItems} emptyLabel="Ülke verisi yok" />
+            <Widget title={t("revenue.regions.byCountry")}>
+              <BarList
+                items={countryItems}
+                emptyLabel={t("revenue.regions.countryEmpty")}
+              />
               {unmappedCountries.length ? (
                 <Text size="xsmall" className="text-ui-fg-muted mt-2">
-                  Haritada gösterilemeyen: {unmappedCountries.join(", ")}
+                  {t("revenue.regions.unmapped", {
+                    list: unmappedCountries.join(", "),
+                  })}
                 </Text>
               ) : null}
             </Widget>
@@ -471,31 +732,43 @@ export const Component = () => {
         </Tabs.Content>
 
         {/* REKLAM: AdMob dünyası */}
-        <Tabs.Content value="reklam" className="mt-3 flex flex-col gap-y-3">
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <Tabs.Content value="reklam" className="flex flex-col gap-y-3">
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
             <StatCard
-              label="Bu Ay"
-              sub="Takvim ayı (1→bugün)"
+              label={t("revenue.ad.today")}
+              sub={t("revenue.ad.todaySub")}
+              accent="positive"
+              value={<Money amount={overview.adRevenueNow} currency={cur} />}
+              trend={adDailyTotals}
+              delta={adNowDelta}
+            />
+            <StatCard
+              label={t("revenue.ad.thisMonth")}
+              sub={t("revenue.ad.thisMonthSub")}
+              accent="positive"
               value={<Money amount={overview.adRevenue} currency={cur} />}
+              trend={adDailyTotals}
             />
             <StatCard
-              label="Geçen Ay"
-              sub="Tam ay"
-              value={<Money amount={overview.adRevenueLastMonth} currency={cur} />}
+              label={t("revenue.ad.lastMonth")}
+              sub={t("revenue.ad.lastMonthSub")}
+              value={
+                <Money amount={overview.adRevenueLastMonth} currency={cur} />
+              }
             />
             <StatCard
-              label="eCPM"
-              sub="1000 gösterim başına"
+              label={t("revenue.ad.ecpm")}
+              sub={t("revenue.ad.ecpmSub")}
               value={<Money amount={overview.adEcpm} currency={cur} />}
             />
             <StatCard
-              label="Gösterim"
-              sub="Bu ay"
+              label={t("revenue.ad.impressions")}
+              sub={t("revenue.ad.impressionsSub")}
               value={num(overview.adImpressions)}
             />
           </div>
 
-          <Widget title="Günlük Reklam Geliri">
+          <Widget title={t("revenue.ad.dailyTitle")}>
             {adDaily.length ? (
               <StackedAreaChart
                 data={adDaily}
@@ -505,21 +778,23 @@ export const Component = () => {
               />
             ) : (
               <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
-                Henüz günlük veri yok
+                {t("revenue.ad.dailyEmpty")}
               </div>
             )}
           </Widget>
 
           <Widget
-            title="Kırılım"
+            title={t("revenue.ad.breakdown")}
             action={
               <div className="flex items-center gap-x-2">
                 <Select size="small" value={fApp} onValueChange={setFApp}>
                   <Select.Trigger className="w-44">
-                    <Select.Value placeholder="Ürün" />
+                    <Select.Value placeholder={t("revenue.ad.product")} />
                   </Select.Trigger>
                   <Select.Content>
-                    <Select.Item value="all">Tüm ürünler</Select.Item>
+                    <Select.Item value="all">
+                      {t("revenue.ad.allProducts")}
+                    </Select.Item>
                     {adApps.map(([id, name]) => (
                       <Select.Item key={id} value={id}>
                         {name}
@@ -527,12 +802,18 @@ export const Component = () => {
                     ))}
                   </Select.Content>
                 </Select>
-                <Select size="small" value={fPlatform} onValueChange={setFPlatform}>
+                <Select
+                  size="small"
+                  value={fPlatform}
+                  onValueChange={setFPlatform}
+                >
                   <Select.Trigger className="w-36">
-                    <Select.Value placeholder="Platform" />
+                    <Select.Value placeholder={t("revenue.ad.platform")} />
                   </Select.Trigger>
                   <Select.Content>
-                    <Select.Item value="all">Tüm platformlar</Select.Item>
+                    <Select.Item value="all">
+                      {t("revenue.ad.allPlatforms")}
+                    </Select.Item>
                     <Select.Item value="ios">iOS</Select.Item>
                     <Select.Item value="android">Android</Select.Item>
                   </Select.Content>
@@ -544,12 +825,12 @@ export const Component = () => {
               columns={[
                 {
                   key: "app",
-                  header: "Ürün",
+                  header: t("revenue.ad.product"),
                   render: (r) => r.appName,
                 },
                 {
                   key: "platform",
-                  header: "Platform",
+                  header: t("revenue.ad.platform"),
                   render: (r) => (
                     <div className="flex items-center gap-x-2">
                       <PlatformIcon platform={r.platform} />
@@ -559,29 +840,150 @@ export const Component = () => {
                 },
                 {
                   key: "amount",
-                  header: "Gelir",
+                  header: t("revenue.ad.revenue"),
                   align: "right",
                   render: (r) => <Money amount={r.amount} currency={cur} />,
                 },
                 {
                   key: "imp",
-                  header: "Gösterim",
+                  header: t("revenue.ad.impressions"),
                   align: "right",
                   render: (r) => r.impressions.toLocaleString(),
                 },
                 {
                   key: "ecpm",
-                  header: "eCPM",
+                  header: t("revenue.ad.ecpm"),
                   align: "right",
                   render: (r) => <Money amount={r.ecpm} currency={cur} />,
                 },
               ]}
               rows={adRows}
-              emptyLabel="Bu filtrede reklam verisi yok"
+              emptyLabel={t("revenue.ad.emptyFilter")}
             />
           </Widget>
         </Tabs.Content>
       </Tabs>
+
+      <FocusModal open={expenseOpen} onOpenChange={setExpenseOpen}>
+        <FocusModal.Content>
+          <FocusModal.Header>
+            <div className="flex items-center justify-end gap-x-2">
+              <FocusModal.Close asChild>
+                <Button size="small" variant="secondary">
+                  {t("revenue.expense.cancel")}
+                </Button>
+              </FocusModal.Close>
+              <Button
+                size="small"
+                isLoading={createExpense.isPending}
+                disabled={!expense.description.trim() || !expense.amount}
+                onClick={() =>
+                  createExpense.mutate(
+                    {
+                      description: expense.description.trim(),
+                      amount: Number(expense.amount),
+                      currency: cur,
+                      category: expense.category.trim() || "genel",
+                      occurred_at: expense.occurred_at,
+                      recurring: expense.recurring,
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.success(t("revenue.expense.created"))
+                        setExpenseOpen(false)
+                        setExpense({
+                          description: "",
+                          amount: "",
+                          category: "",
+                          occurred_at: new Date().toISOString().slice(0, 10),
+                          recurring: false,
+                        })
+                      },
+                      onError: (e: Error) =>
+                        toast.error(
+                          e?.message || t("revenue.expense.createError")
+                        ),
+                    }
+                  )
+                }
+              >
+                {t("revenue.expense.save")}
+              </Button>
+            </div>
+          </FocusModal.Header>
+          <FocusModal.Body className="flex flex-1 flex-col items-center overflow-auto py-8">
+            <div className="flex w-full max-w-lg flex-col gap-y-4">
+              <div>
+                <Text size="large" weight="plus">
+                  {t("revenue.expense.title")}
+                </Text>
+                <Text size="small" className="text-ui-fg-subtle">
+                  {t("revenue.expense.hint")}
+                </Text>
+              </div>
+              <div className="flex flex-col gap-y-2">
+                <Label>{t("revenue.expense.description")}</Label>
+                <Input
+                  value={expense.description}
+                  onChange={(e) =>
+                    setExpense({ ...expense, description: e.target.value })
+                  }
+                  placeholder={t("revenue.expense.descriptionPh")}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-y-2">
+                  <Label>
+                    {t("revenue.expense.amount", { currency: cur })}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={expense.amount}
+                    onChange={(e) =>
+                      setExpense({ ...expense, amount: e.target.value })
+                    }
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex flex-col gap-y-2">
+                  <Label>{t("revenue.expense.date")}</Label>
+                  <Input
+                    type="date"
+                    value={expense.occurred_at}
+                    onChange={(e) =>
+                      setExpense({ ...expense, occurred_at: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-y-2">
+                <Label>{t("revenue.expense.category")}</Label>
+                <Input
+                  value={expense.category}
+                  onChange={(e) =>
+                    setExpense({ ...expense, category: e.target.value })
+                  }
+                  placeholder={t("revenue.expense.categoryPh")}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <Label>{t("revenue.expense.recurring")}</Label>
+                  <Text size="xsmall" className="text-ui-fg-muted">
+                    {t("revenue.expense.recurringHint")}
+                  </Text>
+                </div>
+                <Switch
+                  checked={expense.recurring}
+                  onCheckedChange={(c) =>
+                    setExpense({ ...expense, recurring: !!c })
+                  }
+                />
+              </div>
+            </div>
+          </FocusModal.Body>
+        </FocusModal.Content>
+      </FocusModal>
     </div>
   )
 }

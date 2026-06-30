@@ -467,15 +467,22 @@ class RevenueModuleService extends MedusaService({
       subscriptionRevenueLastMonth += conv(a.amount, a.currency)
     }
     // Reklam: bu ay (takvim 1→bugün) ana sayı; geçen ay karşılaştırma için.
+    // adRevenueNow = bugünkü (takvim günü) reklam geliri.
     let adRevenue = 0
     let adImpressions = 0
     let adRevenueLastMonth = 0
+    let adRevenueNow = 0
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
     const platAgg = new Map<string, { amount: number; impressions: number }>()
     for (const s of adSnaps) {
       const d = new Date(s.date)
       const v = conv(s.ad_revenue, s.currency)
       if (d >= thisStart) {
         adRevenue += v
+        if (d >= todayStart) {
+          adRevenueNow += v
+        }
         const imp = Number(s.ad_impressions ?? 0)
         adImpressions += imp
         const p = platAgg.get(s.platform) ?? { amount: 0, impressions: 0 }
@@ -522,6 +529,7 @@ class RevenueModuleService extends MedusaService({
       subscriptionRevenue: r2(subscriptionRevenue),
       subscriptionRevenueLastMonth: r2(subscriptionRevenueLastMonth),
       adRevenue: r2(adRevenue),
+      adRevenueNow: r2(adRevenueNow),
       adRevenueLastMonth: r2(adRevenueLastMonth),
       adImpressions,
       adEcpm: ecpm(adRevenue, adImpressions),

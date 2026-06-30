@@ -10,6 +10,9 @@ type StatCardProps = {
   sub?: string
   accent?: StatAccent
   trend?: number[]
+  // Açık delta — verilirse trend'den hesaplanan yüzde yerine bu kullanılır
+  // (ör. "Bugün" kartı: bugün vs dün, aylık trend değil). null = delta gösterme.
+  delta?: number | null
 }
 
 // Inline-style colors → no dependency on Tailwind token class existence.
@@ -46,8 +49,9 @@ export const StatCard = ({
   sub,
   accent = "neutral",
   trend,
+  delta: deltaProp,
 }: StatCardProps) => {
-  const delta = pctDelta(trend)
+  const delta = deltaProp !== undefined ? deltaProp : pctDelta(trend)
 
   return (
     <Container className="flex min-h-[92px] flex-col gap-y-1.5 p-4">
@@ -70,7 +74,7 @@ export const StatCard = ({
       </div>
 
       <div
-        className="truncate text-xl font-semibold leading-none tabular-nums"
+        className="truncate text-xl font-semibold tabular-nums leading-none"
         style={{ color: accentColor[accent] }}
       >
         {value}

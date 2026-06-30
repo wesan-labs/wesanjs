@@ -3554,5 +3554,129 @@
       "update": "Edit",
       "delete": "Delete"
     }
+  },
+  "revenue": {
+    "tabs": {
+      "general": "General",
+      "subscription": "Subscription",
+      "ads": "Ads"
+    },
+    "period": {
+      "d7": "7d",
+      "d28": "28d",
+      "month": "This month",
+      "last7": "Last 7 days",
+      "last28": "Last 28 days"
+    },
+    "addExpense": "Add expense",
+    "loading": "Loading…",
+    "loadError": "Couldn't load revenue data. Check that the backend is running.",
+    "noData": "No data yet",
+    "pnl": {
+      "netProfit": "Net Profit",
+      "margin": "{{value}}% net margin",
+      "income": "Income",
+      "deduction": "Deductions",
+      "mrr": "MRR"
+    },
+    "composition": {
+      "title": "Revenue Composition",
+      "income": "Revenue",
+      "subscription": "Subscription",
+      "ad": "Ads"
+    },
+    "kpi": {
+      "totalRevenue": "Total Revenue",
+      "totalRevenueSub": "Subscription + ads",
+      "mrr": "MRR",
+      "mrrSub": "Monthly recurring",
+      "activeSubs": "Active Subscriptions",
+      "now": "Now",
+      "adThisMonth": "Ads · This Month",
+      "calendarMonth": "Calendar month"
+    },
+    "trend": {
+      "totalTitle": "Total Revenue Trend"
+    },
+    "regions": {
+      "title": "Payment Regions",
+      "empty": "No payment regions yet",
+      "byCountry": "By Country",
+      "countryEmpty": "No country data",
+      "unmapped": "Not shown on map: {{list}}"
+    },
+    "apps": {
+      "title": "Apps",
+      "app": "App",
+      "subscription": "Subscription",
+      "ad": "Ads",
+      "total": "Total",
+      "subscribers": "Subscribers",
+      "empty": "No products yet — add from Settings → Integrations",
+      "product": "Product"
+    },
+    "recent": {
+      "title": "Recent Transactions",
+      "kind": "Type",
+      "date": "Date",
+      "amount": "Amount",
+      "empty": "No transactions yet — will fill once a webhook is connected"
+    },
+    "sub": {
+      "thisMonth": "This Month",
+      "thisMonthSub": "Calendar month (1→today)",
+      "lastMonth": "Last Month",
+      "lastMonthSub": "Full month",
+      "mrr": "MRR",
+      "mrrSub": "Monthly recurring",
+      "activeSubs": "Active Subscriptions",
+      "now": "Now",
+      "trial": "Trial",
+      "newCustomers": "New Customers",
+      "last28d": "Last 28 days",
+      "activeUsers": "Active Users",
+      "byProduct": "By Product",
+      "trendTitle": "Subscription Revenue Trend",
+      "byPlatform": "By Platform",
+      "platformEmpty": "No platform data",
+      "productEmpty": "No products yet"
+    },
+    "ad": {
+      "today": "Today",
+      "todaySub": "Today's ad revenue · vs yesterday",
+      "thisMonth": "This Month",
+      "thisMonthSub": "Calendar month (1→today)",
+      "lastMonth": "Last Month",
+      "lastMonthSub": "Full month",
+      "ecpm": "eCPM",
+      "ecpmSub": "Per 1000 impressions",
+      "impressions": "Impressions",
+      "impressionsSub": "This month",
+      "dailyTitle": "Daily Ad Revenue",
+      "dailyEmpty": "No daily data yet",
+      "breakdown": "Breakdown",
+      "allProducts": "All products",
+      "allPlatforms": "All platforms",
+      "product": "Product",
+      "platform": "Platform",
+      "revenue": "Revenue",
+      "emptyFilter": "No ad data for this filter"
+    },
+    "expense": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "title": "New expense",
+      "hint": "Net profit and deductions include this expense.",
+      "description": "Description",
+      "descriptionPh": "e.g. server cost",
+      "amount": "Amount ({{currency}})",
+      "date": "Date",
+      "category": "Category",
+      "categoryPh": "e.g. infrastructure, marketing",
+      "recurring": "Recurring",
+      "recurringHint": "Recurs every month",
+      "created": "Expense added",
+      "createError": "Couldn't add expense"
+    }
   }
 }
