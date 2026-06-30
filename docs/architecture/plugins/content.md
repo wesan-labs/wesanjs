@@ -6,7 +6,7 @@ Görsel/metin/video-prompt üretimi (vision LLM) + içerik kütüphanesi + günl
 ## Tür & katman
 - **Tür:** plugin (content)
 - **Katman:** domain / içerik üretimi + sosyal analitik
-- **tenant_id taşıyor mu:** Hayır
+- **tenant_id taşıyor mu:** Evet (nullable, `tenant_default` varsayılan değeriyle)
 
 ## Mimari / katmanlar
 | Katman | Var mı | Sayı/İçerik |
