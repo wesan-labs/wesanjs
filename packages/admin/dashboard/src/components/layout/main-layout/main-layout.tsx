@@ -230,6 +230,11 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       to: "/cms",
     },
     {
+      icon: <UserGroup />,
+      label: "Tenants",
+      to: "/tenants",
+    },
+    {
       icon: <ChatBubbleLeftRight />,
       label: "Social Media",
       to: "/social-media",

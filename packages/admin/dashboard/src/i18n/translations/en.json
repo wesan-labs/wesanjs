@@ -3823,5 +3823,52 @@
       "generate": "✦ Generate",
       "generateSoon": "AI generation arrives in the AI phase"
     }
+  },
+  "tenants": {
+    "title": "Tenants",
+    "hint": "Control plane: create tenants, manage members, switch active tenant.",
+    "newTenant": "New Tenant",
+    "loading": "Loading…",
+    "empty": "No tenants yet.",
+    "name": "Name",
+    "slug": "Slug",
+    "status": "Status",
+    "members": "Members",
+    "role": "Role",
+    "active": "active",
+    "suspended": "suspended",
+    "activeTenant": "Active",
+    "makeActive": "Make active",
+    "clearActive": "Clear active tenant",
+    "activeBanner": "Requests are scoped to this tenant (x-tenant-id). Clear to see everything.",
+    "detailTabs": {
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "member": {
+      "email": "Email",
+      "role": "Role",
+      "added": "Added",
+      "remove": "Remove",
+      "invitePh": "user@company.com",
+      "add": "Add member",
+      "addedToast": "Member added",
+      "removedToast": "Member removed",
+      "error": "Operation failed"
+    },
+    "settings": {
+      "name": "Name",
+      "status": "Status",
+      "save": "Save",
+      "saved": "Saved"
+    },
+    "create": {
+      "cancel": "Cancel",
+      "save": "Create",
+      "namePh": "Acme Inc",
+      "slugPh": "acme",
+      "created": "Tenant created",
+      "error": "Couldn't create"
+    }
   }
 }

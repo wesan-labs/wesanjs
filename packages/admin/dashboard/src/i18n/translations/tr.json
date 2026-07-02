@@ -3613,5 +3613,52 @@
       "generate": "✦ Üret",
       "generateSoon": "AI üretimi AI fazında gelecek"
     }
+  },
+  "tenants": {
+    "title": "Tenant'lar",
+    "hint": "Kontrol düzlemi: tenant oluştur, üyeleri yönet, aktif tenant'ı değiştir.",
+    "newTenant": "Yeni Tenant",
+    "loading": "Yükleniyor…",
+    "empty": "Henüz tenant yok.",
+    "name": "Ad",
+    "slug": "Slug",
+    "status": "Durum",
+    "members": "Üyeler",
+    "role": "Rol",
+    "active": "aktif",
+    "suspended": "askıda",
+    "activeTenant": "Aktif",
+    "makeActive": "Aktif yap",
+    "clearActive": "Aktif tenant'ı temizle",
+    "activeBanner": "İstekler bu tenant'a scope'lu (x-tenant-id). Hepsini görmek için temizle.",
+    "detailTabs": {
+      "members": "Üyeler",
+      "settings": "Ayarlar"
+    },
+    "member": {
+      "email": "E-posta",
+      "role": "Rol",
+      "added": "Eklendi",
+      "remove": "Çıkar",
+      "invitePh": "kullanici@sirket.com",
+      "add": "Üye ekle",
+      "addedToast": "Üye eklendi",
+      "removedToast": "Üye çıkarıldı",
+      "error": "İşlem başarısız"
+    },
+    "settings": {
+      "name": "Ad",
+      "status": "Durum",
+      "save": "Kaydet",
+      "saved": "Kaydedildi"
+    },
+    "create": {
+      "cancel": "İptal",
+      "save": "Oluştur",
+      "namePh": "Acme A.Ş.",
+      "slugPh": "acme",
+      "created": "Tenant oluşturuldu",
+      "error": "Oluşturulamadı"
+    }
   }
 }

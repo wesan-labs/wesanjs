@@ -982,6 +982,11 @@ export function getRouteMap({
               lazy: () => import("../../routes/cms"),
             },
             {
+              path: "/tenants",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/tenants"),
+            },
+            {
               path: "/content",
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/content"),
