@@ -5,13 +5,19 @@ import {
 import { Modules } from "@medusajs/framework/utils"
 import { TENANT_MODULE } from "../../../../modules/tenant"
 import type TenantModuleService from "../../../../modules/tenant/service"
+import { forbidden, getActorMembership } from "../../../lib/require-membership"
 
-// GET /admin/tenants/:id — tenant + üyeler (kullanıcı e-postasıyla zengin).
+// GET /admin/tenants/:id — tenant + üyeler. Yalnız ÜYELER görebilir
+// (security review: üye-olmayana cross-tenant bilgi sızıntısıydı).
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
   const { id } = req.params
+  if (!(await getActorMembership(req, id))) {
+    res.status(403).json(forbidden())
+    return
+  }
   const service: TenantModuleService = req.scope.resolve(TENANT_MODULE)
   const tenant = await service.retrieveTenant(id)
   const memberships = await service.listTenantMemberships({ tenant_id: id })
@@ -33,12 +39,16 @@ export const GET = async (
   res.json({ tenant, members })
 }
 
-// POST /admin/tenants/:id — ad/durum güncelle.
+// POST /admin/tenants/:id — ad/durum güncelle. Yalnız tenant ADMIN'i.
 export const POST = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
   const { id } = req.params
+  if (!(await getActorMembership(req, id, "admin"))) {
+    res.status(403).json(forbidden())
+    return
+  }
   const body = req.body as { name?: string; status?: string }
   const service: TenantModuleService = req.scope.resolve(TENANT_MODULE)
   const update: Record<string, unknown> = { id }

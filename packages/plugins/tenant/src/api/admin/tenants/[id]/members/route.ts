@@ -4,15 +4,24 @@ import {
 } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { addTenantMemberWorkflow } from "../../../../../workflows/manage-membership"
+import {
+  forbidden,
+  getActorMembership,
+} from "../../../../lib/require-membership"
 
 // POST /admin/tenants/:id/members — e-posta ile üye ekle.
-// Kullanıcı sistemde yoksa 404 (gerçek davet akışı A6'da — burada var olan
-// admin kullanıcıları tenant'a bağlanır).
+// Yalnız o tenant'ın ADMIN'i (security review: yetkisiz herkes kendini
+// herhangi bir tenant'a ekleyebiliyordu = privilege escalation, A1'i deliyordu).
+// Kullanıcı sistemde yoksa 404 (gerçek davet akışı A6).
 export const POST = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
   const { id } = req.params
+  if (!(await getActorMembership(req, id, "admin"))) {
+    res.status(403).json(forbidden())
+    return
+  }
   const body = req.body as { email: string; role?: string }
   const email = body.email?.trim().toLowerCase()
   if (!email) {
