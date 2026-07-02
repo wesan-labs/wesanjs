@@ -1,37 +1,41 @@
 // CMS şema tasarımcısı — FieldDef[] üzerinde ÖZYİNELEMELİ CRUD. collection.schema editörü.
 // Cockpit (helm schema-designer.tsx) portu + nesting: object.fields ve list.of UI'dan
-// düzenlenir (cockpit yalnız top-level'dı). dnd-kit yok → ↑/↓; @medusajs/ui.
+// düzenlenir. dnd-kit yok → ↑/↓; @medusajs/ui; etiketler i18n (cms.kinds / cms.designer).
 
 import { useState } from "react"
 import { Button, Input, Label, Select, Switch, Text } from "@medusajs/ui"
+import { useTranslation } from "react-i18next"
 import type { CollectionSchema, FieldDef } from "../lib/schema"
 
-const KIND_LABELS: Record<FieldDef["kind"], string> = {
-  text: "Metin",
-  textarea: "Uzun metin",
-  slug: "Slug",
-  number: "Sayı",
-  boolean: "Anahtar",
-  date: "Tarih",
-  select: "Seçim",
-  asset: "Medya",
-  image: "Görsel",
-  list: "Liste",
-  object: "Grup",
-  ref: "Referans",
-  richtext: "Zengin metin",
-  json: "JSON",
-}
+const KINDS: FieldDef["kind"][] = [
+  "text",
+  "textarea",
+  "slug",
+  "number",
+  "boolean",
+  "date",
+  "select",
+  "asset",
+  "image",
+  "list",
+  "object",
+  "ref",
+  "richtext",
+  "json",
+]
 
-const KIND_OPTIONS = Object.entries(KIND_LABELS) as [FieldDef["kind"], string][]
-
+// Dil-nötr default değerler (data — kullanıcı hemen düzenler, çeviri gerekmez).
 const makeField = (kind: FieldDef["kind"]): FieldDef => {
-  const base = { name: "yeni_alan", label: "Yeni Alan", required: false }
+  const base = { name: "field", label: "Field", required: false }
   switch (kind) {
     case "select":
       return { ...base, kind, options: [{ value: "a", label: "A" }] }
     case "list":
-      return { ...base, kind, of: { kind: "text", name: "item", label: "Öğe" } }
+      return {
+        ...base,
+        kind,
+        of: { kind: "text", name: "item", label: "Item" },
+      }
     case "object":
       return { ...base, kind, fields: [] }
     case "ref":
@@ -42,7 +46,6 @@ const makeField = (kind: FieldDef["kind"]): FieldDef => {
 }
 
 // Tek alanın şekil editörü: kind/name/label/required (+ref) satırı + object/list nesting.
-// move/remove burada YOK (onu FieldsList sarmalar) — list.of gibi tekil şekiller için de kullanılır.
 const FieldShape = ({
   field,
   onChange,
@@ -50,6 +53,7 @@ const FieldShape = ({
   field: FieldDef
   onChange: (f: FieldDef) => void
 }) => {
+  const { t } = useTranslation()
   // Kind değişimi: name/label/required korunur, variant-özel alanlar default'lanır.
   const changeKind = (next: FieldDef["kind"]) =>
     onChange({
@@ -64,7 +68,7 @@ const FieldShape = ({
       <div className="grid gap-3 sm:grid-cols-12">
         <div className="flex flex-col gap-y-1 sm:col-span-3">
           <Label size="xsmall" className="text-ui-fg-muted">
-            Tip
+            {t("cms.designer.type")}
           </Label>
           <Select
             value={field.kind}
@@ -74,9 +78,9 @@ const FieldShape = ({
               <Select.Value />
             </Select.Trigger>
             <Select.Content>
-              {KIND_OPTIONS.map(([kind, label]) => (
-                <Select.Item key={kind} value={kind}>
-                  {label}
+              {KINDS.map((k) => (
+                <Select.Item key={k} value={k}>
+                  {t(`cms.kinds.${k}`)}
                 </Select.Item>
               ))}
             </Select.Content>
@@ -85,19 +89,19 @@ const FieldShape = ({
 
         <div className="flex flex-col gap-y-1 sm:col-span-3">
           <Label size="xsmall" className="text-ui-fg-muted">
-            Anahtar (name)
+            {t("cms.designer.key")}
           </Label>
           <Input
             className="font-mono"
             value={field.name}
             onChange={(e) => onChange({ ...field, name: e.target.value })}
-            placeholder="ornek_alan"
+            placeholder={t("cms.designer.keyPh")}
           />
         </div>
 
         <div className="flex flex-col gap-y-1 sm:col-span-4">
           <Label size="xsmall" className="text-ui-fg-muted">
-            Etiket
+            {t("cms.designer.label")}
           </Label>
           <Input
             value={field.label}
@@ -107,7 +111,7 @@ const FieldShape = ({
 
         <div className="flex flex-col gap-y-1 sm:col-span-2">
           <Label size="xsmall" className="text-ui-fg-muted">
-            Zorunlu
+            {t("cms.designer.required")}
           </Label>
           <Switch
             checked={!!field.required}
@@ -118,14 +122,14 @@ const FieldShape = ({
         {field.kind === "ref" ? (
           <div className="flex flex-col gap-y-1 sm:col-span-12">
             <Label size="xsmall" className="text-ui-fg-muted">
-              Referans collection slug
+              {t("cms.designer.refCollection")}
             </Label>
             <Input
               value={field.collection}
               onChange={(e) =>
                 onChange({ ...field, collection: e.target.value })
               }
-              placeholder="ör. authors"
+              placeholder={t("cms.designer.refPh")}
             />
           </div>
         ) : null}
@@ -138,7 +142,7 @@ const FieldShape = ({
             weight="plus"
             className="text-ui-fg-muted mb-2 uppercase tracking-wider"
           >
-            Alanlar
+            {t("cms.designer.fields")}
           </Text>
           <FieldsList
             fields={field.fields}
@@ -154,7 +158,7 @@ const FieldShape = ({
             weight="plus"
             className="text-ui-fg-muted mb-2 uppercase tracking-wider"
           >
-            Öğe tipi
+            {t("cms.designer.itemType")}
           </Text>
           <FieldShape
             field={field.of}
@@ -174,6 +178,7 @@ const FieldsList = ({
   fields: FieldDef[]
   onChange: (f: FieldDef[]) => void
 }) => {
+  const { t } = useTranslation()
   const [addKind, setAddKind] = useState<FieldDef["kind"]>("text")
 
   const update = (i: number, f: FieldDef) => {
@@ -183,12 +188,12 @@ const FieldsList = ({
   }
   const remove = (i: number) => onChange(fields.filter((_, j) => j !== i))
   const move = (i: number, dir: -1 | 1) => {
-    const t = i + dir
-    if (t < 0 || t >= fields.length) {
+    const target = i + dir
+    if (target < 0 || target >= fields.length) {
       return
     }
     const a = [...fields]
-    ;[a[i], a[t]] = [a[t], a[i]]
+    ;[a[i], a[target]] = [a[target], a[i]]
     onChange(a)
   }
 
@@ -204,7 +209,7 @@ const FieldsList = ({
               type="button"
               onClick={() => move(idx, -1)}
               disabled={idx === 0}
-              aria-label="Yukarı"
+              aria-label={t("cms.designer.moveUp")}
               className="text-ui-fg-muted hover:text-ui-fg-base disabled:opacity-30"
             >
               ↑
@@ -213,7 +218,7 @@ const FieldsList = ({
               type="button"
               onClick={() => move(idx, 1)}
               disabled={idx === fields.length - 1}
-              aria-label="Aşağı"
+              aria-label={t("cms.designer.moveDown")}
               className="text-ui-fg-muted hover:text-ui-fg-base disabled:opacity-30"
             >
               ↓
@@ -228,7 +233,7 @@ const FieldsList = ({
             size="small"
             onClick={() => remove(idx)}
           >
-            Sil
+            {t("cms.designer.delete")}
           </Button>
         </div>
       ))}
@@ -236,7 +241,7 @@ const FieldsList = ({
       {fields.length === 0 ? (
         <div className="border-ui-border-strong rounded-lg border border-dashed p-4 text-center">
           <Text size="small" className="text-ui-fg-muted">
-            Alan yok. Aşağıdan ekle.
+            {t("cms.designer.empty")}
           </Text>
         </div>
       ) : null}
@@ -250,9 +255,9 @@ const FieldsList = ({
             <Select.Value />
           </Select.Trigger>
           <Select.Content>
-            {KIND_OPTIONS.map(([kind, label]) => (
-              <Select.Item key={kind} value={kind}>
-                {label}
+            {KINDS.map((k) => (
+              <Select.Item key={k} value={k}>
+                {t(`cms.kinds.${k}`)}
               </Select.Item>
             ))}
           </Select.Content>
@@ -263,7 +268,7 @@ const FieldsList = ({
           size="small"
           onClick={() => onChange([...fields, makeField(addKind)])}
         >
-          + Alan ekle
+          {t("cms.designer.addField")}
         </Button>
       </div>
     </div>

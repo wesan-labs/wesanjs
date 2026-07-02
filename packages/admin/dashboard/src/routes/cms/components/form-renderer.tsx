@@ -1,5 +1,5 @@
 // CMS dinamik form renderer — schema.fields[] → @medusajs/ui kontrol haritası.
-// Cockpit (helm form-renderer.tsx) portu. list/object özyinelemeli.
+// Cockpit (helm form-renderer.tsx) portu. list/object özyinelemeli; etiketler i18n.
 // richtext/asset/ref şimdilik güvenli fallback (Faz 3: Plate + asset + ref picker).
 
 import {
@@ -11,6 +11,7 @@ import {
   Textarea,
   clx,
 } from "@medusajs/ui"
+import { useTranslation } from "react-i18next"
 import { defaultForField, slugify, type FieldDef } from "../lib/schema"
 
 interface FieldInputProps {
@@ -28,6 +29,7 @@ const FieldInput = ({
   onChange,
   siblings,
 }: FieldInputProps) => {
+  const { t } = useTranslation()
   switch (field.kind) {
     case "text":
       return (
@@ -62,7 +64,7 @@ const FieldInput = ({
             className="font-mono"
             value={(value as string) ?? ""}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="ornek-slug"
+            placeholder={t("cms.form.slugPh")}
           />
           {field.source ? (
             <Button
@@ -72,7 +74,7 @@ const FieldInput = ({
               onClick={() => onChange(slugify(sourceVal))}
               disabled={!sourceVal}
             >
-              Otomatik
+              {t("cms.form.auto")}
             </Button>
           ) : null}
         </div>
@@ -118,7 +120,7 @@ const FieldInput = ({
             id={id}
             value={url}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="https://… veya /gorsel.svg"
+            placeholder={t("cms.form.imagePh")}
           />
           {url.trim() ? (
             <img
@@ -145,7 +147,7 @@ const FieldInput = ({
           onValueChange={(v) => onChange(v)}
         >
           <Select.Trigger id={id}>
-            <Select.Value placeholder="Seç…" />
+            <Select.Value placeholder={t("cms.form.selectPh")} />
           </Select.Trigger>
           <Select.Content>
             {field.options.map((opt) => (
@@ -168,8 +170,8 @@ const FieldInput = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder={
             field.kind === "ref"
-              ? `${field.collection} entry id`
-              : "asset id / yol"
+              ? t("cms.form.refIdPh", { collection: field.collection })
+              : t("cms.form.assetIdPh")
           }
         />
       )
@@ -199,7 +201,7 @@ const FieldInput = ({
                 size="small"
                 onClick={() => onChange(items.filter((_, i) => i !== idx))}
               >
-                Sil
+                {t("cms.form.delete")}
               </Button>
             </div>
           ))}
@@ -210,7 +212,7 @@ const FieldInput = ({
               size="small"
               onClick={() => onChange([...items, defaultForField(field.of)])}
             >
-              + Öğe ekle
+              {t("cms.form.addItem")}
             </Button>
           </div>
         </div>
@@ -234,7 +236,9 @@ const FieldInput = ({
             />
           ))}
           {field.fields.length === 0 ? (
-            <p className="text-ui-fg-muted text-xs italic">boş grup</p>
+            <p className="text-ui-fg-muted text-xs italic">
+              {t("cms.form.emptyGroup")}
+            </p>
           ) : null}
         </div>
       )
@@ -310,11 +314,12 @@ export const FormRenderer = ({
   value,
   onChange,
 }: FormRendererProps) => {
+  const { t } = useTranslation()
   const setField = (name: string, next: unknown) =>
     onChange({ ...value, [name]: next })
 
   if (fields.length === 0) {
-    return <p className="text-ui-fg-muted text-sm">Bu bölümde alan yok.</p>
+    return <p className="text-ui-fg-muted text-sm">{t("cms.form.noFields")}</p>
   }
 
   return (

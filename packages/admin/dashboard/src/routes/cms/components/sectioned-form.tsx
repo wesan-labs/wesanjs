@@ -5,6 +5,8 @@
 
 import { Fragment, useState } from "react"
 import { Text, clx } from "@medusajs/ui"
+import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import { FormRenderer } from "./form-renderer"
 import type { CollectionSchema, FieldDef } from "../lib/schema"
 
@@ -22,7 +24,8 @@ type Section =
   | { key: string; label: string; fields: FieldDef[]; pick: "root" }
 
 // Top-level bölümler: object → kendi alanları; list → tek alan; kalan leaf'ler "Genel"de.
-const buildSections = (schema: CollectionSchema): Section[] => {
+// Sadece "Genel" etiketi çevrilir; diğerleri f.label (kullanıcı verisi).
+const buildSections = (schema: CollectionSchema, t: TFunction): Section[] => {
   const sections: Section[] = []
   const leaves = schema.fields.filter(
     (f) => f.kind !== "object" && f.kind !== "list"
@@ -30,7 +33,7 @@ const buildSections = (schema: CollectionSchema): Section[] => {
   if (leaves.length) {
     sections.push({
       key: GENERAL,
-      label: "Genel",
+      label: t("cms.sectioned.general"),
       fields: leaves,
       pick: "root",
     })
@@ -71,7 +74,8 @@ interface Props {
 }
 
 export const SectionedForm = ({ schema, value, onChange }: Props) => {
-  const sections = buildSections(schema)
+  const { t } = useTranslation()
+  const sections = buildSections(schema, t)
   const [active, setActive] = useState<string | null>(null)
   const activeKey = active ?? sections[0]?.key ?? null
   const current = sections.find((s) => s.key === activeKey)
@@ -79,7 +83,7 @@ export const SectionedForm = ({ schema, value, onChange }: Props) => {
   if (sections.length === 0) {
     return (
       <Text size="small" className="text-ui-fg-muted">
-        Şema boş — bu entry'de alan yok.
+        {t("cms.sectioned.emptySchema")}
       </Text>
     )
   }
@@ -146,6 +150,7 @@ interface DetailProps {
 
 // Bölüm içi drill-down: object çocukları breadcrumb ile derinleşir, leaf/list inline kalır.
 const SectionDetail = ({ rootLabel, fields, value, onChange }: DetailProps) => {
+  const { t } = useTranslation()
   const [subPath, setSubPath] = useState<string[]>([])
 
   let curFields = fields
@@ -202,7 +207,9 @@ const SectionDetail = ({ rootLabel, fields, value, onChange }: DetailProps) => {
             >
               <span className="truncate font-medium">{f.label}</span>
               <span className="text-ui-fg-muted flex shrink-0 items-center gap-x-1.5 text-xs">
-                {f.kind === "object" ? `${f.fields.length} alan` : ""}
+                {f.kind === "object"
+                  ? t("cms.sectioned.fieldCount", { count: f.fields.length })
+                  : ""}
                 <span>›</span>
               </span>
             </button>
@@ -220,7 +227,7 @@ const SectionDetail = ({ rootLabel, fields, value, onChange }: DetailProps) => {
 
       {navChildren.length === 0 && inlineChildren.length === 0 ? (
         <Text size="small" className="text-ui-fg-muted">
-          Bu bölümde alan yok.
+          {t("cms.sectioned.noFields")}
         </Text>
       ) : null}
     </div>

@@ -10,8 +10,10 @@ import {
   clx,
   toast,
 } from "@medusajs/ui"
+import { useTranslation } from "react-i18next"
 import { sdk } from "../../../lib/client/client"
 import { SectionedForm } from "./sectioned-form"
+import { SeoPanel } from "./seo-panel"
 import { inferSchema, type CollectionSchema } from "../lib/schema"
 
 type Entry = {
@@ -35,6 +37,7 @@ export const EntryEditor = ({
   previewUrl?: string | null
   onClose: () => void
 }) => {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   const { data: res, isLoading } = useQuery({
@@ -46,7 +49,7 @@ export const EntryEditor = ({
 
   const [data, setData] = useState<Record<string, unknown>>({})
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  const [mode, setMode] = useState<"form" | "json">("form")
+  const [mode, setMode] = useState<"form" | "seo" | "json">("form")
   const [text, setText] = useState("")
   const [invalid, setInvalid] = useState(false)
   const [previewOn, setPreviewOn] = useState(false)
@@ -103,16 +106,16 @@ export const EntryEditor = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cms-entry", entryId] })
       queryClient.invalidateQueries({ queryKey: ["cms-site"] })
-      toast.success("Kaydedildi")
+      toast.success(t("cms.editor.saved"))
     },
     onError: (error: Error) => {
-      toast.error(error?.message || "Kaydedilemedi")
+      toast.error(error?.message || t("cms.editor.saveError"))
     },
   })
 
   const handleSave = (status?: "draft" | "published") => {
     if (invalid) {
-      toast.error("Geçersiz JSON — düzelt, sonra kaydet")
+      toast.error(t("cms.editor.invalidJson"))
       return
     }
     save.mutate({ data, ...(status ? { status } : {}) })
@@ -127,17 +130,17 @@ export const EntryEditor = ({
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cms-site"] })
-      toast.success("Şema kaydedildi — artık authored, rafine edilebilir")
+      toast.success(t("cms.editor.schemaSaved"))
     },
     onError: (error: Error) => {
-      toast.error(error?.message || "Şema kaydedilemedi")
+      toast.error(error?.message || t("cms.schemaModal.saveError"))
     },
   })
 
   if (isLoading || !entry) {
     return (
       <Container className="p-6">
-        <Text className="text-ui-fg-subtle">Yükleniyor…</Text>
+        <Text className="text-ui-fg-subtle">{t("cms.editor.loading")}</Text>
       </Container>
     )
   }
@@ -146,7 +149,9 @@ export const EntryEditor = ({
     <Container className="divide-y p-0">
       <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
         <div className="flex items-center gap-x-2">
-          <Heading level="h2">İçerik · {entry.slug}</Heading>
+          <Heading level="h2">
+            {t("cms.editor.content", { slug: entry.slug })}
+          </Heading>
           <Badge
             size="2xsmall"
             color={entry.status === "published" ? "green" : "orange"}
@@ -164,10 +169,10 @@ export const EntryEditor = ({
             disabled={!previewUrl}
             onClick={() => setPreviewOn((v) => !v)}
           >
-            Önizle
+            {t("cms.editor.preview")}
           </Button>
           <Button size="small" variant="secondary" onClick={onClose}>
-            Kapat
+            {t("cms.editor.close")}
           </Button>
           <Button
             size="small"
@@ -175,14 +180,14 @@ export const EntryEditor = ({
             onClick={() => handleSave()}
             isLoading={save.isPending}
           >
-            Taslak Kaydet
+            {t("cms.editor.saveDraft")}
           </Button>
           <Button
             size="small"
             onClick={() => handleSave("published")}
             isLoading={save.isPending}
           >
-            Yayınla
+            {t("cms.editor.publish")}
           </Button>
         </div>
       </div>
@@ -191,8 +196,9 @@ export const EntryEditor = ({
       <div className="bg-ui-bg-subtle flex items-center justify-between gap-x-3 px-6 py-2.5">
         <div className="flex items-center gap-x-3">
           <Text size="small" className="text-ui-fg-muted">
-            {schema ? "Şema" : "Türetilmiş şema"} ·{" "}
-            {effectiveSchema.fields.length} alan · {entry.locale}
+            {schema ? t("cms.editor.schema") : t("cms.editor.inferredSchema")} ·{" "}
+            {t("cms.editor.fields", { count: effectiveSchema.fields.length })} ·{" "}
+            {entry.locale}
           </Text>
           {!schema && collectionId ? (
             <Button
@@ -201,12 +207,12 @@ export const EntryEditor = ({
               onClick={() => saveSchema.mutate()}
               isLoading={saveSchema.isPending}
             >
-              Şemayı kaydet
+              {t("cms.editor.saveSchema")}
             </Button>
           ) : null}
         </div>
         <div className="bg-ui-bg-component inline-flex rounded-lg p-0.5">
-          {(["form", "json"] as const).map((m) => (
+          {(["form", "seo", "json"] as const).map((m) => (
             <button
               key={m}
               type="button"
@@ -218,7 +224,11 @@ export const EntryEditor = ({
                   : "text-ui-fg-subtle"
               )}
             >
-              {m === "form" ? "Form" : "Ham JSON"}
+              {m === "form"
+                ? t("cms.editor.form")
+                : m === "seo"
+                ? t("cms.seo.tab")
+                : t("cms.editor.rawJson")}
             </button>
           ))}
         </div>
@@ -241,6 +251,17 @@ export const EntryEditor = ({
                 schema={effectiveSchema}
                 value={data}
                 onChange={setData}
+              />
+            </div>
+          ) : mode === "seo" ? (
+            <div className="max-h-[72vh] overflow-auto p-6">
+              <SeoPanel
+                value={
+                  data.seo && typeof data.seo === "object"
+                    ? (data.seo as Record<string, unknown>)
+                    : {}
+                }
+                onChange={(next) => setData({ ...data, seo: next })}
               />
             </div>
           ) : (
@@ -270,7 +291,7 @@ export const EntryEditor = ({
                   </Text>
                   {invalid ? (
                     <Text size="small" className="text-ui-fg-error">
-                      geçersiz JSON
+                      {t("cms.editor.invalidJsonShort")}
                     </Text>
                   ) : null}
                 </div>
@@ -290,24 +311,27 @@ export const EntryEditor = ({
         {previewOn && previewUrl ? (
           <div className="flex flex-col">
             <div className="bg-ui-bg-subtle flex items-center justify-between gap-x-2 px-4 py-2">
-              <Text
-                size="xsmall"
-                className="text-ui-fg-muted truncate font-mono"
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-ui-fg-interactive truncate font-mono text-xs hover:underline"
+                title={previewUrl}
               >
-                {previewUrl}
-              </Text>
+                ↗ {t("cms.editor.openTab")}
+              </a>
               <Button
                 size="small"
                 variant="transparent"
                 onClick={() => setReloadKey((k) => k + 1)}
               >
-                ↻ Yenile
+                ↻ {t("cms.editor.reload")}
               </Button>
             </div>
             <iframe
               key={reloadKey}
               src={previewUrl}
-              title="Önizleme"
+              title={t("cms.editor.preview")}
               referrerPolicy="no-referrer"
               className="h-[72vh] w-full border-0"
             />

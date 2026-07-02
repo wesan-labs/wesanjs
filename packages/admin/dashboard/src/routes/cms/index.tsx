@@ -13,6 +13,7 @@ import {
   clx,
   toast,
 } from "@medusajs/ui"
+import { useTranslation } from "react-i18next"
 import { sdk } from "../../lib/client/client"
 import { EntryEditor } from "./components/entry-editor"
 import { SchemaDesigner } from "./components/schema-designer"
@@ -49,6 +50,7 @@ type SiteDetail = {
 const EMPTY_FORM = { slug: "", name: "", base_url: "", preview_secret: "" }
 
 export const Component = () => {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -77,12 +79,12 @@ export const Component = () => {
       sdk.client.fetch("/admin/cms/sites", { method: "POST", body: payload }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cms-sites"] })
-      toast.success("Site oluşturuldu")
+      toast.success(t("cms.newSite.created"))
       setOpen(false)
       setForm(EMPTY_FORM)
     },
     onError: (error: Error) => {
-      toast.error(error?.message || "Oluşturulamadı")
+      toast.error(error?.message || t("cms.newSite.createError"))
     },
   })
 
@@ -94,11 +96,11 @@ export const Component = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cms-site"] })
-      toast.success("Şema kaydedildi")
+      toast.success(t("cms.schemaModal.saved"))
       setSchemaOpen(false)
     },
     onError: (error: Error) => {
-      toast.error(error?.message || "Şema kaydedilemedi")
+      toast.error(error?.message || t("cms.schemaModal.saveError"))
     },
   })
 
@@ -143,34 +145,32 @@ export const Component = () => {
       <Container className="divide-y p-0">
         <div className="flex items-center justify-between px-6 py-4">
           <div>
-            <Heading level="h2">CMS · Siteler</Heading>
+            <Heading level="h2">{t("cms.sites.title")}</Heading>
             <Text size="small" className="text-ui-fg-subtle">
-              Bir site'a tıkla → içeriğini (koleksiyon + entry) gör.
+              {t("cms.sites.hint")}
             </Text>
           </div>
           <Button size="small" onClick={() => setOpen(true)}>
-            Yeni Site
+            {t("cms.sites.newSite")}
           </Button>
         </div>
 
         {isLoading ? (
           <div className="px-6 py-8">
-            <Text className="text-ui-fg-subtle">Yükleniyor…</Text>
+            <Text className="text-ui-fg-subtle">{t("cms.sites.loading")}</Text>
           </div>
         ) : sites.length === 0 ? (
           <div className="px-6 py-8">
-            <Text className="text-ui-fg-subtle">
-              Henüz site yok. "Yeni Site" ile ekle.
-            </Text>
+            <Text className="text-ui-fg-subtle">{t("cms.sites.empty")}</Text>
           </div>
         ) : (
           <Table>
             <Table.Header>
               <Table.Row>
-                <Table.HeaderCell>Ad</Table.HeaderCell>
-                <Table.HeaderCell>Slug</Table.HeaderCell>
-                <Table.HeaderCell>URL</Table.HeaderCell>
-                <Table.HeaderCell>Durum</Table.HeaderCell>
+                <Table.HeaderCell>{t("cms.sites.name")}</Table.HeaderCell>
+                <Table.HeaderCell>{t("cms.sites.slug")}</Table.HeaderCell>
+                <Table.HeaderCell>{t("cms.sites.url")}</Table.HeaderCell>
+                <Table.HeaderCell>{t("cms.sites.status")}</Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -191,7 +191,9 @@ export const Component = () => {
                   <Table.Cell>{s.base_url || "—"}</Table.Cell>
                   <Table.Cell>
                     <Badge size="2xsmall" color={s.enabled ? "green" : "grey"}>
-                      {s.enabled ? "aktif" : "kapalı"}
+                      {s.enabled
+                        ? t("cms.sites.active")
+                        : t("cms.sites.disabled")}
                     </Badge>
                   </Table.Cell>
                 </Table.Row>
@@ -204,7 +206,9 @@ export const Component = () => {
       {selectedId && detail && (
         <Container className="divide-y p-0">
           <div className="px-6 py-4">
-            <Heading level="h2">{detail.site.name} · İçerik</Heading>
+            <Heading level="h2">
+              {t("cms.detail.content", { name: detail.site.name })}
+            </Heading>
           </div>
 
           <div className="px-6 py-4">
@@ -214,7 +218,7 @@ export const Component = () => {
                 weight="plus"
                 className="text-ui-fg-muted uppercase tracking-wider"
               >
-                Koleksiyonlar ({collections.length})
+                {t("cms.detail.collections", { count: collections.length })}
               </Text>
               {activeColl ? (
                 <Button
@@ -225,13 +229,13 @@ export const Component = () => {
                     setSchemaOpen(true)
                   }}
                 >
-                  Şemayı düzenle
+                  {t("cms.detail.editSchema")}
                 </Button>
               ) : null}
             </div>
             {collections.length === 0 ? (
               <Text size="small" className="text-ui-fg-subtle">
-                Koleksiyon yok. wesan içeriğini içe aktarmak için:{" "}
+                {t("cms.detail.noCollections")}{" "}
                 <code className="text-xs">
                   cd levios/helm && npx medusa exec ./src/scripts/ingest-cms.ts
                 </code>
@@ -267,7 +271,8 @@ export const Component = () => {
                         size="xsmall"
                         className="text-ui-fg-muted font-mono"
                       >
-                        {c.slug} · {entryCount(c.id)} kayıt
+                        {c.slug} ·{" "}
+                        {t("cms.detail.records", { count: entryCount(c.id) })}
                       </Text>
                     </button>
                   )
@@ -286,12 +291,11 @@ export const Component = () => {
                         {activeColl.label}
                       </Text>
                       <Badge size="2xsmall" color="purple">
-                        singleton
+                        {activeColl.kind}
                       </Badge>
                     </div>
                     <Text size="small" className="text-ui-fg-subtle mt-1">
-                      Tek kayıt tüm site içeriğini taşır — liste yok, doğrudan
-                      düzenlenir.
+                      {t("cms.detail.singletonNote")}
                     </Text>
                   </div>
                   {singletonEntry ? (
@@ -299,11 +303,11 @@ export const Component = () => {
                       size="small"
                       onClick={() => setEditingEntryId(singletonEntry.id)}
                     >
-                      Düzenle →
+                      {t("cms.detail.edit")}
                     </Button>
                   ) : (
                     <Text size="small" className="text-ui-fg-muted">
-                      Kayıt yok
+                      {t("cms.detail.noRecord")}
                     </Text>
                   )}
                 </div>
@@ -314,19 +318,28 @@ export const Component = () => {
                     weight="plus"
                     className="text-ui-fg-muted mb-2 uppercase tracking-wider"
                   >
-                    {activeColl.label} · içerikler ({activeEntries.length})
+                    {t("cms.detail.entries", {
+                      label: activeColl.label,
+                      count: activeEntries.length,
+                    })}
                   </Text>
                   {activeEntries.length === 0 ? (
                     <Text size="small" className="text-ui-fg-subtle">
-                      İçerik yok.
+                      {t("cms.detail.noEntries")}
                     </Text>
                   ) : (
                     <Table>
                       <Table.Header>
                         <Table.Row>
-                          <Table.HeaderCell>Slug</Table.HeaderCell>
-                          <Table.HeaderCell>Dil</Table.HeaderCell>
-                          <Table.HeaderCell>Durum</Table.HeaderCell>
+                          <Table.HeaderCell>
+                            {t("cms.detail.slug")}
+                          </Table.HeaderCell>
+                          <Table.HeaderCell>
+                            {t("cms.detail.locale")}
+                          </Table.HeaderCell>
+                          <Table.HeaderCell>
+                            {t("cms.detail.status")}
+                          </Table.HeaderCell>
                         </Table.Row>
                       </Table.Header>
                       <Table.Body>
@@ -384,7 +397,7 @@ export const Component = () => {
                   variant="secondary"
                   disabled={createSite.isPending}
                 >
-                  İptal
+                  {t("cms.newSite.cancel")}
                 </Button>
               </FocusModal.Close>
               <Button
@@ -392,46 +405,46 @@ export const Component = () => {
                 onClick={() => createSite.mutate(form)}
                 isLoading={createSite.isPending}
               >
-                Kaydet
+                {t("cms.newSite.save")}
               </Button>
             </div>
           </FocusModal.Header>
           <FocusModal.Body className="flex flex-1 flex-col items-center overflow-auto py-8">
             <div className="flex w-full max-w-lg flex-col gap-y-4">
               <div className="flex flex-col gap-y-2">
-                <Label>Ad</Label>
+                <Label>{t("cms.newSite.name")}</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Wesan"
+                  placeholder={t("cms.newSite.namePh")}
                 />
               </div>
               <div className="flex flex-col gap-y-2">
-                <Label>Slug</Label>
+                <Label>{t("cms.newSite.slug")}</Label>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  placeholder="wesan"
+                  placeholder={t("cms.newSite.slugPh")}
                 />
               </div>
               <div className="flex flex-col gap-y-2">
-                <Label>Site URL</Label>
+                <Label>{t("cms.newSite.siteUrl")}</Label>
                 <Input
                   value={form.base_url}
                   onChange={(e) =>
                     setForm({ ...form, base_url: e.target.value })
                   }
-                  placeholder="https://wesan.co"
+                  placeholder={t("cms.newSite.siteUrlPh")}
                 />
               </div>
               <div className="flex flex-col gap-y-2">
-                <Label>Önizleme secret'ı (opsiyonel)</Label>
+                <Label>{t("cms.newSite.previewSecret")}</Label>
                 <Input
                   value={form.preview_secret}
                   onChange={(e) =>
                     setForm({ ...form, preview_secret: e.target.value })
                   }
-                  placeholder="rastgele bir token"
+                  placeholder={t("cms.newSite.previewSecretPh")}
                 />
               </div>
             </div>
@@ -445,7 +458,7 @@ export const Component = () => {
             <div className="flex items-center justify-end gap-x-2">
               <FocusModal.Close asChild>
                 <Button size="small" variant="secondary">
-                  İptal
+                  {t("cms.newSite.cancel")}
                 </Button>
               </FocusModal.Close>
               <Button
@@ -460,17 +473,18 @@ export const Component = () => {
                   })
                 }
               >
-                Şemayı kaydet
+                {t("cms.schemaModal.save")}
               </Button>
             </div>
           </FocusModal.Header>
           <FocusModal.Body className="flex flex-1 flex-col items-center overflow-auto py-8">
             <div className="flex w-full max-w-3xl flex-col gap-y-4">
               <div>
-                <Heading level="h2">{activeColl?.label} · Şema</Heading>
+                <Heading level="h2">
+                  {t("cms.schemaModal.title", { label: activeColl?.label })}
+                </Heading>
                 <Text size="small" className="text-ui-fg-subtle">
-                  İçerik-modeli: alanları ekle / düzenle / sırala. Kaydedince
-                  editör bu şemayla gelir.
+                  {t("cms.schemaModal.hint")}
                 </Text>
               </div>
               <SchemaDesigner value={draftSchema} onChange={setDraftSchema} />
