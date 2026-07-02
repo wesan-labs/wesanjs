@@ -203,7 +203,6 @@ export const PublishComposer = ({
                 granularity="minute"
                 value={when}
                 onChange={setWhen}
-                placeholder="Tarih ve saat seç"
               />
             )}
             <Text size="xsmall" className="text-ui-fg-muted">
