@@ -12,7 +12,7 @@
 | cms admin UI | "boş" | ✅ VAR — Studio: schema-driven editör + designer + SEO paneli + delivery + i18n |
 | cms collections API | "yok" | ✅ VAR — `admin/cms/collections/[id]` canlıda 200 |
 | cms delivery | — | ✅ VAR — `GET /cms/:slug?preview=` canlıda 200 |
-| tenant | 🟡 iskelet | 🟡→ **A1 BİTTİ (2026-07-01):** tenant-context middleware (`tenant/src/api/middlewares.ts`, x-tenant-id→membership→403) + cms pilot izolasyonu (tenant_id migration + route guard'ları + RLS 3/3 tablo, old-levios cad08cf80 port'u `helm/src/scripts/enable-rls-cms.ts`). KANIT: DB-seviyesi (levios_app rolü: wesan=1/1/1, beta=0/0/0, cross-UPDATE=0 satır) + API-seviyesi (header'sız=legacy, wesan=1, beta=0, cross-detay=404, üye-olmayan=403). Kalan: A2 API+ekran, diğer plugin'lerin scope'lanması, levios_app bağlantısına geçiş |
+| tenant | 🟡 iskelet | 🟡→ **A1 BİTTİ (2026-07-01):** tenant-context middleware (`tenant/src/api/middlewares.ts`, x-tenant-id→membership→403) + cms pilot izolasyonu (tenant_id migration + route guard'ları + RLS 3/3 tablo, old-levios cad08cf80 port'u — cms plugin migration'ı `Migration20260701110000.ts`; wesanjs=platform, helm=yalnız tüketici). KANIT: DB-seviyesi (levios_app rolü: wesan=1/1/1, beta=0/0/0, cross-UPDATE=0 satır) + API-seviyesi (header'sız=legacy, wesan=1, beta=0, cross-detay=404, üye-olmayan=403). Kalan: A2 API+ekran, diğer plugin'lerin scope'lanması, levios_app bağlantısına geçiş |
 
 Bu oturumda ayrıca kanıtlanan **operasyonel boşluklar**:
 - **Hata izleme YOK** — Sentry yalnız `connections` ekranında ikon/kart; `@sentry` dep'i hiçbir pakette yok.
