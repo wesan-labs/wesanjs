@@ -35,6 +35,8 @@ export type CreateCmsSiteInput = {
   base_url?: string | null
   preview_secret?: string | null
   locales?: string[] | null
+  // A1: tenant context'ten damgalanır (route koyar); null = platform kaydı.
+  tenant_id?: string | null
 }
 
 const createCmsSiteStep = createStep(
@@ -45,6 +47,7 @@ const createCmsSiteStep = createStep(
     const site = await service.createCmsSites({
       slug: input.slug,
       name: input.name,
+      tenant_id: input.tenant_id ?? null,
       base_url: input.base_url ?? null,
       preview_secret: input.preview_secret ?? null,
       // json alanı: Medusa string[]'i Record olarak tipler; runtime'da dizi saklanır.

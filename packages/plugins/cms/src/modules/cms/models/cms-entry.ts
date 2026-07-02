@@ -6,6 +6,8 @@ export default model.define(
   { tableName: "cms_entry", name: "CmsEntry" },
   {
     id: model.id({ prefix: "cent" }).primaryKey(),
+    // Denormalize tenant scope (RLS her tabloda bağımsız çalışsın diye).
+    tenant_id: model.text().nullable(),
     collection_id: model.text(),
     site_id: model.text(),
     slug: model.text(),

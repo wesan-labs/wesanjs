@@ -7,6 +7,8 @@ export default model.define(
   { tableName: "cms_collection", name: "CmsCollection" },
   {
     id: model.id({ prefix: "ccol" }).primaryKey(),
+    // Denormalize tenant scope (RLS her tabloda bağımsız çalışsın diye).
+    tenant_id: model.text().nullable(),
     site_id: model.text(),
     slug: model.text(),
     label: model.text(),
