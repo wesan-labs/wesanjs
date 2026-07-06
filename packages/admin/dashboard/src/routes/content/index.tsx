@@ -247,12 +247,8 @@ export const Component = () => {
     analysis && analysis.sector !== "other" ? analysis.sector : undefined
 
   const statuses: Record<Panel, ProgressStatus> = {
-    image:
-      versions.length > 1
-        ? "completed"
-        : source
-          ? "in-progress"
-          : "not-started",
+    // Görsel yüklendiyse adım tamam — düzenleme opsiyonel (ürün niyeti §9).
+    image: source ? "completed" : "not-started",
     text: briefs.length || texts.length ? "completed" : "not-started",
     publish: "not-started",
   }
@@ -456,6 +452,13 @@ export const Component = () => {
                     onUploaded={handleUpload}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setLibraryOpen(true)}
+                  className="text-ui-fg-subtle hover:text-ui-fg-base text-xs font-medium"
+                >
+                  veya kütüphaneden seç
+                </button>
               </div>
             </div>
           )}
