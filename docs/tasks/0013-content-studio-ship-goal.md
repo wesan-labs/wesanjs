@@ -29,17 +29,25 @@ Bu altı adım **kesintisiz** çalışıyorsa hedef vurulmuştur.
 - Sıra: **audit → önceliklendir → doğrulanmış dilim.** Her dilim tek başına "kullanıcı yolculuğunu bir adım daha kesintisiz yaptı mı?" sorusuyla test edilir.
 - Kredi-gated adımlar (gerçek görsel üretim) işaretlenir; kredisiz doğrulanabilen (compose determinism, editör, takvim UI) önce.
 
-## Pipeline durumu (audit girdisi)
+## Pipeline durumu — SHIP dilimi tamamlandı (2026-07-06)
 
-| Adım | Var mı | Boşluk |
-|------|--------|--------|
-| ⓪ Marka | brand-profile.ts (localStorage, düz BRAND_VARS) | `BrandIdentity` şema (domain≠enum) + UI |
-| ① Üret | Pack engine + PackPicker/ShotPreview (Faz 1-3) ✅ | pack elle-yazım → derleyici (adaptif); UX yoğunluğu |
-| Düzenle | `runEdit`/versions var | **Editör YOK** (Filerobot) |
-| ② Metin | prompt-library ✅ | marka sesi few-shot |
-| Planla | — | **Takvim/slot YOK** |
-| ③ Paylaş | Zernio publish ✅ | per-platform variant |
-| Ölç/besle | account-snapshot | post-metric + döngü YOK |
+| Adım | Durum | Not |
+|------|-------|-----|
+| ⓪ Marka | ✅ nudge (keşfedilebilir) | kurulum UI düz model — BrandIdentity redesign'e ertelendi |
+| ① Üret | ✅ tek pack akışı, oto-compose | gerçek görsel = kredi (Gemini/OpenRouter) |
+| Düzenle | ✅ **Filerobot editörü** (crop/aspect/text/logo/filtre) | lazy-load; Can görsel doğrular |
+| ② Metin | ✅ | marka-sesi few-shot = sonra |
+| Planla | 🟡 tek-gönderi zamanlama | lokal takvim = bilinçli sonra (audit: L) |
+| ③ Paylaş | ✅ dead-end kapandı (hesap CTA) | hesap bağlama + medya = env/imageHost |
+| Ölç/besle | — | post-metric + döngü = adaptif faz |
+
+**SHIP dilimi commit'leri (#0013):** görsel-sadeleştirme `6cfe5f6` · paylaş-dead-end `f81e064` · marka-nudge `9d75177` · **Filerobot editör** `dac19d2` · empty-state+stepper `f6332cb`. Hepsi typecheck-temiz.
+
+**DoD journey artık uçtan-uca traversable** (kod seviyesinde). Kalan: Can'ın görsel doğrulaması + runtime-gated parçalar (kredi, hesap bağlama).
+
+## Sonraki faz (ship sonrası — adaptif v2)
+
+BrandIdentity derleyici (§20 adım 1-2) · kit üretim · feedback döngüsü · video editör (OpenCut) · lokal takvim. Bunlar shippable dilimin ÜSTÜNE gelen roadmap; ship'i bloke etmez.
 
 ## Referans sıra (v2 §20)
 
