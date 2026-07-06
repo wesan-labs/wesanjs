@@ -1,9 +1,8 @@
 // CMS iki-pane tipli panel + sağ panede drill-down. Cockpit (helm sectioned-form.tsx) portu.
-// Sol ray: top-level bölümler. Sağ pane: seçili bölüm; object çocukları breadcrumb ile
-// derinleşir (Pages › Home › Hero), leaf+list alanları o seviyede inline düzenlenir.
-// "pages" gibi derin ağaç tek wall yerine gezinilebilir detay olur.
+// Sol ray: top-level bölümler (sayfa düzeyinde dışarıda da render edilebilir).
+// Sağ pane: seçili bölüm; object çocukları breadcrumb ile derinleşir.
 
-import { Fragment, useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 import { Text, clx } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import type { TFunction } from "i18next"
@@ -12,7 +11,7 @@ import type { CollectionSchema, FieldDef } from "../lib/schema"
 
 const GENERAL = "__general"
 
-type Section =
+export type ContentSection =
   | { key: typeof GENERAL; label: string; fields: FieldDef[]; pick: "root" }
   | {
       key: string
@@ -23,10 +22,11 @@ type Section =
     }
   | { key: string; label: string; fields: FieldDef[]; pick: "root" }
 
-// Top-level bölümler: object → kendi alanları; list → tek alan; kalan leaf'ler "Genel"de.
-// Sadece "Genel" etiketi çevrilir; diğerleri f.label (kullanıcı verisi).
-const buildSections = (schema: CollectionSchema, t: TFunction): Section[] => {
-  const sections: Section[] = []
+export const buildSections = (
+  schema: CollectionSchema,
+  t: TFunction
+): ContentSection[] => {
+  const sections: ContentSection[] = []
   const leaves = schema.fields.filter(
     (f) => f.kind !== "object" && f.kind !== "list"
   )
@@ -57,7 +57,6 @@ const buildSections = (schema: CollectionSchema, t: TFunction): Section[] => {
 const isObjectVal = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v)
 
-// path boyunca immutable yaz (ara düğüm yoksa {} ile oluştur).
 const setAtPath = (data: unknown, path: string[], slice: unknown): unknown => {
   if (path.length === 0) {
     return slice
@@ -67,17 +66,74 @@ const setAtPath = (data: unknown, path: string[], slice: unknown): unknown => {
   return { ...node, [head]: setAtPath(node[head], rest, slice) }
 }
 
+interface SectionNavProps {
+  sections: ContentSection[]
+  activeKey: string | null
+  onChange: (key: string) => void
+  className?: string
+}
+
+export const SectionNav = ({
+  sections,
+  activeKey,
+  onChange,
+  className,
+}: SectionNavProps) => {
+  const resolved = activeKey ?? sections[0]?.key ?? null
+
+  if (sections.length === 0) {
+    return null
+  }
+
+  return (
+    <nav className={clx("flex flex-col gap-y-0.5", className)}>
+      {sections.map((s) => (
+        <button
+          key={s.key}
+          type="button"
+          onClick={() => onChange(s.key)}
+          className={clx(
+            "flex items-center gap-x-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+            s.key === resolved
+              ? "bg-ui-bg-base-pressed text-ui-fg-base font-medium"
+              : "text-ui-fg-subtle hover:bg-ui-bg-base-hover"
+          )}
+        >
+          <span
+            className={clx(
+              "size-1.5 shrink-0 rounded-full",
+              s.key === resolved
+                ? "bg-ui-fg-interactive"
+                : "bg-ui-border-base"
+            )}
+          />
+          <span className="truncate">{s.label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 interface Props {
   schema: CollectionSchema
   value: Record<string, unknown>
   onChange: (next: Record<string, unknown>) => void
+  activeKey?: string | null
+  onActiveKeyChange?: (key: string) => void
+  hideNav?: boolean
 }
 
-export const SectionedForm = ({ schema, value, onChange }: Props) => {
+export const SectionedForm = ({
+  schema,
+  value,
+  onChange,
+  activeKey: controlledActive,
+  onActiveKeyChange,
+  hideNav = false,
+}: Props) => {
   const { t } = useTranslation()
-  const sections = buildSections(schema, t)
-  const [active, setActive] = useState<string | null>(null)
-  const activeKey = active ?? sections[0]?.key ?? null
+  const sections = useMemo(() => buildSections(schema, t), [schema, t])
+  const activeKey = controlledActive ?? sections[0]?.key ?? null
   const current = sections.find((s) => s.key === activeKey)
 
   if (sections.length === 0) {
@@ -88,7 +144,6 @@ export const SectionedForm = ({ schema, value, onChange }: Props) => {
     )
   }
 
-  // Bölümün kök data slice'ı + o slice'a geri yazan onChange.
   let sectionValue: Record<string, unknown> = value
   let sectionOnChange: (next: Record<string, unknown>) => void = onChange
   if (current && current.pick === "child") {
@@ -98,45 +153,29 @@ export const SectionedForm = ({ schema, value, onChange }: Props) => {
     sectionOnChange = (next) => onChange({ ...value, [ck]: next })
   }
 
-  return (
-    <div className="grid gap-6 md:grid-cols-[180px_1fr]">
-      <nav className="border-ui-border-base flex flex-col gap-y-0.5 md:border-r md:pr-3">
-        {sections.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => setActive(s.key)}
-            className={clx(
-              "flex items-center gap-x-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-              s.key === activeKey
-                ? "bg-ui-bg-base-pressed text-ui-fg-base font-medium"
-                : "text-ui-fg-subtle hover:bg-ui-bg-base-hover"
-            )}
-          >
-            <span
-              className={clx(
-                "size-1.5 shrink-0 rounded-full",
-                s.key === activeKey
-                  ? "bg-ui-fg-interactive"
-                  : "bg-ui-border-base"
-              )}
-            />
-            <span className="truncate">{s.label}</span>
-          </button>
-        ))}
-      </nav>
+  const content = current ? (
+    <SectionDetail
+      key={current.key}
+      rootLabel={current.label}
+      fields={current.fields}
+      value={sectionValue}
+      onChange={sectionOnChange}
+    />
+  ) : null
 
-      <div className="min-w-0">
-        {current ? (
-          <SectionDetail
-            key={current.key}
-            rootLabel={current.label}
-            fields={current.fields}
-            value={sectionValue}
-            onChange={sectionOnChange}
-          />
-        ) : null}
-      </div>
+  if (hideNav) {
+    return <div className="min-w-0">{content}</div>
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(140px,180px)_minmax(0,1fr)]">
+      <SectionNav
+        sections={sections}
+        activeKey={activeKey}
+        onChange={(key) => onActiveKeyChange?.(key)}
+        className="border-ui-border-base lg:border-r lg:pr-3"
+      />
+      <div className="min-w-0">{content}</div>
     </div>
   )
 }
@@ -148,7 +187,6 @@ interface DetailProps {
   onChange: (next: Record<string, unknown>) => void
 }
 
-// Bölüm içi drill-down: object çocukları breadcrumb ile derinleşir, leaf/list inline kalır.
 const SectionDetail = ({ rootLabel, fields, value, onChange }: DetailProps) => {
   const { t } = useTranslation()
   const [subPath, setSubPath] = useState<string[]>([])

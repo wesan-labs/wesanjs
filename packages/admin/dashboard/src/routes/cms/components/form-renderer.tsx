@@ -8,11 +8,33 @@ import {
   Label,
   Select,
   Switch,
+  Text,
   Textarea,
   clx,
 } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import { defaultForField, slugify, type FieldDef } from "../lib/schema"
+
+const SCALAR_FIELD_KINDS = new Set([
+  "text",
+  "textarea",
+  "slug",
+  "number",
+  "date",
+  "select",
+  "boolean",
+  "image",
+  "asset",
+  "ref",
+])
+
+const isRowObjectList = (
+  of: FieldDef
+): of is FieldDef & { kind: "object"; fields: FieldDef[] } =>
+  of.kind === "object" &&
+  of.fields.length >= 1 &&
+  of.fields.length <= 8 &&
+  of.fields.every((f) => SCALAR_FIELD_KINDS.has(f.kind))
 
 interface FieldInputProps {
   id: string
@@ -20,6 +42,8 @@ interface FieldInputProps {
   value: unknown
   onChange: (next: unknown) => void
   siblings: Record<string, unknown>
+  /** Tablo satırında etiket yerine placeholder */
+  inline?: boolean
 }
 
 const FieldInput = ({
@@ -28,13 +52,17 @@ const FieldInput = ({
   value,
   onChange,
   siblings,
+  inline = false,
 }: FieldInputProps) => {
   const { t } = useTranslation()
+  const inlinePlaceholder = inline ? field.label : undefined
   switch (field.kind) {
     case "text":
       return (
         <Input
           id={id}
+          size="small"
+          placeholder={inlinePlaceholder}
           value={(value as string) ?? ""}
           maxLength={field.max}
           onChange={(e) => onChange(e.target.value)}
@@ -178,11 +206,137 @@ const FieldInput = ({
 
     case "list": {
       const items = Array.isArray(value) ? value : []
+      const objectItems = field.of.kind === "object"
+      const rowLayout = objectItems && isRowObjectList(field.of)
+      const objectFields = rowLayout ? field.of.fields : []
+
+      if (rowLayout) {
+        const colTemplate = `repeat(${objectFields.length}, minmax(0, 1fr)) 2.25rem`
+        return (
+          <div className="border-ui-border-base overflow-hidden rounded-md border">
+            <div
+              className="bg-ui-bg-subtle border-ui-border-base grid items-center gap-x-2 gap-y-0 border-b px-2 py-1.5"
+              style={{ gridTemplateColumns: colTemplate }}
+            >
+              {objectFields.map((f) => (
+                <Text
+                  key={f.name}
+                  size="xsmall"
+                  weight="plus"
+                  className="text-ui-fg-muted truncate uppercase tracking-wide"
+                >
+                  {f.label}
+                </Text>
+              ))}
+              <span />
+            </div>
+            {items.length === 0 ? (
+              <Text size="xsmall" className="text-ui-fg-muted px-2 py-2">
+                {t("cms.form.emptyList", { defaultValue: "No items yet." })}
+              </Text>
+            ) : (
+              items.map((item, idx) => {
+                const row =
+                  item && typeof item === "object" && !Array.isArray(item)
+                    ? (item as Record<string, unknown>)
+                    : {}
+                return (
+                  <div
+                    key={idx}
+                    className="border-ui-border-base hover:bg-ui-bg-subtle grid items-center gap-x-2 gap-y-0 border-b px-2 py-1 last:border-b-0"
+                    style={{ gridTemplateColumns: colTemplate }}
+                  >
+                    {objectFields.map((f) => (
+                      <FieldInput
+                        key={f.name}
+                        id={`${id}-${idx}-${f.name}`}
+                        field={f}
+                        value={row[f.name]}
+                        inline
+                        onChange={(next) => {
+                          const arr = [...items]
+                          arr[idx] = { ...row, [f.name]: next }
+                          onChange(arr)
+                        }}
+                        siblings={row}
+                      />
+                    ))}
+                    <Button
+                      type="button"
+                      variant="transparent"
+                      size="small"
+                      className="text-ui-fg-muted shrink-0"
+                      onClick={() =>
+                        onChange(items.filter((_, i) => i !== idx))
+                      }
+                      aria-label={t("cms.form.delete")}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                )
+              })
+            )}
+            <div className="bg-ui-bg-subtle border-ui-border-base border-t px-2 py-1.5">
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                onClick={() =>
+                  onChange([...items, defaultForField(field.of)])
+                }
+              >
+                {t("cms.form.addItem")}
+              </Button>
+            </div>
+          </div>
+        )
+      }
+
       return (
-        <div className="border-ui-border-base flex flex-col gap-y-3 rounded-lg border p-3">
+        <div className="flex flex-col gap-y-1.5">
           {items.map((item, idx) => (
-            <div key={idx} className="flex items-start gap-x-2">
-              <div className="flex-1">
+            <div
+              key={idx}
+              className="border-ui-border-base flex flex-wrap items-end gap-2 rounded-md border px-2 py-1.5"
+            >
+              {objectItems ? (
+                field.of.fields.map((f) => (
+                  <div key={f.name} className="min-w-[120px] flex-1">
+                    <FieldInput
+                      id={`${id}-${idx}-${f.name}`}
+                      field={f}
+                      value={
+                        item &&
+                        typeof item === "object" &&
+                        !Array.isArray(item)
+                          ? (item as Record<string, unknown>)[f.name]
+                          : undefined
+                      }
+                      inline
+                      onChange={(next) => {
+                        const obj =
+                          item &&
+                          typeof item === "object" &&
+                          !Array.isArray(item)
+                            ? { ...(item as Record<string, unknown>) }
+                            : {}
+                        obj[f.name] = next
+                        const arr = [...items]
+                        arr[idx] = obj
+                        onChange(arr)
+                      }}
+                      siblings={
+                        item &&
+                        typeof item === "object" &&
+                        !Array.isArray(item)
+                          ? (item as Record<string, unknown>)
+                          : {}
+                      }
+                    />
+                  </div>
+                ))
+              ) : (
                 <FieldInput
                   id={`${id}-${idx}`}
                   field={field.of}
@@ -194,27 +348,28 @@ const FieldInput = ({
                   }}
                   siblings={siblings}
                 />
-              </div>
+              )}
               <Button
                 type="button"
                 variant="transparent"
                 size="small"
+                className="text-ui-fg-muted shrink-0"
                 onClick={() => onChange(items.filter((_, i) => i !== idx))}
+                aria-label={t("cms.form.delete")}
               >
-                {t("cms.form.delete")}
+                ×
               </Button>
             </div>
           ))}
-          <div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="small"
-              onClick={() => onChange([...items, defaultForField(field.of)])}
-            >
-              {t("cms.form.addItem")}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            className="self-start"
+            onClick={() => onChange([...items, defaultForField(field.of)])}
+          >
+            {t("cms.form.addItem")}
+          </Button>
         </div>
       )
     }
@@ -224,8 +379,20 @@ const FieldInput = ({
         value && typeof value === "object" && !Array.isArray(value)
           ? (value as Record<string, unknown>)
           : {}
+      const compact = field.fields.every((f) =>
+        ["text", "slug", "number", "boolean", "date", "select", "image"].includes(
+          f.kind
+        )
+      )
       return (
-        <div className="border-ui-border-base flex flex-col gap-y-4 rounded-lg border p-3">
+        <div
+          className={clx(
+            "border-ui-border-base rounded-lg border p-3",
+            compact
+              ? "grid grid-cols-2 gap-3"
+              : "flex flex-col gap-y-3"
+          )}
+        >
           {field.fields.map((f) => (
             <FieldRow
               key={f.name}
@@ -233,6 +400,7 @@ const FieldInput = ({
               value={obj[f.name]}
               onChange={(next) => onChange({ ...obj, [f.name]: next })}
               siblings={obj}
+              compact={compact}
             />
           ))}
           {field.fields.length === 0 ? (
@@ -274,21 +442,32 @@ interface FieldRowProps {
   value: unknown
   onChange: (next: unknown) => void
   siblings: Record<string, unknown>
+  compact?: boolean
+  /** Liste/tablo alanları için daha sıkı dikey boşluk */
+  dense?: boolean
 }
 
-const FieldRow = ({ field, value, onChange, siblings }: FieldRowProps) => {
+const FieldRow = ({
+  field,
+  value,
+  onChange,
+  siblings,
+  compact = false,
+  dense = false,
+}: FieldRowProps) => {
   const id = `cms-field-${field.name}`
+  const isList = field.kind === "list"
   return (
-    <div className="flex flex-col gap-y-2">
-      <div className="flex items-center gap-x-2">
-        <Label htmlFor={id} size="small" weight="plus">
-          {field.label}
-          {field.required ? <span className="text-ui-fg-error"> *</span> : null}
-        </Label>
-        <span className="text-ui-fg-muted bg-ui-bg-component rounded px-1.5 py-0.5 font-mono text-[10px]">
-          {field.kind}
-        </span>
-      </div>
+    <div
+      className={clx(
+        "flex flex-col",
+        dense || isList ? "gap-y-1" : compact ? "gap-y-1.5" : "gap-y-2"
+      )}
+    >
+      <Label htmlFor={id} size="small" weight="plus">
+        {field.label}
+        {field.required ? <span className="text-ui-fg-error"> *</span> : null}
+      </Label>
       <FieldInput
         id={id}
         field={field}
@@ -323,7 +502,7 @@ export const FormRenderer = ({
   }
 
   return (
-    <div className={clx("flex flex-col gap-y-4")}>
+    <div className="flex flex-col gap-y-3">
       {fields.map((field) => (
         <FieldRow
           key={field.name}
@@ -331,6 +510,7 @@ export const FormRenderer = ({
           value={value[field.name]}
           onChange={(next) => setField(field.name, next)}
           siblings={value}
+          dense={field.kind === "list"}
         />
       ))}
     </div>

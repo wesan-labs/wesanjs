@@ -11,8 +11,9 @@ import {
   Textarea,
   toast,
 } from "@medusajs/ui"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { PlatformGlyph } from "../../content/components/prompt-meta"
+import { accountsRequireMedia } from "../../../lib/social-platform-rules"
 import { usePublishSocial, useSocialAccounts } from "../../../hooks/api/social"
 
 type Mode = "draft" | "schedule" | "now"
@@ -46,12 +47,26 @@ export const PublishComposer = ({
   const [when, setWhen] = useState<Date | null>(null)
   const [sendImage, setSendImage] = useState(false)
 
+  const mediaPlatforms = useMemo(
+    () => accountsRequireMedia(accounts, selected),
+    [accounts, selected]
+  )
+  const needsMedia = mediaPlatforms.length > 0
+  const hasMedia =
+    !!mediaUrl.trim() || (sendImage && !!initialImage && imageHost)
+
   // Sync caption + default the image toggle when the drawer opens.
   useEffect(() => {
     if (!open) return
     if (initialContent != null) setContent(initialContent)
     setSendImage(!!initialImage && imageHost)
   }, [open, initialContent, initialImage, imageHost])
+
+  // Instagram/TikTok etc. selected → auto-attach studio image when hosting is on.
+  useEffect(() => {
+    if (!open || !needsMedia || !initialImage || !imageHost) return
+    setSendImage(true)
+  }, [open, needsMedia, initialImage, imageHost])
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -74,6 +89,18 @@ export const PublishComposer = ({
     }
     if (mode === "schedule" && !when) {
       toast.error("Tarih ve saat seç")
+      return
+    }
+    if (needsMedia && !hasMedia) {
+      toast.error("Görsel veya video gerekli", {
+        description:
+          `${mediaPlatforms.join(", ")} için herkese açık medya URL'i girin` +
+          (initialImage && !imageHost
+            ? " (stüdyo görseli: platform görsel barındırma henüz açılmamış)."
+            : initialImage
+              ? " veya «Görseli de gönder» açık olsun."
+              : "."),
+      })
       return
     }
     try {
@@ -114,6 +141,22 @@ export const PublishComposer = ({
           <Drawer.Title>Paylaş</Drawer.Title>
         </Drawer.Header>
         <Drawer.Body className="flex flex-col gap-y-4 overflow-y-auto">
+          {needsMedia && !hasMedia && (
+            <div className="border-ui-border-error bg-ui-bg-error-subtle rounded-lg border p-3">
+              <Text size="small" weight="plus" className="text-ui-fg-error">
+                {mediaPlatforms.join(", ")} görsel veya video olmadan paylaşım kabul etmez.
+              </Text>
+              <Text size="xsmall" className="text-ui-fg-subtle mt-1">
+                Aşağıya public URL girin
+                {initialImage && imageHost
+                  ? " veya stüdyo görselini gönderin."
+                  : initialImage
+                    ? " — stüdyo görseli için platform görsel barındırma gerekli."
+                    : "."}
+              </Text>
+            </div>
+          )}
+
           {initialImage && (
             <div className="flex flex-col gap-y-2">
               <Label size="small">Stüdyo görseli</Label>
@@ -129,8 +172,8 @@ export const PublishComposer = ({
                   </Text>
                   <Text size="xsmall" className="text-ui-fg-muted">
                     {imageHost
-                      ? "Yayınlarken otomatik herkese açık URL'e yüklenir."
-                      : "Görsel barındırma (IMAGE_HOST) yok — public URL gir ya da kapalı bırak."}
+                      ? "Platform görsel barındırma açık — yayında otomatik public URL oluşur."
+                      : "Görsel yükleme platformda kapalı — public medya URL'i girin."}
                   </Text>
                 </div>
                 <Switch
@@ -153,7 +196,9 @@ export const PublishComposer = ({
           </div>
 
           <div className="flex flex-col gap-y-1.5">
-            <Label size="small">Görsel/Video URL (opsiyonel)</Label>
+            <Label size="small">
+              Görsel/Video URL{needsMedia ? " (zorunlu)" : " (opsiyonel)"}
+            </Label>
             <Input
               value={mediaUrl}
               onChange={(e) => setMediaUrl(e.target.value)}
@@ -218,7 +263,11 @@ export const PublishComposer = ({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             İptal
           </Button>
-          <Button onClick={submit} isLoading={publish.isPending}>
+          <Button
+            onClick={submit}
+            isLoading={publish.isPending}
+            disabled={needsMedia && !hasMedia}
+          >
             {cta}
           </Button>
         </Drawer.Footer>

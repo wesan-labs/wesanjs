@@ -46,9 +46,11 @@ export type INavItem = {
   from?: string
   nested?: string
   translationNs?: string
-  // Grup başlığı (kendi sayfası olmayan; E-Commerce/CRM). Active kutu almaz —
-  // aksi halde başlık + aktif çocuk ikisi de seçili görünür.
+  // Grup başlığı (kendi sayfası olmayan; E-Commerce/CRM). Active kutu almaz.
   isGroup?: boolean
+  // Leaf settings links that share a path prefix with a sibling must not both
+  // appear active (e.g. /settings/organization vs /settings/organization/members).
+  exactActive?: boolean
 }
 
 const BASE_NAV_LINK_CLASSES =
@@ -307,6 +309,7 @@ export const NavItem = ({
   from,
   translationNs,
   isGroup,
+  exactActive,
 }: INavItem) => {
   const { t } = useTranslation(translationNs as any)
   const { pathname, search } = useLocation()
@@ -337,7 +340,11 @@ export const NavItem = ({
       asGroup?: boolean
     }) => {
       if (["core", "setting"].includes(type)) {
-        isActive = pathname.startsWith(to)
+        if (exactActive) {
+          isActive = pathname === to
+        } else {
+          isActive = pathname === to || pathname.startsWith(`${to}/`)
+        }
       }
 
       // Grup başlığı kendi sayfası olmadığı için active kutu almaz.
@@ -351,7 +358,7 @@ export const NavItem = ({
         [SETTING_NAV_LINK_CLASSES]: isSetting,
       })
     },
-    [type, pathname]
+    [type, pathname, exactActive]
   )
 
   const getLinkTarget = useCallback(

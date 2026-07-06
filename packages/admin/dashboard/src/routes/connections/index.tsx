@@ -14,6 +14,7 @@ import {
   toast,
 } from "@medusajs/ui"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   useApps,
   useCreateApp,
@@ -30,18 +31,22 @@ import {
   type RevSource,
 } from "../../hooks/api/apps"
 import {
+  PRIMARY_TENANT_SLUG,
+  setActiveTenantId,
+  useActiveTenant,
+} from "../../hooks/api/tenants"
+import {
   useFinanceSettings,
   useSaveFinanceSettings,
   type FinanceSettings,
 } from "../../hooks/api/revenue"
+import { useSocialStatus } from "../../hooks/api/social"
 
 /* ---- brand logos (simple-icons, viewBox 0 0 24 24, single path) ---- */
 const ICON_REVENUECAT =
   "M4.3036.3999c-1.5246 0-3.2129.1508-4.303.4136v14.9997c.3083.1722.8432.28 1.5632.28.7404 0 1.2553-.1072 1.5433-.28v-5.2323a14.8588 14.8588 0 0 0 2.121.1512h.3294l2.8604 5.0588c.432.195 1.0288.3024 1.9348.3024.8033 0 1.38-.1104 1.6476-.3024l-3.437-5.8358c1.4195-.8004 2.326-2.2698 2.326-4.4964C10.8894 1.827 8.4232.4 4.3037.4zm15.4543 0c-1.3788 0-2.624.2707-3.6901.7945-2.4552 1.203-3.9609 3.7376-3.9609 7.3627 0 4.8245 2.6552 7.7155 7.1659 7.7155.9 0 1.5868-.3014 2.005.2554.4194.5568-.3582 1.2165-.7746 1.5105-1.6338 1.1544-5.7217-.1024-9.4908-.4804C5.5994 17.015.9264 16.3009.146 19.1928c-.4104 1.5264.1225 2.5013.6421 3.0503 1.044 1.1046 2.882 1.357 4.344 1.357a13.959 13.959 0 0 0 2.0508-.1558 1.311 1.311 0 0 0 1.023-.8063c.1674-.4254.0861-.904-.212-1.2562a1.3464 1.3464 0 0 0-1.2352-.4523c-1.5012.2706-3.6213.8685-4.4343.0105-.2748-.291-.2268-1.0037 0-1.2257.6048-.8748 4.493-.5393 8.4127-.0293 4.329.4344 8.4023 1.8609 10.945.6351.9955-.48 2.318-1.1941 2.318-3.792h-.0012c0-1.1473-.1489-2.274-.4476-3.3797-1.3818.1872-2.4783.2857-3.2883.2941-2.845 0-4.869-1.4484-4.869-5.0963 0-3.648 2.0461-5.1573 5.0179-5.1573 1.2011 0 2.129.2512 3.1405.7336.1062-.9234-.1058-2.1605-.5906-2.8523-.78-.4608-2.0014-.6703-3.2038-.6703zM4.51 3.1889c2.0579 0 3.2108.7111 3.2108 2.4421 0 1.6824-1.0912 2.3554-2.8816 2.3554a10.2838 10.2838 0 0 1-1.7706-.1511V3.3166a7.7782 7.7782 0 0 1 1.4413-.1277z"
 const ICON_ADMOB =
   "M11.46.033h-.052A11.993 11.993 0 0 0 0 11.922v.052c0 7.475 6.563 11.928 11.447 11.928h.17a3.086 3.086 0 0 0 3.125-3.047c0-1.693-1.433-2.917-3.152-2.917h-.039a6.016 6.016 0 0 1-5.508-6.368v-.052a6.016 6.016 0 0 1 5.573-5.509c1.719 0 3.125-1.237 3.125-2.917A3.086 3.086 0 0 0 11.604.02h-.143zm2.031.026a3.516 3.516 0 0 1 1.746 3.021 3.386 3.386 0 0 1-1.928 3.047c2.865.6 4.532 3.126 4.688 5.378v7.684a3.49 3.49 0 0 1 6.003.026v-7.736A12.046 12.046 0 0 0 13.491.045zm7.475 17.932a2.995 2.995 0 1 0 .04 0z"
-const ICON_SENTRY =
-  "M13.91 2.505c-.873-1.448-2.972-1.448-3.844 0L6.904 7.92a15.478 15.478 0 0 1 8.53 12.811h-2.221A13.301 13.301 0 0 0 5.784 9.814l-2.926 5.06a7.65 7.65 0 0 1 4.435 5.848H2.194a.365.365 0 0 1-.298-.534l1.413-2.402a5.16 5.16 0 0 0-1.614-.913L.296 19.275a2.182 2.182 0 0 0 .812 2.999 2.24 2.24 0 0 0 1.086.288h6.983a9.322 9.322 0 0 0-3.845-8.318l1.11-1.922a11.47 11.47 0 0 1 4.95 10.24h5.915a17.242 17.242 0 0 0-7.885-15.28l2.244-3.845a.37.37 0 0 1 .504-.13c.255.14 9.75 16.708 9.928 16.9a.365.365 0 0 1-.327.543h-2.287c.029.612.029 1.223 0 1.831h2.297a2.206 2.206 0 0 0 1.922-3.31z"
 
 const CURRENCIES = ["USD", "EUR", "GBP", "TRY"]
 
@@ -85,16 +90,6 @@ const INTEGRATIONS: IntegrationDef[] = [
     category: "Reklam",
     color: "#14B8A6",
     bg: "rgba(20,184,166,0.14)",
-    available: false,
-  },
-  {
-    key: "sentry",
-    label: "Sentry",
-    mono: "Se",
-    icon: ICON_SENTRY,
-    category: "Hata",
-    color: "#7B51F8",
-    bg: "rgba(123,81,248,0.14)",
     available: false,
   },
 ]
@@ -814,6 +809,128 @@ const AccountDrawer = ({
   )
 }
 
+const SOCIAL_PLATFORM_LABELS: Record<string, string> = {
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  twitter: "X",
+  x: "X",
+  facebook: "Facebook",
+  linkedin: "LinkedIn",
+  pinterest: "Pinterest",
+  youtube: "YouTube",
+  threads: "Threads",
+}
+
+const SocialOrgSection = () => {
+  const navigate = useNavigate()
+  const { data, isLoading } = useSocialStatus()
+
+  if (isLoading) {
+    return (
+      <Container className="p-5">
+        <Text size="small" className="text-ui-fg-muted">
+          Sosyal medya durumu yükleniyor…
+        </Text>
+      </Container>
+    )
+  }
+
+  if (!data) {
+    return null
+  }
+
+  const profileLabel = data.profile?.name || data.profile?.id?.slice(0, 8) || "—"
+
+  return (
+    <Container className="flex flex-col gap-y-4 p-5">
+      <div className="flex flex-col gap-y-2 sm:flex-row sm:items-start sm:justify-between sm:gap-x-4">
+        <div>
+          <Heading level="h2">Sosyal medya</Heading>
+          <Text size="small" className="text-ui-fg-subtle">
+            Bu organizasyonun Zernio profili ve bağlı hesaplar. Platform anahtarı
+            Levios operatörü tarafından yönetilir — müşteri <code>.env</code>{" "}
+            doldurmaz.
+          </Text>
+        </div>
+        <Button
+          variant="secondary"
+          size="small"
+          className="shrink-0"
+          onClick={() => navigate("/social-media")}
+        >
+          Sosyal medyaya git
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Badge
+          size="2xsmall"
+          color={data.platformSocial ? "green" : "red"}
+        >
+          {data.platformSocial ? "Platform anahtarı aktif" : "Platform anahtarı yok"}
+        </Badge>
+        <Badge
+          size="2xsmall"
+          color={data.configured ? "green" : "orange"}
+        >
+          {data.configured ? "Org profili hazır" : "Profil bekleniyor"}
+        </Badge>
+        {data.profile?.shared ? (
+          <Badge size="2xsmall" color="orange">
+            Paylaşımlı profil (dev / free tier)
+          </Badge>
+        ) : null}
+        <Badge
+          size="2xsmall"
+          color={data.imageHost ? "green" : "grey"}
+        >
+          {data.imageHost
+            ? "Görsel yükleme hazır"
+            : "Görsel yükleme kapalı"}
+        </Badge>
+      </div>
+
+      {data.profile ? (
+        <Text size="small" className="text-ui-fg-subtle">
+          Profil:{" "}
+          <span className="text-ui-fg-base font-medium">{profileLabel}</span>
+          {data.accountCount > 0
+            ? ` · ${data.accountCount} bağlı hesap`
+            : " · henüz bağlı hesap yok"}
+        </Text>
+      ) : null}
+
+      {data.accounts.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {data.accounts.map((a) => (
+            <Badge key={`${a.platform}-${a.username}`} size="2xsmall">
+              {SOCIAL_PLATFORM_LABELS[a.platform.toLowerCase()] || a.platform}
+              {a.username ? ` @${a.username}` : ""}
+            </Badge>
+          ))}
+        </div>
+      ) : data.configured ? (
+        <Text size="xsmall" className="text-ui-fg-muted">
+          Instagram, TikTok vb. bağlamak için Sosyal medya sayfasından OAuth
+          başlatın.
+        </Text>
+      ) : !data.platformSocial ? (
+        <Text size="xsmall" className="text-ui-fg-muted">
+          Levios operatörü sunucuda <code>ZERNIO_API_KEY</code> tanımlamalı.
+        </Text>
+      ) : null}
+
+      {!data.imageHost ? (
+        <Text size="xsmall" className="text-ui-fg-muted">
+          Stüdyodan görsel yayınlamak için operatör{" "}
+          <code>IMAGE_HOST</code> (imgbb, cloudinary veya r2) yapılandırmalı;
+          aksi halde yalnızca public URL ile yayın yapılır.
+        </Text>
+      ) : null}
+    </Container>
+  )
+}
+
 const AccountButton = ({
   label,
   connected,
@@ -838,6 +955,10 @@ export const Component = () => {
   const { integrations } = useIntegrations()
   const { apps } = useApps()
   const { sources } = useSources()
+  const { activeTenant, tenants } = useActiveTenant()
+  const primaryTenant = tenants.find((t) => t.slug === PRIMARY_TENANT_SLUG)
+  const onWrongOrg =
+    !!primaryTenant && activeTenant?.id !== primaryTenant.id && !apps.length
   const createApp = useCreateApp()
   const deleteApp = useDeleteApp()
   const sync = useSync()
@@ -916,6 +1037,35 @@ export const Component = () => {
           </div>
         </div>
       </Container>
+
+      {onWrongOrg ? (
+        <Container className="border-ui-border-interactive bg-ui-bg-subtle flex flex-col gap-y-3 border p-5">
+          <Text size="small" weight="plus">
+            Entegrasyonlar başka organizasyonda
+          </Text>
+          <Text size="small" className="text-ui-fg-subtle">
+            Ürünler ve bağlantılar{" "}
+            <span className="text-ui-fg-base font-medium">
+              {primaryTenant?.name ?? "Wesan"}
+            </span>{" "}
+            org&apos;unda. Şu an{" "}
+            <span className="text-ui-fg-base font-medium">
+              {activeTenant?.name}
+            </span>{" "}
+            seçili — bu yüzden liste boş görünüyor. Veri silinmedi.
+          </Text>
+          <div>
+            <Button
+              size="small"
+              onClick={() => primaryTenant && setActiveTenantId(primaryTenant.id)}
+            >
+              {primaryTenant?.name ?? "Wesan"} org&apos;una geç
+            </Button>
+          </div>
+        </Container>
+      ) : null}
+
+      <SocialOrgSection />
 
       <Container className="overflow-hidden p-0">
         <div className="overflow-x-auto">

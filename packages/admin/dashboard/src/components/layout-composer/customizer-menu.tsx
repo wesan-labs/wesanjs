@@ -46,7 +46,7 @@ const HOSTS: CustomizeHost[] = [
   {
     id: CUSTOMIZE_IDS.SETTINGS_SIDEBAR,
     labelKey: "layout.customizeSettingsSidebar",
-    navigateTo: "/settings",
+    navigateTo: "/settings/organization",
     isMounted: isSettingsPath,
   },
   {

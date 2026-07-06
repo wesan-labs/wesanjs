@@ -4,6 +4,8 @@ import { Sparkline } from "./sparkline"
 
 export type StatAccent = "neutral" | "positive" | "negative"
 
+const SPARKLINE_HEIGHT = 28
+
 type StatCardProps = {
   label: string
   value: ReactNode
@@ -41,8 +43,8 @@ const pctDelta = (trend?: number[]): number | null => {
   return ((last - first) / Math.abs(first)) * 100
 }
 
-// Compact, uniform KPI card. No hero sizing — small real numbers must not look
-// orphaned. Optional sparkline + delta only render when a real series exists.
+// Compact, uniform KPI card. Sparkline slot is always reserved so cards in the
+// same grid row stay the same height.
 export const StatCard = ({
   label,
   value,
@@ -52,43 +54,48 @@ export const StatCard = ({
   delta: deltaProp,
 }: StatCardProps) => {
   const delta = deltaProp !== undefined ? deltaProp : pctDelta(trend)
+  const showSparkline = !!(trend && trend.length > 1)
 
   return (
-    <Container className="flex min-h-[92px] flex-col gap-y-1.5 p-4">
-      <div className="flex items-center justify-between gap-x-2">
-        <Text
-          size="xsmall"
-          weight="plus"
-          className="text-ui-fg-subtle truncate uppercase tracking-wider"
-        >
-          {label}
-        </Text>
-        {delta != null ? (
-          <span
-            className="shrink-0 text-xs tabular-nums"
-            style={{ color: delta >= 0 ? "#10b981" : "#ef4444" }}
+    <Container className="flex h-full min-h-[108px] flex-col p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-y-1.5">
+        <div className="flex items-center justify-between gap-x-2">
+          <Text
+            size="xsmall"
+            weight="plus"
+            className="text-ui-fg-subtle truncate uppercase tracking-wider"
           >
-            {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}%
-          </span>
+            {label}
+          </Text>
+          {delta != null ? (
+            <span
+              className="shrink-0 text-xs tabular-nums"
+              style={{ color: delta >= 0 ? "#10b981" : "#ef4444" }}
+            >
+              {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}%
+            </span>
+          ) : null}
+        </div>
+
+        <div
+          className="text-lg font-semibold tabular-nums leading-tight sm:text-xl"
+          style={{ color: accentColor[accent] }}
+        >
+          {value}
+        </div>
+
+        {sub ? (
+          <Text size="xsmall" className="text-ui-fg-muted mt-auto truncate">
+            {sub}
+          </Text>
         ) : null}
       </div>
 
-      <div
-        className="truncate text-xl font-semibold tabular-nums leading-none"
-        style={{ color: accentColor[accent] }}
-      >
-        {value}
+      <div className="mt-2 shrink-0" style={{ height: SPARKLINE_HEIGHT }}>
+        {showSparkline ? (
+          <Sparkline data={trend!} color={sparkColor[accent]} height={SPARKLINE_HEIGHT} />
+        ) : null}
       </div>
-
-      {sub ? (
-        <Text size="xsmall" className="text-ui-fg-muted mt-auto truncate">
-          {sub}
-        </Text>
-      ) : null}
-
-      {trend && trend.length > 1 ? (
-        <Sparkline data={trend} color={sparkColor[accent]} height={28} />
-      ) : null}
     </Container>
   )
 }

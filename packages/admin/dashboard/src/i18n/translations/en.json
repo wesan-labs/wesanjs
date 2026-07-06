@@ -3689,6 +3689,31 @@
       "last28": "Last 28 days"
     },
     "addExpense": "Add expense",
+    "sync": {
+      "panelRefreshed": "Panel refreshed",
+      "revenuecatSynced": "RevenueCat synced",
+      "admobSynced": "AdMob synced",
+      "dataThrough": "Data through",
+      "never": "Not yet",
+      "syncNow": "Sync now"
+    },
+    "layout": {
+      "syncBar": "Sync status",
+      "toolbar": "Tabs and filters",
+      "pnlSummary": "Net profit summary",
+      "composition": "Revenue composition",
+      "totalTrend": "Total revenue trend",
+      "geoMap": "Payment regions map",
+      "geoCountry": "Revenue by country",
+      "appsTable": "Apps table",
+      "recentTx": "Recent transactions",
+      "subProducts": "Subscription by product",
+      "subTrend": "Subscription trend",
+      "subPlatform": "Subscription by platform",
+      "adNotice": "Ad data notice",
+      "adDaily": "Daily ad revenue",
+      "adBreakdown": "Ad breakdown"
+    },
     "loading": "Loading…",
     "loadError": "Couldn't load revenue data. Check that the backend is running.",
     "noData": "No data yet",
@@ -3795,8 +3820,15 @@
       "categoryPh": "e.g. infrastructure, marketing",
       "recurring": "Recurring",
       "recurringHint": "Recurs every month",
+      "vendor": "Vendor",
+      "vendorPh": "e.g. AWS, Google Ads",
+      "invoiceNumber": "Invoice number",
+      "invoiceNumberPh": "e.g. INV-2026-001",
+      "invoiceFile": "Invoice / receipt",
+      "invoiceFileHint": "PDF, JPEG, PNG or WebP — max 10 MB",
       "created": "Expense added",
-      "createError": "Couldn't add expense"
+      "createError": "Couldn't add expense",
+      "uploadError": "Couldn't upload invoice"
     }
   },
   "cms": {
@@ -3811,12 +3843,20 @@
       "url": "URL",
       "status": "Status",
       "active": "active",
-      "disabled": "disabled"
+      "disabled": "disabled",
+      "wrongOrgTitle": "CMS lives in another organization",
+      "wrongOrgBody": "Sites and content are stored under {{target}}. You are on {{active}} — so the list looks empty. Nothing was deleted.",
+      "wrongOrgAction": "Switch to {{target}}"
     },
     "detail": {
       "content": "{{name}} · Content",
       "collections": "Collections ({{count}})",
       "editSchema": "Edit schema",
+      "hideSchema": "Hide schema",
+      "schemaSection": "Schema",
+      "noUrl": "No site URL configured",
+      "singletonHint": "Click to edit content",
+      "editing": "Editing…",
       "noCollections": "No collections. To import wesan content:",
       "records": "{{count}} records",
       "singletonNote": "A single record holds the whole site — no list, edit directly.",
@@ -3884,6 +3924,9 @@
     "editor": {
       "loading": "Loading…",
       "content": "Content · {{slug}}",
+      "contentSection": "Content",
+      "contentSections": "Sections",
+      "modalDescription": "Edit site content fields, SEO, or raw JSON.",
       "preview": "Preview",
       "close": "Close",
       "saveDraft": "Save draft",
@@ -3912,6 +3955,8 @@
       "assetIdPh": "asset id / path",
       "delete": "Delete",
       "addItem": "+ Add item",
+      "item": "Item {{index}}",
+      "emptyList": "No items yet.",
       "emptyGroup": "empty group"
     },
     "sectioned": {
@@ -3942,6 +3987,67 @@
       "ogWarn": "Add a social (OG) image",
       "generate": "✦ Generate",
       "generateSoon": "AI generation arrives in the AI phase"
+    }
+  },
+  "organization": {
+    "domain": "Organization",
+    "hint": "Manage your organization profile and active workspace scope.",
+    "new": "New organization",
+    "loading": "Loading…",
+    "empty": "No organization yet. Create one to get started.",
+    "name": "Name",
+    "slug": "Slug",
+    "status": "Status",
+    "active": "active",
+    "suspended": "suspended",
+    "activeScope": "Active workspace",
+    "switch": "Switch organization",
+    "clearActive": "Clear workspace scope",
+    "activeBanner": "Requests are scoped to this organization (x-tenant-id).",
+    "save": "Save",
+    "saved": "Saved",
+    "tabs": {
+      "profile": "General"
+    },
+    "hub": {
+      "title": "Access & team",
+      "hint": "Manage who is in this organization and what they can do.",
+      "rbacOff": "Enable MEDUSA_FF_RBAC to create roles and fine-grained permissions."
+    },
+    "member": {
+      "email": "Email",
+      "role": "Membership",
+      "moduleRole": "Module role",
+      "added": "Added",
+      "remove": "Remove",
+      "permissions": "Access",
+      "invitePh": "user@company.com",
+      "add": "Add member",
+      "addedToast": "Member added",
+      "removedToast": "Member removed",
+      "error": "Operation failed",
+      "roles": {
+        "admin": "Admin",
+        "manager": "Manager",
+        "member": "Member"
+      }
+    },
+    "team": {
+      "domain": "Team",
+      "hint": "Members of {{name}}.",
+      "noOrg": "Create or select an organization first.",
+      "createLink": "Go to Organization settings",
+      "manageRoles": "Roles & permissions",
+      "rbacHint": "Membership role (admin/manager/member) controls org admin actions. RBAC roles define which modules and API routes a user can access — assign them under Roles.",
+      "membershipHint": "Membership roles control who can manage this organization. Enable RBAC for module-level permissions."
+    },
+    "create": {
+      "cancel": "Cancel",
+      "save": "Create",
+      "namePh": "Acme Inc",
+      "slugPh": "acme",
+      "created": "Organization created",
+      "error": "Couldn't create"
     }
   },
   "tenants": {

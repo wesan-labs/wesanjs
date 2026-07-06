@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { sdk } from "../../lib/client"
+import { useTenantQueryKey } from "./tenants"
 
 /**
  * Social hooks — talk to the content plugin's provider proxy
@@ -57,29 +58,6 @@ export interface AccountAnalytics {
   posts: PostAnalytics[]
 }
 
-export const useSocialAccounts = () =>
-  useQuery({
-    queryKey: ["social", "accounts"],
-    queryFn: () =>
-      sdk.client.fetch<{
-        accounts: SocialAccount[]
-        configured: boolean
-        imageHost?: boolean
-      }>("/admin/content/social/accounts"),
-    staleTime: 30_000,
-  })
-
-export const useSocialAnalytics = (accountId?: string) =>
-  useQuery({
-    queryKey: ["social", "analytics", accountId],
-    queryFn: () =>
-      sdk.client.fetch<{ analytics: AccountAnalytics }>(
-        `/admin/content/social/analytics?accountId=${accountId}`
-      ),
-    enabled: !!accountId,
-    staleTime: 60_000,
-  })
-
 export interface SocialSnapshot {
   date: string
   metrics: {
@@ -93,10 +71,39 @@ export interface SocialSnapshot {
   }
 }
 
+export const useSocialAccounts = () => {
+  const queryKey = useTenantQueryKey(["social", "accounts"])
+  return useQuery({
+    queryKey,
+    queryFn: () =>
+      sdk.client.fetch<{
+        accounts: SocialAccount[]
+        configured: boolean
+        imageHost?: boolean
+        platformSocial?: boolean
+      }>("/admin/content/social/accounts"),
+    staleTime: 30_000,
+  })
+}
+
+export const useSocialAnalytics = (accountId?: string) => {
+  const queryKey = useTenantQueryKey(["social", "analytics", accountId])
+  return useQuery({
+    queryKey,
+    queryFn: () =>
+      sdk.client.fetch<{ analytics: AccountAnalytics }>(
+        `/admin/content/social/analytics?accountId=${accountId}`
+      ),
+    enabled: !!accountId,
+    staleTime: 60_000,
+  })
+}
+
 /** Daily metric history (snapshot job) for trend lines; empty until ≥1 day captured. */
-export const useSocialTrends = (accountId?: string) =>
-  useQuery({
-    queryKey: ["social", "trends", accountId],
+export const useSocialTrends = (accountId?: string) => {
+  const queryKey = useTenantQueryKey(["social", "trends", accountId])
+  return useQuery({
+    queryKey,
     queryFn: () =>
       sdk.client.fetch<{
         snapshots: SocialSnapshot[]
@@ -105,6 +112,7 @@ export const useSocialTrends = (accountId?: string) =>
     enabled: !!accountId,
     staleTime: 60_000,
   })
+}
 
 /** Returns the hosted OAuth URL for a platform so the caller can open it. */
 export const useConnectSocial = () =>
@@ -132,9 +140,45 @@ export interface PublishInput {
 /** Publish (or draft/schedule) a post to selected connected accounts. */
 export const usePublishSocial = () =>
   useMutation({
-    mutationFn: (input: PublishInput) =>
-      sdk.client.fetch<{ result: { id: string | null; status: string } }>(
-        "/admin/content/social/publish",
-        { method: "POST", body: input }
-      ),
+    mutationFn: async (input: PublishInput) => {
+      try {
+        return await sdk.client.fetch<{ result: { id: string | null; status: string } }>(
+          "/admin/content/social/publish",
+          { method: "POST", body: input }
+        )
+      } catch (e) {
+        const err = e as { message?: string; body?: { error?: string } }
+        throw new Error(err.body?.error || err.message || "Yayın başarısız")
+      }
+    },
   })
+
+export type SocialOrgStatus = {
+  configured: boolean
+  platformSocial: boolean
+  imageHost: boolean
+  profile: {
+    id: string
+    name: string | null
+    shared: boolean
+  } | null
+  accounts: {
+    platform: string
+    username: string | null
+    displayName: string | null
+    enabled: boolean
+    status: string | null
+  }[]
+  accountCount: number
+}
+
+/** Org-level social setup for Connections (Zernio profile + linked accounts). */
+export const useSocialStatus = () => {
+  const queryKey = useTenantQueryKey(["social", "status"])
+  return useQuery({
+    queryKey,
+    queryFn: () =>
+      sdk.client.fetch<SocialOrgStatus>("/admin/content/social/status"),
+    staleTime: 30_000,
+  })
+}

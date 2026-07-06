@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Badge,
   Button,
-  Container,
+  FocusModal,
   Heading,
   Text,
   Textarea,
@@ -30,12 +30,27 @@ export const EntryEditor = ({
   schema,
   previewUrl,
   onClose,
+  inline = false,
+  showSchemaBar = true,
+  mode: controlledMode,
+  onModeChange,
+  activeSectionKey,
+  onActiveSectionChange,
+  externalSectionNav = false,
 }: {
   entryId: string
   collectionId?: string
   schema?: CollectionSchema | null
   previewUrl?: string | null
-  onClose: () => void
+  onClose?: () => void
+  inline?: boolean
+  showSchemaBar?: boolean
+  mode?: "form" | "seo" | "json"
+  onModeChange?: (mode: "form" | "seo" | "json") => void
+  activeSectionKey?: string | null
+  onActiveSectionChange?: (key: string) => void
+  /** Sol panelde bölüm nav'ı varsa editörde gizle */
+  externalSectionNav?: boolean
 }) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -49,7 +64,15 @@ export const EntryEditor = ({
 
   const [data, setData] = useState<Record<string, unknown>>({})
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  const [mode, setMode] = useState<"form" | "seo" | "json">("form")
+  const [internalMode, setInternalMode] = useState<"form" | "seo" | "json">("form")
+  const mode = controlledMode ?? internalMode
+  const setMode = (next: "form" | "seo" | "json") => {
+    if (onModeChange) {
+      onModeChange(next)
+    } else {
+      setInternalMode(next)
+    }
+  }
   const [text, setText] = useState("")
   const [invalid, setInvalid] = useState(false)
   const [previewOn, setPreviewOn] = useState(false)
@@ -62,7 +85,6 @@ export const EntryEditor = ({
     }
   }, [entry])
 
-  // JSON moduna / section'a geçişte textarea'yı bellekteki güncel değerden doldur.
   useEffect(() => {
     if (activeKey && mode === "json") {
       setText(JSON.stringify(data[activeKey], null, 2))
@@ -71,12 +93,15 @@ export const EntryEditor = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeKey, mode])
 
-  // Form motoru: authored schema (collection.schema) ya da yoksa entry.data'dan
-  // türetilmiş jenerik şema. Orijinal data'dan infer → stabil yapı, ucuz.
-  const effectiveSchema = useMemo<CollectionSchema>(
-    () => schema ?? inferSchema(entry?.data),
-    [schema, entry]
-  )
+  const hasAuthoredSchema = !!schema?.fields?.length
+
+  const effectiveSchema = useMemo<CollectionSchema>(() => {
+    const inferred = inferSchema(entry?.data)
+    if (!hasAuthoredSchema) {
+      return inferred
+    }
+    return schema!
+  }, [schema, entry, hasAuthoredSchema])
 
   const sectionKeys = useMemo(() => Object.keys(data), [data])
 
@@ -121,7 +146,6 @@ export const EntryEditor = ({
     save.mutate({ data, ...(status ? { status } : {}) })
   }
 
-  // Türetilen şemayı collection.schema'ya kalıcılaştır → bootstrap'tan authored'a.
   const saveSchema = useMutation({
     mutationFn: () =>
       sdk.client.fetch(`/admin/cms/collections/${collectionId}`, {
@@ -137,70 +161,88 @@ export const EntryEditor = ({
     },
   })
 
-  if (isLoading || !entry) {
-    return (
-      <Container className="p-6">
-        <Text className="text-ui-fg-subtle">{t("cms.editor.loading")}</Text>
-      </Container>
-    )
-  }
-
-  return (
-    <Container className="divide-y p-0">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
-        <div className="flex items-center gap-x-2">
-          <Heading level="h2">
-            {t("cms.editor.content", { slug: entry.slug })}
-          </Heading>
-          <Badge
-            size="2xsmall"
-            color={entry.status === "published" ? "green" : "orange"}
-          >
-            {entry.status}
-          </Badge>
-          <Badge size="2xsmall" color="grey">
-            {entry.locale.toUpperCase()}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-x-2">
-          <Button
-            size="small"
-            variant={previewOn ? "primary" : "secondary"}
-            disabled={!previewUrl}
-            onClick={() => setPreviewOn((v) => !v)}
-          >
-            {t("cms.editor.preview")}
-          </Button>
-          <Button size="small" variant="secondary" onClick={onClose}>
-            {t("cms.editor.close")}
-          </Button>
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => handleSave()}
-            isLoading={save.isPending}
-          >
-            {t("cms.editor.saveDraft")}
-          </Button>
-          <Button
-            size="small"
-            onClick={() => handleSave("published")}
-            isLoading={save.isPending}
-          >
-            {t("cms.editor.publish")}
-          </Button>
-        </div>
-      </div>
-
-      {/* Mod toggle: şema-driven form ↔ ham JSON kaçışı */}
-      <div className="bg-ui-bg-subtle flex items-center justify-between gap-x-3 px-6 py-2.5">
-        <div className="flex items-center gap-x-3">
-          <Text size="small" className="text-ui-fg-muted">
-            {schema ? t("cms.editor.schema") : t("cms.editor.inferredSchema")} ·{" "}
-            {t("cms.editor.fields", { count: effectiveSchema.fields.length })} ·{" "}
-            {entry.locale}
+  const toolbar = (
+    <div
+      className={clx(
+        "flex flex-wrap items-center justify-between gap-3",
+        inline ? "px-5 py-3" : "w-full"
+      )}
+    >
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2">
+        {isLoading || !entry ? (
+          <Text size="small" className="text-ui-fg-subtle">
+            {t("cms.editor.loading")}
           </Text>
-          {!schema && collectionId ? (
+        ) : (
+          <>
+            <Heading level="h2" className="truncate text-base">
+              {t("cms.editor.content", { slug: entry.slug })}
+            </Heading>
+            <Badge
+              size="2xsmall"
+              color={entry.status === "published" ? "green" : "orange"}
+            >
+              {entry.status}
+            </Badge>
+            <Badge size="2xsmall" color="grey">
+              {entry.locale.toUpperCase()}
+            </Badge>
+          </>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-2">
+        <Button
+          size="small"
+          variant={previewOn ? "primary" : "secondary"}
+          disabled={!previewUrl}
+          onClick={() => setPreviewOn((v) => !v)}
+        >
+          {t("cms.editor.preview")}
+        </Button>
+        {!inline && onClose ? (
+          <FocusModal.Close asChild>
+            <Button size="small" variant="secondary" onClick={onClose}>
+              {t("cms.editor.close")}
+            </Button>
+          </FocusModal.Close>
+        ) : null}
+        <Button
+          size="small"
+          variant="secondary"
+          onClick={() => handleSave()}
+          isLoading={save.isPending}
+          disabled={isLoading || !entry}
+        >
+          {t("cms.editor.saveDraft")}
+        </Button>
+        <Button
+          size="small"
+          onClick={() => handleSave("published")}
+          isLoading={save.isPending}
+          disabled={isLoading || !entry}
+        >
+          {t("cms.editor.publish")}
+        </Button>
+      </div>
+    </div>
+  )
+
+  const modeBar = (
+    <div
+      className={clx(
+        "border-ui-border-base bg-ui-bg-subtle flex flex-wrap items-center justify-between gap-x-3 border-b",
+        inline ? "px-5 py-2" : "px-5 py-2"
+      )}
+    >
+      {showSchemaBar ? (
+        <div className="flex flex-wrap items-center gap-x-3">
+          <Text size="small" className="text-ui-fg-muted">
+            {hasAuthoredSchema
+              ? t("cms.editor.schema")
+              : t("cms.editor.inferredSchema")}{" "}
+            · {t("cms.editor.fields", { count: effectiveSchema.fields.length })}
+          </Text>
+          {!hasAuthoredSchema && collectionId ? (
             <Button
               size="small"
               variant="secondary"
@@ -211,50 +253,70 @@ export const EntryEditor = ({
             </Button>
           ) : null}
         </div>
-        <div className="bg-ui-bg-component inline-flex rounded-lg p-0.5">
-          {(["form", "seo", "json"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={clx(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                mode === m
-                  ? "bg-ui-bg-base text-ui-fg-base shadow-elevation-card-rest"
-                  : "text-ui-fg-subtle"
-              )}
-            >
-              {m === "form"
-                ? t("cms.editor.form")
-                : m === "seo"
+      ) : (
+        <Text size="small" className="text-ui-fg-muted">
+          {t("cms.editor.contentSection")}
+        </Text>
+      )}
+      <div className="bg-ui-bg-component inline-flex rounded-lg p-0.5">
+        {(["form", "seo", "json"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            className={clx(
+              "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+              mode === m
+                ? "bg-ui-bg-base text-ui-fg-base shadow-elevation-card-rest"
+                : "text-ui-fg-subtle hover:text-ui-fg-base"
+            )}
+          >
+            {m === "form"
+              ? t("cms.editor.form")
+              : m === "seo"
                 ? t("cms.seo.tab")
                 : t("cms.editor.rawJson")}
-            </button>
-          ))}
-        </div>
+          </button>
+        ))}
       </div>
+    </div>
+  )
 
+  const body = (
+    <>
+      {modeBar}
       <div
         className={clx(
-          previewOn && previewUrl ? "grid grid-cols-1 lg:grid-cols-2" : ""
+          "min-h-0",
+          previewOn && previewUrl
+            ? "grid grid-cols-1 lg:grid-cols-2"
+            : "flex flex-col",
+          inline ? "min-h-[360px]" : "flex-1"
         )}
       >
         <div
           className={clx(
-            "min-w-0",
+            "min-h-0 min-w-0 overflow-auto",
             previewOn && previewUrl ? "lg:border-r" : ""
           )}
         >
-          {mode === "form" ? (
-            <div className="max-h-[72vh] overflow-auto p-6">
+          {isLoading || !entry ? (
+            <div className="flex items-center justify-center p-8">
+              <Text className="text-ui-fg-subtle">{t("cms.editor.loading")}</Text>
+            </div>
+          ) : mode === "form" ? (
+            <div className="p-5">
               <SectionedForm
                 schema={effectiveSchema}
                 value={data}
                 onChange={setData}
+                activeKey={activeSectionKey}
+                onActiveKeyChange={onActiveSectionChange}
+                hideNav={externalSectionNav}
               />
             </div>
           ) : mode === "seo" ? (
-            <div className="max-h-[72vh] overflow-auto p-6">
+            <div className="p-5">
               <SeoPanel
                 value={
                   data.seo && typeof data.seo === "object"
@@ -265,8 +327,8 @@ export const EntryEditor = ({
               />
             </div>
           ) : (
-            <div className="grid grid-cols-[220px_1fr]">
-              <nav className="flex max-h-[72vh] flex-col gap-y-0.5 overflow-auto border-r p-3">
+            <div className="grid min-h-[40vh] grid-cols-[minmax(140px,180px)_1fr]">
+              <nav className="border-ui-border-base flex flex-col gap-y-0.5 overflow-auto border-r p-2">
                 {sectionKeys.map((k) => (
                   <button
                     key={k}
@@ -283,8 +345,7 @@ export const EntryEditor = ({
                   </button>
                 ))}
               </nav>
-
-              <div className="flex max-h-[72vh] flex-col gap-y-2 overflow-auto p-4">
+              <div className="flex flex-col gap-y-2 overflow-auto p-4">
                 <div className="flex items-center justify-between">
                   <Text size="small" className="text-ui-fg-subtle font-mono">
                     {activeKey} (JSON)
@@ -298,7 +359,7 @@ export const EntryEditor = ({
                 <Textarea
                   value={text}
                   onChange={(e) => onText(e.target.value)}
-                  rows={26}
+                  rows={24}
                   className={clx(
                     "font-mono text-xs",
                     invalid && "border-ui-border-error"
@@ -308,9 +369,10 @@ export const EntryEditor = ({
             </div>
           )}
         </div>
+
         {previewOn && previewUrl ? (
-          <div className="flex flex-col">
-            <div className="bg-ui-bg-subtle flex items-center justify-between gap-x-2 px-4 py-2">
+          <div className="flex min-h-0 flex-col">
+            <div className="bg-ui-bg-subtle flex items-center justify-between gap-x-2 border-b px-4 py-2">
               <a
                 href={previewUrl}
                 target="_blank"
@@ -333,11 +395,54 @@ export const EntryEditor = ({
               src={previewUrl}
               title={t("cms.editor.preview")}
               referrerPolicy="no-referrer"
-              className="h-[72vh] w-full border-0"
+              className="min-h-[40vh] w-full flex-1 border-0"
             />
           </div>
         ) : null}
       </div>
-    </Container>
+    </>
+  )
+
+  if (inline) {
+    return (
+      <div className="flex flex-col">
+        <div className="border-ui-border-base border-b">{toolbar}</div>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <FocusModal
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose?.()
+        }
+      }}
+    >
+      <FocusModal.Content className="!max-w-[min(1200px,96vw)]">
+        <FocusModal.Header>
+          <FocusModal.Title asChild>
+            <span className="sr-only">
+              {entry
+                ? t("cms.editor.content", { slug: entry.slug })
+                : t("cms.editor.loading")}
+            </span>
+          </FocusModal.Title>
+          <FocusModal.Description asChild>
+            <span className="sr-only">
+              {t("cms.editor.modalDescription", {
+                defaultValue: "Edit site content fields, SEO, or raw JSON.",
+              })}
+            </span>
+          </FocusModal.Description>
+          {toolbar}
+        </FocusModal.Header>
+        <FocusModal.Body className="flex flex-1 flex-col overflow-hidden p-0">
+          {body}
+        </FocusModal.Body>
+      </FocusModal.Content>
+    </FocusModal>
   )
 }

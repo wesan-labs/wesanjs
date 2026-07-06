@@ -11,6 +11,8 @@ import { HttpTypes } from "@medusajs/types"
 import { sdk } from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
 import { queryKeysFactory } from "../../lib/query-key-factory"
+import { useFeatureFlag } from "../../providers/feature-flag-provider"
+import { usePermissions } from "../../providers/permissions-provider"
 import { pricePreferencesQueryKeys } from "./price-preferences"
 
 const STORE_QUERY_KEY = "store" as const
@@ -33,6 +35,23 @@ export async function retrieveActiveStore(
   return { store: activeStore }
 }
 
+/**
+ * Whether the current user may call store admin APIs (RBAC-aware).
+ */
+export const useStoreReadEnabled = () => {
+  const isRbacEnabled = useFeatureFlag("rbac")
+  const { hasPermission, isLoading } = usePermissions()
+
+  if (!isRbacEnabled) {
+    return { enabled: true, isLoading: false }
+  }
+
+  return {
+    enabled: !isLoading && hasPermission("store:read"),
+    isLoading,
+  }
+}
+
 export const useStore = (
   query?: HttpTypes.SelectParams,
   options?: Omit<
@@ -45,10 +64,15 @@ export const useStore = (
     "queryFn" | "queryKey"
   >
 ) => {
+  const { enabled: canReadStore } = useStoreReadEnabled()
+  const { enabled: optionsEnabled, ...restOptions } = options ?? {}
+
   const { data, ...rest } = useQuery({
     queryFn: () => retrieveActiveStore(query),
     queryKey: storeQueryKeys.details(),
-    ...options,
+    retry: false,
+    ...restOptions,
+    enabled: (optionsEnabled ?? true) && canReadStore,
   })
 
   return {

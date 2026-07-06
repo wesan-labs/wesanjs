@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useEffect } from "react"
+import { useSyncExternalStore } from "react"
 import { sdk } from "../../lib/client"
-import { ACTIVE_TENANT_KEY } from "../../lib/client/client"
+import {
+  ACTIVE_TENANT_KEY,
+  readStoredTenantId,
+  syncActiveTenantHeader,
+} from "../../lib/client/client"
+import { queryClient } from "../../lib/query-client"
+import { mePermissionsQueryKey } from "./rbac-roles"
 
 export type Tenant = {
   id: string
@@ -9,6 +17,7 @@ export type Tenant = {
   status: string
   member_count?: number
   role?: string | null
+  rbac_role_id?: string | null
   created_at: string
 }
 
@@ -17,29 +26,44 @@ export type TenantMember = {
   tenant_id: string
   user_id: string
   role: string
+  rbac_role_id?: string | null
   email: string | null
   created_at: string
 }
 
-// Aktif tenant (switcher): localStorage'da durur; sdk globalHeaders bunu
-// boot'ta okur (lib/client/client.ts — tek kaynak). Değişim reload ister.
+// Aktif tenant (switcher): localStorage + SDK header (lib/client/client.ts).
 export { ACTIVE_TENANT_KEY }
 
-export const getActiveTenantId = (): string | null =>
-  typeof window !== "undefined"
-    ? window.localStorage.getItem(ACTIVE_TENANT_KEY)
-    : null
+const activeTenantListeners = new Set<() => void>()
+
+const notifyActiveTenantListeners = () => {
+  activeTenantListeners.forEach((listener) => listener())
+}
+
+export const subscribeActiveTenantId = (listener: () => void) => {
+  activeTenantListeners.add(listener)
+  return () => activeTenantListeners.delete(listener)
+}
+
+export const getActiveTenantId = (): string | null => readStoredTenantId()
+
+export const useActiveTenantId = () =>
+  useSyncExternalStore(subscribeActiveTenantId, getActiveTenantId, () => null)
+
+/** Prefix React Query keys with the active org so tenant switches never show stale cache. */
+export const useTenantQueryKey = (base: readonly unknown[]) => {
+  const tenantId = useActiveTenantId()
+  return [...base, tenantId] as const
+}
 
 export const setActiveTenantId = (id: string | null) => {
   if (typeof window === "undefined") {
     return
   }
-  if (id) {
-    window.localStorage.setItem(ACTIVE_TENANT_KEY, id)
-  } else {
-    window.localStorage.removeItem(ACTIVE_TENANT_KEY)
-  }
-  window.location.reload()
+  syncActiveTenantHeader(id)
+  notifyActiveTenantListeners()
+  // Tenant-scoped data must refetch under the new x-tenant-id header.
+  queryClient.invalidateQueries()
 }
 
 export const tenantQueryKeys = {
@@ -55,6 +79,105 @@ export const useTenants = () => {
       sdk.client.fetch<{ tenants: Tenant[]; count: number }>("/admin/tenants"),
   })
   return { tenants: data?.tenants ?? [], count: data?.count ?? 0, ...rest }
+}
+
+/** Primary working org — revenue, CMS, and social should live here. */
+export const PRIMARY_TENANT_SLUG = "wesan-tenant"
+/** Pre–multi-tenant revenue rows (migrated to PRIMARY by consolidate-wesan-org). */
+export const LEGACY_REVENUE_TENANT_SLUG = "default"
+/** @deprecated Use PRIMARY_TENANT_SLUG — CMS shares the same org after consolidation. */
+export const CMS_HOME_TENANT_SLUG = PRIMARY_TENANT_SLUG
+
+/** Pilot/demo orgs — hidden from the switcher unless user is finance-only on them. */
+export const PILOT_TENANT_SLUGS = new Set([
+  "acme",
+  "beta",
+  "beta-tenant",
+  "default",
+])
+
+export const isPilotTenant = (tenant: Pick<Tenant, "slug">) =>
+  PILOT_TENANT_SLUGS.has(tenant.slug)
+
+/** Orgs shown in the header switcher (primary + non-pilot; fallback = all memberships). */
+export const filterSwitcherTenants = (tenants: Tenant[]): Tenant[] => {
+  const primary = tenants.filter((t) => t.slug === PRIMARY_TENANT_SLUG)
+  const nonPilot = tenants.filter(
+    (t) => t.slug !== PRIMARY_TENANT_SLUG && !isPilotTenant(t)
+  )
+  const visible = [...primary, ...nonPilot]
+  return visible.length ? visible : tenants
+}
+
+/** Pick active org: saved → Wesan (primary) → legacy Default → finance role org → first. */
+export const resolveDefaultTenantId = (tenants: Tenant[]): string | null => {
+  if (!tenants.length) {
+    return null
+  }
+
+  const stored = readStoredTenantId()
+  if (stored && tenants.some((t) => t.id === stored)) {
+    return stored
+  }
+
+  const primary = tenants.find((t) => t.slug === PRIMARY_TENANT_SLUG)
+  if (primary) {
+    return primary.id
+  }
+
+  const legacy = tenants.find((t) => t.slug === LEGACY_REVENUE_TENANT_SLUG)
+  if (legacy) {
+    return legacy.id
+  }
+
+  const withModuleRole = tenants.find((t) => t.rbac_role_id)
+  if (withModuleRole) {
+    return withModuleRole.id
+  }
+
+  return tenants[0]?.id ?? null
+}
+
+/** Resolved active org: stored pick → Default (legacy revenue) → finance org → first. */
+export const useActiveTenant = () => {
+  const storedId = useActiveTenantId()
+  const { tenants, isLoading, ...rest } = useTenants()
+
+  const preferredId = resolveDefaultTenantId(tenants)
+  const preferredTenant =
+    tenants.find((t) => t.id === preferredId) ?? tenants[0] ?? null
+
+  useEffect(() => {
+    if (isLoading || !tenants.length) {
+      return
+    }
+
+    const nextId = resolveDefaultTenantId(tenants)
+    if (!nextId) {
+      return
+    }
+
+    const stored = readStoredTenantId()
+    if (stored === nextId) {
+      return
+    }
+
+    // Only auto-set header when nothing valid is stored (don't override explicit picks).
+    if (stored && tenants.some((t) => t.id === stored)) {
+      return
+    }
+
+    setActiveTenantId(nextId)
+  }, [tenants, isLoading])
+
+  return {
+    activeTenant: preferredTenant,
+    activeTenantId: preferredTenant?.id ?? null,
+    storedTenantId: storedId,
+    tenants,
+    isLoading,
+    ...rest,
+  }
 }
 
 export const useMyTenants = () => {
@@ -104,7 +227,11 @@ export const useUpdateTenant = (id: string) => {
 export const useAddTenantMember = (tenantId: string) => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: { email: string; role?: string }) =>
+    mutationFn: (input: {
+      email: string
+      role?: string
+      rbac_role_id?: string | null
+    }) =>
       sdk.client.fetch(`/admin/tenants/${tenantId}/members`, {
         method: "POST",
         body: input,
@@ -112,6 +239,31 @@ export const useAddTenantMember = (tenantId: string) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: tenantQueryKeys.detail(tenantId) })
       qc.invalidateQueries({ queryKey: tenantQueryKeys.list })
+    },
+  })
+}
+
+export const useUpdateTenantMember = (tenantId: string) => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      membershipId: string
+      role?: string
+      rbac_role_id?: string | null
+    }) =>
+      sdk.client.fetch(
+        `/admin/tenants/${tenantId}/members/${input.membershipId}`,
+        {
+          method: "PATCH",
+          body: {
+            role: input.role,
+            rbac_role_id: input.rbac_role_id,
+          },
+        }
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: tenantQueryKeys.detail(tenantId) })
+      qc.invalidateQueries({ queryKey: mePermissionsQueryKey })
     },
   })
 }

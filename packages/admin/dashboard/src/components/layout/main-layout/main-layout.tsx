@@ -17,8 +17,17 @@ import {
 import { CORE_LAYOUT_IDS } from "@medusajs/admin-shared"
 import { Avatar, clx, Divider, DropdownMenu, Text } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
+import { useMemo } from "react"
 
 import { useStore } from "../../../hooks/api/store"
+import {
+  filterSwitcherTenants,
+  setActiveTenantId,
+  useActiveTenant,
+} from "../../../hooks/api/tenants"
+import {
+  filterMainNavRoutes,
+} from "../../../lib/main-nav-permissions"
 import { LayoutComposer } from "../../layout-composer"
 import { PermissionGuard } from "../../common/permission-guard"
 import { Skeleton } from "../../common/skeleton"
@@ -29,6 +38,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useLogout } from "../../../hooks/api"
 import { queryClient } from "../../../lib/query-client"
 import { useExtension } from "../../../providers/extension-provider"
+import { usePermissions } from "../../../providers/permissions-provider"
 import { useSearch } from "../../../providers/search-provider"
 import { UserMenu } from "../user-menu"
 import { useDocumentDirection } from "../../../hooks/use-document-direction"
@@ -46,14 +56,12 @@ const MainSidebar = () => {
   return (
     <aside className="flex flex-1 flex-col justify-between overflow-y-auto">
       <div className="flex flex-1 flex-col">
-        <PermissionGuard resource="store" operation="read">
-          <div className="bg-ui-bg-subtle sticky top-0">
-            <Header />
-            <div className="px-3">
-              <Divider variant="dashed" />
-            </div>
+        <div className="bg-ui-bg-subtle sticky top-0">
+          <WorkspaceHeader />
+          <div className="px-3">
+            <Divider variant="dashed" />
           </div>
-        </PermissionGuard>
+        </div>
         <div className="flex flex-1 flex-col justify-between">
           <div className="flex flex-1 flex-col">
             <SidebarRoutes />
@@ -96,18 +104,22 @@ const Logout = () => {
   )
 }
 
-const Header = () => {
+const WorkspaceHeader = () => {
   const { t } = useTranslation()
-  const { store, isPending, isError, error } = useStore()
+  const { store, isPending: storePending } = useStore()
+  const { activeTenant, tenants, isLoading: tenantsLoading, storedTenantId } =
+    useActiveTenant()
+  const switcherTenants = useMemo(
+    () => filterSwitcherTenants(tenants),
+    [tenants]
+  )
   const direction = useDocumentDirection()
-  const name = store?.name
-  const fallback = store?.name?.slice(0, 1).toUpperCase()
+  const storedId = storedTenantId
 
-  const isLoaded = !isPending && !!store && !!name && !!fallback
-
-  if (isError) {
-    throw error
-  }
+  const displayName = activeTenant?.name ?? store?.name
+  const fallback = displayName?.slice(0, 1).toUpperCase()
+  const isLoaded =
+    !storePending && !tenantsLoading && !!displayName && !!fallback
 
   return (
     <div className="w-full p-3">
@@ -127,14 +139,14 @@ const Header = () => {
             <Skeleton className="h-6 w-6 rounded-md" />
           )}
           <div className="block overflow-hidden text-start">
-            {name ? (
+            {displayName ? (
               <Text
                 size="small"
                 weight="plus"
                 leading="compact"
                 className="truncate"
               >
-                {store.name}
+                {displayName}
               </Text>
             ) : (
               <Skeleton className="h-[9px] w-[120px]" />
@@ -153,24 +165,58 @@ const Header = () => {
                   leading="compact"
                   className="truncate"
                 >
-                  {name}
+                  {displayName}
                 </Text>
                 <Text
                   size="xsmall"
                   leading="compact"
                   className="text-ui-fg-subtle"
                 >
-                  {t("app.nav.main.store")}
+                  {activeTenant
+                    ? t("organization.domain")
+                    : t("app.nav.main.store")}
                 </Text>
               </div>
             </div>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item className="gap-x-2" asChild>
-              <Link to="/settings/store">
-                <BuildingStorefront className="text-ui-fg-subtle" />
-                {t("app.nav.main.storeSettings")}
-              </Link>
-            </DropdownMenu.Item>
+            {switcherTenants.length > 0 ? (
+              <>
+                <DropdownMenu.Separator />
+                {switcherTenants.map((org) => (
+                  <DropdownMenu.Item
+                    key={org.id}
+                    className="gap-x-2"
+                    onClick={() => {
+                      if (org.id !== storedId) {
+                        setActiveTenantId(org.id)
+                      }
+                    }}
+                  >
+                    <UserGroup className="text-ui-fg-subtle" />
+                    <span className="truncate">{org.name}</span>
+                    {org.id === (storedId ?? activeTenant?.id) ? (
+                      <span className="text-ui-fg-muted ms-auto text-xs">
+                        ✓
+                      </span>
+                    ) : null}
+                  </DropdownMenu.Item>
+                ))}
+                <DropdownMenu.Item className="gap-x-2" asChild>
+                  <Link to="/settings/organization">
+                    <CogSixTooth className="text-ui-fg-subtle" />
+                    {t("organization.domain")}
+                  </Link>
+                </DropdownMenu.Item>
+              </>
+            ) : null}
+            <PermissionGuard resource="store" operation="read">
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item className="gap-x-2" asChild>
+                <Link to="/settings/store">
+                  <BuildingStorefront className="text-ui-fg-subtle" />
+                  {t("app.nav.main.storeSettings")}
+                </Link>
+              </DropdownMenu.Item>
+            </PermissionGuard>
             <DropdownMenu.Separator />
             <Logout />
           </DropdownMenu.Content>
@@ -183,78 +229,76 @@ const Header = () => {
 const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
   const { t } = useTranslation()
 
-  return [
-    {
-      icon: <ShoppingBag />,
-      label: "E-Commerce",
-      to: "/ecommerce",
-      isGroup: true,
-      items: [
-        { label: "Dashboard", to: "/ecommerce" },
-        { label: t("orders.domain"), to: "/orders" },
-        { label: t("products.domain"), to: "/products" },
-        { label: t("collections.domain"), to: "/collections" },
-        { label: t("categories.domain"), to: "/categories" },
-        { label: t("productOptions.domain"), to: "/product-options" },
-        { label: t("inventory.domain"), to: "/inventory" },
-        { label: t("reservations.domain"), to: "/reservations" },
-        { label: t("promotions.domain"), to: "/promotions" },
-        { label: t("campaigns.domain"), to: "/campaigns" },
-        { label: t("priceLists.domain"), to: "/price-lists" },
-      ],
-    },
-    {
-      icon: <UserGroup />,
-      label: "CRM",
-      to: "/crm",
-      isGroup: true,
-      items: [
-        { label: "Dashboard", to: "/crm" },
-        { label: t("customers.domain"), to: "/customers" },
-        { label: t("customerGroups.domain"), to: "/customer-groups" },
-      ],
-    },
-    {
-      icon: <ChartBar />,
-      label: "Analytics",
-      to: "/analytics",
-    },
-    {
-      icon: <CurrencyDollar />,
-      label: "Revenue",
-      to: "/revenue",
-    },
-    {
-      icon: <Newspaper />,
-      label: "CMS",
-      to: "/cms",
-    },
-    {
-      icon: <UserGroup />,
-      label: "Tenants",
-      to: "/tenants",
-    },
-    {
-      icon: <ChatBubbleLeftRight />,
-      label: "Social Media",
-      to: "/social-media",
-      isGroup: true,
-      items: [
-        { label: "Content", to: "/content" },
-        { label: "Analiz", to: "/social-media" },
-      ],
-    },
-    {
-      icon: <BellAlert />,
-      label: "Notifications",
-      to: "/notifications",
-    },
-    {
-      icon: <CursorArrowRays />,
-      label: "AdSense",
-      to: "/adsense",
-    },
-  ]
+  return useMemo(
+    () => [
+      {
+        icon: <ShoppingBag />,
+        label: "E-Commerce",
+        to: "/ecommerce",
+        isGroup: true,
+        items: [
+          { label: "Dashboard", to: "/ecommerce" },
+          { label: t("orders.domain"), to: "/orders" },
+          { label: t("products.domain"), to: "/products" },
+          { label: t("collections.domain"), to: "/collections" },
+          { label: t("categories.domain"), to: "/categories" },
+          { label: t("productOptions.domain"), to: "/product-options" },
+          { label: t("inventory.domain"), to: "/inventory" },
+          { label: t("reservations.domain"), to: "/reservations" },
+          { label: t("promotions.domain"), to: "/promotions" },
+          { label: t("campaigns.domain"), to: "/campaigns" },
+          { label: t("priceLists.domain"), to: "/price-lists" },
+        ],
+      },
+      {
+        icon: <UserGroup />,
+        label: "CRM",
+        to: "/crm",
+        isGroup: true,
+        items: [
+          { label: "Dashboard", to: "/crm" },
+          { label: t("customers.domain"), to: "/customers" },
+          { label: t("customerGroups.domain"), to: "/customer-groups" },
+        ],
+      },
+      {
+        icon: <ChartBar />,
+        label: "Analytics",
+        to: "/analytics",
+      },
+      {
+        icon: <CurrencyDollar />,
+        label: "Revenue",
+        to: "/revenue",
+      },
+      {
+        icon: <Newspaper />,
+        label: "CMS",
+        to: "/cms",
+      },
+      {
+        icon: <ChatBubbleLeftRight />,
+        label: "Social Media",
+        to: "/social-media",
+        isGroup: true,
+        items: [
+          { label: "Content", to: "/content" },
+          { label: "Analiz", to: "/social-media" },
+        ],
+      },
+      {
+        icon: <BellAlert />,
+        label: "Notifications",
+        to: "/notifications",
+      },
+      {
+        icon: <CursorArrowRays />,
+        label: "AdSense",
+        to: "/adsense",
+      },
+    ],
+    [t]
+  )
 }
 
 const Searchbar = () => {
@@ -291,7 +335,32 @@ const Searchbar = () => {
  * (and its children reordered) independently in edit mode.
  */
 const SidebarRoutes = () => {
-  const coreRoutes = useCoreRoutes()
+  const { hasAnyPermission, isLoading: permissionsLoading, policy } =
+    usePermissions()
+  const allCoreRoutes = useCoreRoutes()
+  const enforceNav = policy !== null
+  const coreRoutes = useMemo(
+    () => filterMainNavRoutes(allCoreRoutes, enforceNav, hasAnyPermission),
+    [allCoreRoutes, enforceNav, hasAnyPermission]
+  )
+  const showSearch =
+    !enforceNav ||
+    hasAnyPermission([
+      "order:read",
+      "product:read",
+      "customer:read",
+      "inventory:read",
+    ])
+
+  if (enforceNav && permissionsLoading) {
+    return (
+      <nav className="py-3">
+        <div className="px-3">
+          <Skeleton className="h-8 w-full rounded-md" />
+        </div>
+      </nav>
+    )
+  }
 
   const { getMenu } = useExtension()
 
@@ -308,6 +377,22 @@ const SidebarRoutes = () => {
 
   const extensionItems = menuItems.filter((item) => !item.nested)
 
+  const visibleExtensionItems = enforceNav
+    ? extensionItems.filter((item) =>
+        filterMainNavRoutes(
+          [
+            {
+              label: item.label,
+              to: item.to,
+              items: item.items,
+            },
+          ],
+          enforceNav,
+          hasAnyPermission
+        ).length > 0
+      )
+    : extensionItems
+
   return (
     <nav className="py-3">
       <div className="px-3">
@@ -321,20 +406,22 @@ const SidebarRoutes = () => {
           sections={{
             main: (
               <>
-                <LayoutComposer.Entry id="Searchbar">
-                  <Searchbar />
-                </LayoutComposer.Entry>
+                {showSearch ? (
+                  <LayoutComposer.Entry id="Searchbar">
+                    <Searchbar />
+                  </LayoutComposer.Entry>
+                ) : null}
                 {coreRoutes.map((route) => (
                   <LayoutComposer.Entry id={`nav:${route.to}`} key={route.to}>
                     <NavItem key={route.to} {...route} />
                   </LayoutComposer.Entry>
                 ))}
-                {extensionItems.length > 0 && (
+                {visibleExtensionItems.length > 0 && (
                   <LayoutComposer.Entry id="Divider">
                     <Divider variant="dashed" />
                   </LayoutComposer.Entry>
                 )}
-                {extensionItems.map((item) => (
+                {visibleExtensionItems.map((item) => (
                   <LayoutComposer.Entry id={`nav:${item.to}`} key={item.to}>
                     <NavItem
                       key={item.to}

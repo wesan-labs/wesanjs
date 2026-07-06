@@ -50,6 +50,14 @@ export const SettingsSidebarLayoutComponent = ({
 
   return (
     <div className="flex flex-1 flex-col">
+      {hasContent(sections["organization"]) && (
+        <>
+          <CollapsibleGroup label={t("organization.domain")}>
+            {sections["organization"]}
+          </CollapsibleGroup>
+          <GroupDivider />
+        </>
+      )}
       <CollapsibleGroup label={t("app.nav.settings.general")}>
         {sections["general"]}
       </CollapsibleGroup>

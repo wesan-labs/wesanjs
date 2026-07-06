@@ -13,6 +13,7 @@ import { Shell } from "../shell"
 import { UserMenu } from "../user-menu"
 import { useFeatureFlag } from "../../../providers/feature-flag-provider"
 import { usePermissions } from "../../../providers/permissions-provider"
+import { filterSettingsNavRoutes } from "../../../lib/main-nav-permissions"
 
 export const SettingsLayout = () => {
   return (
@@ -22,8 +23,7 @@ export const SettingsLayout = () => {
   )
 }
 
-const useSettingRoutes = (): INavItem[] => {
-  const isTranslationsEnabled = useFeatureFlag("translation")
+const useOrganizationRoutes = (): INavItem[] => {
   const isRbacEnabled = useFeatureFlag("rbac")
   const { hasPermission } = usePermissions()
   const { t } = useTranslation()
@@ -33,6 +33,34 @@ const useSettingRoutes = (): INavItem[] => {
 
   return useMemo(
     () => [
+      {
+        label: t("organization.tabs.profile"),
+        to: "/settings/organization",
+        exactActive: true,
+      },
+      {
+        label: t("organization.team.domain"),
+        to: "/settings/organization/members",
+      },
+      ...(canReadRoles
+        ? [{ label: t("roles.domain"), to: "/settings/roles" }]
+        : []),
+      ...(canReadPolicies
+        ? [{ label: t("policies.domain"), to: "/settings/policies" }]
+        : []),
+    ],
+    [t, canReadRoles, canReadPolicies]
+  )
+}
+
+const useSettingRoutes = (): INavItem[] => {
+  const isTranslationsEnabled = useFeatureFlag("translation")
+  const { hasAnyPermission, policy } = usePermissions()
+  const enforceNav = policy !== null
+  const { t } = useTranslation()
+
+  return useMemo(() => {
+    const routes: INavItem[] = [
       {
         label: t("store.domain"),
         to: "/settings/store",
@@ -49,22 +77,6 @@ const useSettingRoutes = (): INavItem[] => {
         label: t("users.domain"),
         to: "/settings/users",
       },
-      ...(canReadRoles
-        ? [
-            {
-              label: t("roles.domain"),
-              to: "/settings/roles",
-            },
-          ]
-        : []),
-      ...(canReadPolicies
-        ? [
-            {
-              label: t("policies.domain"),
-              to: "/settings/policies",
-            },
-          ]
-        : []),
       {
         label: t("regions.domain"),
         to: "/settings/regions",
@@ -105,9 +117,10 @@ const useSettingRoutes = (): INavItem[] => {
             },
           ]
         : []),
-    ],
-    [t, isTranslationsEnabled, canReadRoles, canReadPolicies]
-  )
+    ]
+
+    return filterSettingsNavRoutes(routes, enforceNav, hasAnyPermission)
+  }, [t, isTranslationsEnabled, enforceNav, hasAnyPermission])
 }
 
 const useDeveloperRoutes = (): INavItem[] => {
@@ -168,6 +181,7 @@ const toNavEntries = (items: INavItem[]) =>
 const SettingsSidebar = () => {
   const { getMenu } = useExtension()
 
+  const organizationRoutes = useOrganizationRoutes()
   const routes = useSettingRoutes()
   const developerRoutes = useDeveloperRoutes()
   const myAccountRoutes = useMyAccountRoutes()
@@ -191,6 +205,7 @@ const SettingsSidebar = () => {
             customizeId={CUSTOMIZE_IDS.SETTINGS_SIDEBAR}
             controlSize="small"
             sections={{
+              organization: toNavEntries(organizationRoutes),
               general: toNavEntries(routes),
               developer: toNavEntries(developerRoutes),
               myAccount: toNavEntries(myAccountRoutes),

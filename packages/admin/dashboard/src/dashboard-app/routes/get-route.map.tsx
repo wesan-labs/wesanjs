@@ -1,6 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { t } from "i18next"
-import { Outlet, RouteObject, UIMatch } from "react-router-dom"
+import { Outlet, RouteObject, UIMatch, redirect } from "react-router-dom"
 import { ProtectedRoute } from "../../components/authentication/protected-route"
 import { RoutePermissionGuard } from "../../components/authentication/route-permission-guard"
 import { MainLayout } from "../../components/layout/main-layout"
@@ -385,10 +385,13 @@ export function getRouteMap({
             },
             {
               path: "/orders",
-              errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
+                permissions: "order:read",
+                redirectTo: "/revenue",
                 breadcrumb: () => t("orders.domain"),
               },
+              errorElement: <ErrorBoundary />,
               children: [
                 {
                   path: "",
@@ -1054,18 +1057,42 @@ export function getRouteMap({
             },
             {
               path: "/ecommerce",
+              element: <RoutePermissionGuard />,
+              handle: {
+                permissions: [
+                  "order:read",
+                  "product:read",
+                  "inventory:read",
+                  "promotion:read",
+                ],
+                requireAll: false,
+                redirectTo: "/revenue",
+              },
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/ecommerce"),
             },
             {
               path: "/crm",
+              element: <RoutePermissionGuard />,
+              handle: {
+                permissions: ["customer:read", "customer_group:read"],
+                requireAll: false,
+                redirectTo: "/revenue",
+              },
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/crm"),
             },
             {
               path: "/revenue",
-              errorElement: <ErrorBoundary />,
-              lazy: () => import("../../routes/revenue"),
+              element: <RoutePermissionGuard />,
+              handle: { permissions: "revenue:read" },
+              children: [
+                {
+                  path: "",
+                  errorElement: <ErrorBoundary />,
+                  lazy: () => import("../../routes/revenue"),
+                },
+              ],
             },
             {
               path: "/apps/:id",
@@ -1074,18 +1101,27 @@ export function getRouteMap({
             },
             {
               path: "/analytics",
+              element: <RoutePermissionGuard />,
+              handle: {
+                permissions: "store:read",
+                redirectTo: "/revenue",
+              },
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/analytics"),
             },
             {
               path: "/cms",
+              element: <RoutePermissionGuard />,
+              handle: {
+                permissions: "store:read",
+                redirectTo: "/revenue",
+              },
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/cms"),
             },
             {
               path: "/tenants",
-              errorElement: <ErrorBoundary />,
-              lazy: () => import("../../routes/tenants"),
+              loader: () => redirect("/settings/organization"),
             },
             {
               path: "/content",
@@ -1127,6 +1163,28 @@ export function getRouteMap({
               index: true,
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/settings"),
+            },
+            {
+              path: "organization",
+              errorElement: <ErrorBoundary />,
+              element: <Outlet />,
+              handle: {
+                breadcrumb: () => t("organization.domain"),
+              },
+              children: [
+                {
+                  path: "",
+                  lazy: () => import("../../routes/organization/organization-general"),
+                },
+                {
+                  path: "members",
+                  lazy: () =>
+                    import("../../routes/organization/organization-members"),
+                  handle: {
+                    breadcrumb: () => t("organization.team.domain"),
+                  },
+                },
+              ],
             },
             {
               path: "expenses",

@@ -7,9 +7,13 @@ export const Settings = () => {
 
   useEffect(() => {
     if (location.pathname === "/settings") {
-      navigate("/settings/store", { replace: true })
+      navigate("/settings/store", {
+        replace: true,
+        // Preserve customize/menu state (e.g. settings sidebar customizer).
+        state: location.state,
+      })
     }
-  }, [location.pathname, navigate])
+  }, [location.pathname, location.state, navigate])
 
   return <Outlet />
 }

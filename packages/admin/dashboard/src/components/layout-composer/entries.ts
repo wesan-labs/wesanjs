@@ -7,7 +7,7 @@ import {
   isValidElement,
 } from "react"
 import { LayoutEntry } from "./entry"
-import type { LayoutEntryProps } from "./entry"
+import type { EntryTileSpan, LayoutEntryProps } from "./entry"
 import { LayoutPreference } from "./types"
 
 // Both core entries and widgets carry a `render` thunk so the rest of the
@@ -19,6 +19,8 @@ export type EntryRenderer = (data: unknown) => ReactNode
 
 export type DisplayEntry = {
   widgetId: string
+  label?: string
+  tile?: EntryTileSpan
   render: EntryRenderer
   order: number
   hidden: boolean
@@ -26,6 +28,8 @@ export type DisplayEntry = {
 
 export type RawEntry = {
   widgetId: string
+  label?: string
+  tile?: EntryTileSpan
   render: EntryRenderer
   naturalSection: string
 }
@@ -88,6 +92,8 @@ export function buildCoreEntries(
 
       entries.push({
         widgetId,
+        label: isLayoutEntry(el) ? el.props.label : undefined,
+        tile: isLayoutEntry(el) ? el.props.tile : undefined,
         render: () => el,
         naturalSection: sectionName,
       })
@@ -161,6 +167,8 @@ export function buildDisplayEntries(
     }
     result[effectiveSection].push({
       widgetId: entry.widgetId,
+      label: entry.label,
+      tile: entry.tile,
       render: entry.render,
       order: effectiveOrder,
       hidden,

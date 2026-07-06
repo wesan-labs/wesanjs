@@ -5,6 +5,8 @@ import { IconButton, clx } from "@medusajs/ui"
 import { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import type { LayoutControlSize } from "./types"
+import type { EntryTileSpan } from "./entry"
+import { ENTRY_TILE_CLASS, ENTRY_TILE_STRETCH } from "./entry"
 
 /**
  * An entry's rendered content plus a placeholder that appears (via the
@@ -48,6 +50,8 @@ export function EntryContent({
 
 type SortableEntryProps = {
   widgetId: string
+  label?: string
+  tile?: EntryTileSpan
   order: number
   hidden: boolean
   onToggleHidden: () => void
@@ -55,8 +59,17 @@ type SortableEntryProps = {
   controlSize?: LayoutControlSize
 }
 
+function formatEntryLabel(widgetId: string, label?: string) {
+  if (label) {
+    return label
+  }
+  return widgetId.replace(/^core:/, "").replace(/#\d+$/, "")
+}
+
 export function SortableEntry({
   widgetId,
+  label,
+  tile,
   order,
   hidden,
   onToggleHidden,
@@ -84,17 +97,16 @@ export function SortableEntry({
 
   const xsmall = controlSize === "xsmall"
   const small = controlSize === "small"
-  const showLabel = controlSize === "default"
+  const showLabel = controlSize === "default" || small
+  const displayLabel = formatEntryLabel(widgetId, label)
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={clx(
-        // `min-w-0` lets the entry shrink below its content's intrinsic width
-        // when a layout stretches it into equal grid/flex tracks. The author's
-        // container can't set this via `[&>*]` because the `display: contents`
-        // SortableContext wrapper hides its children from the `>` combinator.
+        tile && ENTRY_TILE_CLASS[tile],
+        tile && ENTRY_TILE_STRETCH,
         "ring-ui-border-base relative min-w-0 rounded-lg ring-1 transition-opacity",
         // Hidden entries are clearly de-emphasized during edit mode so the
         // user can tell at a glance which ones won't render at idle.
@@ -131,8 +143,14 @@ export function SortableEntry({
         )}
       >
         {showLabel && (
-          <span className="text-ui-fg-muted px-1 font-mono text-xs">
-            {widgetId} ({order})
+          <span
+            className={clx(
+              "text-ui-fg-muted px-1 text-xs",
+              small ? "max-w-[9rem] truncate font-sans" : "font-mono"
+            )}
+            title={displayLabel}
+          >
+            {small ? displayLabel : `${displayLabel} (${order})`}
           </span>
         )}
         <IconButton

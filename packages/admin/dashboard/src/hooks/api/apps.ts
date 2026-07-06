@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { sdk } from "../../lib/client"
+import { useTenantQueryKey } from "./tenants"
 import { useDisplayCurrency } from "./revenue"
 
 export type RevApp = {
   id: string
   name: string
   status: string
+  vertical?: string | null
+  runtime?: string | null
   icon_url?: string | null
   external_ids?: Record<string, unknown> | null
 }
@@ -57,12 +60,13 @@ export type Integrations = {
   }
 }
 
-const appsKey = ["revenue", "apps"] as const
-const sourcesKey = ["revenue", "sources"] as const
+const appsKeyBase = ["revenue", "apps"] as const
+const sourcesKeyBase = ["revenue", "sources"] as const
 
 export const useIntegrations = () => {
+  const queryKey = useTenantQueryKey(["revenue", "integrations"])
   const { data, ...rest } = useQuery({
-    queryKey: ["revenue", "integrations"],
+    queryKey,
     queryFn: async () =>
       sdk.client.fetch<{ integrations: Integrations }>(
         "/admin/revenue/integrations"
@@ -105,8 +109,9 @@ export const useSaveIntegration = () => {
 
 export const useAppsOverview = () => {
   const display = useDisplayCurrency()
+  const queryKey = useTenantQueryKey(["revenue", "apps-overview", display ?? null])
   const { data, ...rest } = useQuery({
-    queryKey: ["revenue", "apps-overview", display ?? null],
+    queryKey,
     queryFn: async () =>
       sdk.client.fetch<{ apps: AppOverviewRow[] }>(
         `/admin/revenue/apps-overview${display ? `?display=${display}` : ""}`
@@ -127,8 +132,9 @@ export type AppDetail = AppOverviewRow & {
 }
 
 export const useAppDetail = (id: string) => {
+  const queryKey = useTenantQueryKey(["revenue", "app", id])
   const { data, ...rest } = useQuery({
-    queryKey: ["revenue", "app", id],
+    queryKey,
     queryFn: async () =>
       sdk.client.fetch<{ app: AppDetail }>(`/admin/revenue/apps/${id}`),
     enabled: !!id,
@@ -137,8 +143,9 @@ export const useAppDetail = (id: string) => {
 }
 
 export const useApps = () => {
+  const queryKey = useTenantQueryKey(appsKeyBase)
   const { data, ...rest } = useQuery({
-    queryKey: appsKey,
+    queryKey,
     queryFn: async () => sdk.client.fetch<{ apps: RevApp[] }>("/admin/revenue/apps"),
   })
   return { apps: data?.apps ?? [], ...rest }
@@ -149,7 +156,7 @@ export const useCreateApp = () => {
   return useMutation({
     mutationFn: (body: { name: string }) =>
       sdk.client.fetch("/admin/revenue/apps", { method: "POST", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: appsKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: appsKeyBase }),
   })
 }
 
@@ -159,8 +166,8 @@ export const useDeleteApp = () => {
     mutationFn: (id: string) =>
       sdk.client.fetch(`/admin/revenue/apps/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: appsKey })
-      qc.invalidateQueries({ queryKey: sourcesKey })
+      qc.invalidateQueries({ queryKey: appsKeyBase })
+      qc.invalidateQueries({ queryKey: sourcesKeyBase })
     },
   })
 }
@@ -177,13 +184,14 @@ export const useUpdateApp = () => {
       external_ids?: Record<string, unknown>
     }) =>
       sdk.client.fetch(`/admin/revenue/apps/${id}`, { method: "POST", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: appsKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: appsKeyBase }),
   })
 }
 
 export const useSources = () => {
+  const queryKey = useTenantQueryKey(sourcesKeyBase)
   const { data, ...rest } = useQuery({
-    queryKey: sourcesKey,
+    queryKey,
     queryFn: async () =>
       sdk.client.fetch<{ sources: RevSource[] }>("/admin/revenue/sources"),
   })
@@ -201,7 +209,7 @@ export const useCreateSource = () => {
       credentials_ref?: string | null
       secret?: string | null
     }) => sdk.client.fetch("/admin/revenue/sources", { method: "POST", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: sourcesKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: sourcesKeyBase }),
   })
 }
 
@@ -210,6 +218,6 @@ export const useDeleteSource = () => {
   return useMutation({
     mutationFn: (id: string) =>
       sdk.client.fetch(`/admin/revenue/sources/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: sourcesKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: sourcesKeyBase }),
   })
 }

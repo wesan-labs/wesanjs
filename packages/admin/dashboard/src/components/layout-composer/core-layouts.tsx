@@ -1,6 +1,7 @@
 import { CORE_LAYOUT_IDS } from "@medusajs/admin-shared"
 import { LayoutDefinition } from "./types"
 import {
+  DashboardGridLayoutComponent,
   SingleColumnLayoutComponent,
   SingleRowLayoutComponent,
   TwoColumnLayoutComponent,
@@ -27,8 +28,14 @@ export const CORE_LAYOUTS: LayoutDefinition[] = [
     Component: TwoColumnLayoutComponent,
   },
   {
+    id: CORE_LAYOUT_IDS.DASHBOARD_GRID,
+    sections: [{ id: "main", ordering: "grid" }],
+    Component: DashboardGridLayoutComponent,
+  },
+  {
     id: CORE_LAYOUT_IDS.SETTINGS_SIDEBAR,
     sections: [
+      { id: "organization", ordering: "list" },
       { id: "general", ordering: "list" },
       { id: "developer", ordering: "list" },
       { id: "myAccount", ordering: "list" },

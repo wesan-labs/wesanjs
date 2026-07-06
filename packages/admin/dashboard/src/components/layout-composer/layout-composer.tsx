@@ -318,6 +318,8 @@ const LayoutComposerRoot = <TLayoutId extends Layouts, TData>({
         <SortableEntry
           key={entry.widgetId}
           widgetId={entry.widgetId}
+          label={entry.label}
+          tile={entry.tile}
           order={entry.order}
           hidden={entry.hidden}
           onToggleHidden={() => toggleHidden(entry.widgetId)}

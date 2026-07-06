@@ -80,11 +80,29 @@ export const inferField = (key: string, value: unknown): FieldDef => {
       : { ...base, kind: "text" }
   }
   if (Array.isArray(value)) {
+    const samples = value.filter(
+      (x): x is Record<string, unknown> =>
+        !!x && typeof x === "object" && !Array.isArray(x)
+    )
+    if (samples.length > 0) {
+      const keys = [
+        ...new Set(samples.flatMap((row) => Object.keys(row))),
+      ]
+      const fields = keys.map((k) => {
+        const sampleVal = samples.find((row) => row[k] != null)?.[k]
+        return inferField(k, sampleVal ?? "")
+      })
+      return {
+        ...base,
+        kind: "list",
+        of: { name: "item", label: "Item", kind: "object", fields },
+      }
+    }
     const sample = value.find((x) => x != null)
     const of: FieldDef =
       sample !== undefined
         ? inferField("item", sample)
-        : { name: "item", label: "Öğe", kind: "text" }
+        : { name: "item", label: "Item", kind: "text" }
     return { ...base, kind: "list", of }
   }
   if (value && typeof value === "object") {

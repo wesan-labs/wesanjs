@@ -2877,24 +2877,24 @@
     }
   },
   "returnReasons": {
-    "domain": "İade Nedenleri",
-    "subtitle": "İade edilen ürünler için nedenleri yönetin.",
-    "calloutHint": "İadeleri kategorize etmek için nedenleri yönetin.",
-    "editReason": "İade Nedenini Düzenle",
+    "domain": "Ürün İadesi",
+    "subtitle": "Ürün geri gelirken seçilen nedenler.",
+    "calloutHint": "Ürün iade nedenlerini buradan yönetin.",
+    "editReason": "Ürün İadesi Düzenle",
     "create": {
-      "header": "İade Nedeni Ekle",
-      "subtitle": "En yaygın iade nedenlerini belirtin.",
-      "hint": "İadeleri kategorize etmek için yeni bir iade nedeni oluşturun.",
-      "successToast": "İade nedeni {{label}} başarıyla oluşturuldu."
+      "header": "Ürün İade Nedeni Ekle",
+      "subtitle": "Sık görülen ürün iade nedenlerini ekleyin.",
+      "hint": "Ürün iadelerini kategorize etmek için yeni bir neden oluşturun.",
+      "successToast": "Ürün iade nedeni {{label}} eklendi."
     },
     "edit": {
-      "header": "İade Nedenini Düzenle",
-      "subtitle": "İade nedeninin değerini düzenleyin.",
-      "successToast": "İade nedeni {{label}} başarıyla güncellendi."
+      "header": "Ürün İadesi Düzenle",
+      "subtitle": "Ürün iade nedenini düzenleyin.",
+      "successToast": "Ürün iade nedeni {{label}} güncellendi."
     },
     "delete": {
-      "confirmation": "{{label}} iade nedenini silmek üzeresiniz. Bu işlem geri alınamaz.",
-      "successToast": "İade nedeni {{label}} başarıyla silindi."
+      "confirmation": "{{label}} ürün iade nedenini silmek üzeresiniz. Bu işlem geri alınamaz.",
+      "successToast": "Ürün iade nedeni {{label}} silindi."
     },
     "fields": {
       "value": {
@@ -2913,24 +2913,24 @@
     }
   },
   "refundReasons": {
-    "domain": "İade Nedenleri",
-    "subtitle": "İade yapma nedenlerini yönetin.",
-    "calloutHint": "İadeleri kategorize etmek için nedenleri yönetin.",
-    "editReason": "İade Nedenini Düzenle",
+    "domain": "Para İadesi",
+    "subtitle": "Para geri ödenirken seçilen nedenler.",
+    "calloutHint": "Para iade nedenlerini buradan yönetin.",
+    "editReason": "Para İadesi Düzenle",
     "create": {
-      "header": "İade Nedeni Ekle",
-      "subtitle": "İadeler için en yaygın nedenleri belirtin.",
-      "hint": "İadeleri kategorize etmek için yeni bir iade nedeni oluşturun.",
-      "successToast": "{{label}} iade nedeni başarıyla oluşturuldu."
+      "header": "Para İade Nedeni Ekle",
+      "subtitle": "Sık görülen para iade nedenlerini ekleyin.",
+      "hint": "Para iadelerini kategorize etmek için yeni bir neden oluşturun.",
+      "successToast": "{{label}} para iade nedeni eklendi."
     },
     "edit": {
-      "header": "İade Nedenini Düzenle",
-      "subtitle": "İade nedeninin değerini düzenleyin.",
-      "successToast": "{{label}} iade nedeni başarıyla güncellendi."
+      "header": "Para İadesi Düzenle",
+      "subtitle": "Para iade nedenini düzenleyin.",
+      "successToast": "{{label}} para iade nedeni güncellendi."
     },
     "delete": {
-      "confirmation": "\"{{label}}\" iade nedenini silmek üzeresiniz. Bu işlem geri alınamaz.",
-      "successToast": "İade nedeni başarıyla silindi."
+      "confirmation": "\"{{label}}\" para iade nedenini silmek üzeresiniz. Bu işlem geri alınamaz.",
+      "successToast": "Para iade nedeni silindi."
     },
     "fields": {
       "label": {
@@ -3359,6 +3359,31 @@
       "last28": "Son 28 gün"
     },
     "addExpense": "Gider ekle",
+    "sync": {
+      "panelRefreshed": "Panel güncellendi",
+      "revenuecatSynced": "RevenueCat senkron",
+      "admobSynced": "AdMob senkron",
+      "dataThrough": "Veri son gün",
+      "never": "Henüz yok",
+      "syncNow": "Senkronla"
+    },
+    "layout": {
+      "syncBar": "Senkron durumu",
+      "toolbar": "Sekmeler ve filtreler",
+      "pnlSummary": "Net kâr özeti",
+      "composition": "Gelir kompozisyonu",
+      "totalTrend": "Toplam gelir trendi",
+      "geoMap": "Ödeme bölgeleri haritası",
+      "geoCountry": "Ülkeye göre gelir",
+      "appsTable": "Uygulama tablosu",
+      "recentTx": "Son işlemler",
+      "subProducts": "Ürüne göre abonelik",
+      "subTrend": "Abonelik trendi",
+      "subPlatform": "Platforma göre abonelik",
+      "adNotice": "Reklam verisi uyarısı",
+      "adDaily": "Günlük reklam geliri",
+      "adBreakdown": "Reklam kırılımı"
+    },
     "loading": "Yükleniyor…",
     "loadError": "Revenue verisi alınamadı. Backend çalışıyor mu kontrol et.",
     "noData": "Henüz veri yok",
@@ -3465,8 +3490,15 @@
       "categoryPh": "ör. altyapı, pazarlama",
       "recurring": "Tekrarlı",
       "recurringHint": "Her ay tekrar eden gider",
+      "vendor": "Tedarikçi",
+      "vendorPh": "ör. AWS, Google Ads",
+      "invoiceNumber": "Fatura no",
+      "invoiceNumberPh": "ör. INV-2026-001",
+      "invoiceFile": "Fatura / fiş",
+      "invoiceFileHint": "PDF, JPEG, PNG veya WebP — en fazla 10 MB",
       "created": "Gider eklendi",
-      "createError": "Gider eklenemedi"
+      "createError": "Gider eklenemedi",
+      "uploadError": "Fatura yüklenemedi"
     }
   },
   "cms": {
@@ -3481,12 +3513,20 @@
       "url": "URL",
       "status": "Durum",
       "active": "aktif",
-      "disabled": "kapalı"
+      "disabled": "kapalı",
+      "wrongOrgTitle": "CMS başka organizasyonda",
+      "wrongOrgBody": "Siteler ve içerik {{target}} org'unda kayıtlı. Şu an {{active}} seçili — bu yüzden liste boş. Veri silinmedi.",
+      "wrongOrgAction": "{{target}} org'una geç"
     },
     "detail": {
       "content": "{{name}} · İçerik",
       "collections": "Koleksiyonlar ({{count}})",
       "editSchema": "Şemayı düzenle",
+      "hideSchema": "Şemayı gizle",
+      "schemaSection": "Şema",
+      "noUrl": "Site URL tanımlı değil",
+      "singletonHint": "Tıkla → içeriği düzenle",
+      "editing": "Düzenleniyor…",
       "noCollections": "Koleksiyon yok. wesan içeriğini içe aktarmak için:",
       "records": "{{count}} kayıt",
       "singletonNote": "Tek kayıt tüm site içeriğini taşır — liste yok, doğrudan düzenlenir.",
@@ -3554,6 +3594,9 @@
     "editor": {
       "loading": "Yükleniyor…",
       "content": "İçerik · {{slug}}",
+      "contentSection": "İçerik",
+      "contentSections": "Bölümler",
+      "modalDescription": "Site içeriği, SEO veya ham JSON düzenle.",
       "preview": "Önizle",
       "close": "Kapat",
       "saveDraft": "Taslak Kaydet",
@@ -3582,6 +3625,8 @@
       "assetIdPh": "asset id / yol",
       "delete": "Sil",
       "addItem": "+ Öğe ekle",
+      "item": "Öğe {{index}}",
+      "emptyList": "Henüz öğe yok.",
       "emptyGroup": "boş grup"
     },
     "sectioned": {
@@ -3612,6 +3657,67 @@
       "ogWarn": "Sosyal (OG) görsel ekle",
       "generate": "✦ Üret",
       "generateSoon": "AI üretimi AI fazında gelecek"
+    }
+  },
+  "organization": {
+    "domain": "Organizasyon",
+    "hint": "Organizasyon profilinizi ve aktif çalışma alanı kapsamını yönetin.",
+    "new": "Yeni organizasyon",
+    "loading": "Yükleniyor…",
+    "empty": "Henüz organizasyon yok. Başlamak için bir tane oluşturun.",
+    "name": "Ad",
+    "slug": "Slug",
+    "status": "Durum",
+    "active": "aktif",
+    "suspended": "askıda",
+    "activeScope": "Aktif çalışma alanı",
+    "switch": "Organizasyon değiştir",
+    "clearActive": "Kapsamı temizle",
+    "activeBanner": "İstekler bu organizasyona scope'lu (x-tenant-id).",
+    "save": "Kaydet",
+    "saved": "Kaydedildi",
+    "tabs": {
+      "profile": "Genel"
+    },
+    "hub": {
+      "title": "Erişim ve takım",
+      "hint": "Bu organizasyonda kimler var ve neler yapabilirler.",
+      "rbacOff": "Rol ve ayrıntılı izinler için MEDUSA_FF_RBAC etkinleştirin."
+    },
+    "member": {
+      "email": "E-posta",
+      "role": "Üyelik rolü",
+      "moduleRole": "Modül rolü",
+      "added": "Eklendi",
+      "remove": "Çıkar",
+      "permissions": "Erişim",
+      "invitePh": "kullanici@sirket.com",
+      "add": "Üye ekle",
+      "addedToast": "Üye eklendi",
+      "removedToast": "Üye çıkarıldı",
+      "error": "İşlem başarısız",
+      "roles": {
+        "admin": "Yönetici",
+        "manager": "Müdür",
+        "member": "Üye"
+      }
+    },
+    "team": {
+      "domain": "Takım",
+      "hint": "{{name}} üyeleri.",
+      "noOrg": "Önce bir organizasyon oluşturun veya seçin.",
+      "createLink": "Organizasyon ayarlarına git",
+      "manageRoles": "Roller ve izinler",
+      "rbacHint": "Üyelik rolü (admin/manager/member) org yönetimini belirler. RBAC rolleri hangi modül ve API'lere erişileceğini tanımlar — Roller sekmesinden atayın.",
+      "membershipHint": "Üyelik rolleri organizasyonu kimin yöneteceğini belirler. Modül izinleri için RBAC'ı etkinleştirin."
+    },
+    "create": {
+      "cancel": "İptal",
+      "save": "Oluştur",
+      "namePh": "Acme A.Ş.",
+      "slugPh": "acme",
+      "created": "Organizasyon oluşturuldu",
+      "error": "Oluşturulamadı"
     }
   },
   "tenants": {
