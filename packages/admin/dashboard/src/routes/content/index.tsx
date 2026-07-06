@@ -264,6 +264,7 @@ export const Component = () => {
         setLanguages={setLanguages}
         onOpenLibrary={() => setLibraryOpen(true)}
         onOpenBrand={() => setBrandOpen(true)}
+        brandSet={!!brandProfile.BRAND_NAME?.trim()}
       />
 
       <LibraryDrawer
@@ -642,6 +643,7 @@ const Header = ({
   setLanguages,
   onOpenLibrary,
   onOpenBrand,
+  brandSet,
 }: {
   panel: Panel
   setPanel: (p: Panel) => void
@@ -650,6 +652,8 @@ const Header = ({
   setLanguages: (fn: (prev: string[]) => string[]) => void
   onOpenLibrary: () => void
   onOpenBrand: () => void
+  /** marka kurulu mu — kurulu değilse "Markanı kur" nudge'ı öne çıkar */
+  brandSet: boolean
 }) => {
   const addLanguage = (l: string) =>
     setLanguages((prev) => (prev.includes(l) ? prev : [...prev, l]))
@@ -714,9 +718,16 @@ const Header = ({
 
       {/* Sağ: kütüphane + çoklu çıktı dili */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <Button variant="secondary" size="small" onClick={onOpenBrand}>
+        <Button
+          variant={brandSet ? "secondary" : "primary"}
+          size="small"
+          onClick={onOpenBrand}
+        >
           <Buildings />
-          Marka
+          {brandSet ? "Marka" : "Markanı kur"}
+          {!brandSet && (
+            <span className="bg-ui-tag-orange-icon ml-1 size-1.5 rounded-full" />
+          )}
         </Button>
         <Button
           variant="secondary"
