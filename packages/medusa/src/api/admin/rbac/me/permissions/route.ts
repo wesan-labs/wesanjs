@@ -2,6 +2,7 @@ import { resolvePermissions } from "@medusajs/framework"
 import {
   AuthenticatedMedusaRequest,
   MedusaResponse,
+  resolveEffectiveRbacRoleIds,
 } from "@medusajs/framework/http"
 import { HttpTypes } from "@medusajs/framework/types"
 import {
@@ -44,15 +45,7 @@ export const GET = async (
 
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
 
-  const { data: actors } = await query.graph({
-    entity: actorType,
-    fields: ["id", "rbac_roles.id"],
-    filters: { id: actorId },
-  })
-
-  const roleIds: string[] =
-    actors?.[0]?.rbac_roles?.map((r: { id: string }) => r.id).filter(Boolean) ??
-    []
+  const roleIds: string[] = resolveEffectiveRbacRoleIds(req)
 
   // Build the universe from code-registered + DB-persisted policies.
   const universe: Array<{ resource: string; operation: string }> = []

@@ -1,4 +1,4 @@
-import { ExclamationCircle } from "@medusajs/icons"
+import { ExclamationCircle, Spinner } from "@medusajs/icons"
 import { Container, Heading, Text } from "@medusajs/ui"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
@@ -118,9 +118,13 @@ export const RoutePermissionGuard = () => {
     source: "route",
   })
 
-  // Don't block while loading - TODO: reconsider this
+  // Block child routes (and their data fetches) until permissions are resolved.
   if (isLoading) {
-    return <Outlet />
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Spinner className="text-ui-fg-interactive animate-spin" />
+      </div>
+    )
   }
 
   // No requirement declared anywhere up the tree → opt-out, render through.

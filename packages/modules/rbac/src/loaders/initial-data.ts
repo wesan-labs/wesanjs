@@ -52,4 +52,35 @@ export default async ({
     role_id: role.id,
     policy_id: policy.id,
   })
+
+  // Onboarding pilot: Finance role (revenue read + expense write)
+  const financeRole = await rbacRoleService.upsert({
+    id: "role_finance",
+    name: "Finance",
+    description:
+      "Revenue dashboards and expense management (onboarding pilot role)",
+  })
+
+  const financePolicyKeys = [
+    "revenue:read",
+    "expense:create",
+    "expense:update",
+    "expense:delete",
+  ]
+  const syncedPolicies = await rbacPolicyService.list({}, { take: 500 })
+  const policyByKey = new Map(
+    syncedPolicies.map((p: { key: string; id: string }) => [p.key, p])
+  )
+
+  for (const key of financePolicyKeys) {
+    const finPolicy = policyByKey.get(key)
+    if (!finPolicy) {
+      continue
+    }
+    await rbacRolePolicyService.upsert({
+      id: `rlpl_finance_${finPolicy.id}`,
+      role_id: financeRole.id,
+      policy_id: finPolicy.id,
+    })
+  }
 }

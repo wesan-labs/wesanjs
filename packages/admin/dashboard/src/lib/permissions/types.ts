@@ -41,6 +41,8 @@ export type PermissionResource =
   | "refund_reason"
   | "workflow"
   | "translation"
+  | "revenue"
+  | "expense"
 
 /**
  * Operations that can be performed on resources.

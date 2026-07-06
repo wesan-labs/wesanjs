@@ -6,6 +6,7 @@ import type {
   MedusaResponse,
   MiddlewareFunction,
 } from "../types"
+import { resolveEffectiveRbacRoleIds } from "../utils/resolve-effective-rbac-roles"
 
 export type PolicyAction = {
   resource: string
@@ -26,9 +27,7 @@ async function checkPermissions(
     return
   }
 
-  const authContext = req.auth_context
-  // Get roles from JWT token's app_metadata
-  const roleIds = (authContext?.app_metadata?.roles as string[]) || []
+  const roleIds = resolveEffectiveRbacRoleIds(req)
 
   if (!roleIds.length) {
     throw new MedusaError(MedusaError.Types.FORBIDDEN, "Forbidden")
