@@ -4421,6 +4421,7 @@ __metadata:
     "@medusajs/dashboard": 2.17.2
     "@medusajs/framework": 2.17.2
     "@medusajs/icons": 2.17.2
+    "@medusajs/medusa": 2.17.2
     "@medusajs/test-utils": 2.17.2
     "@medusajs/types": 2.17.2
     "@medusajs/ui": 4.1.19
@@ -4436,6 +4437,7 @@ __metadata:
     "@medusajs/dashboard": 2.17.2
     "@medusajs/framework": 2.17.2
     "@medusajs/icons": 2.17.2
+    "@medusajs/medusa": 2.17.2
     "@medusajs/test-utils": 2.17.2
     "@medusajs/ui": 4.1.19
     react: ^18.3.1
