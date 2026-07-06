@@ -7,6 +7,7 @@
 import { describe, expect, test } from "bun:test"
 import type { BrandIdentity } from "../brand/types"
 import { compilePack } from "./compiler"
+import { composeWithBrand, getCompiledPack } from "./loader"
 import { composeInstruction } from "./template-engine"
 
 const coffee: BrandIdentity = {
@@ -107,5 +108,33 @@ describe("ALAN-BAĞIMSIZ — ezberci-öldüren tez", () => {
     expect(a).not.toBe(b)
     expect(a).toContain("Ember")
     expect(b).toContain("BrightSmile")
+  })
+})
+
+describe("compile-and-cache — loader entegrasyonu (compose akışına bağlı)", () => {
+  test("getCompiledPack aynı marka+version → aynı referansı döner (compile-once)", () => {
+    const p1 = getCompiledPack(coffee)
+    const p2 = getCompiledPack(coffee)
+    expect(p2).toBe(p1) // cache hit — yeniden derlenmedi
+  })
+
+  test("version değişince yeniden derlenir (invalidate)", () => {
+    const p1 = getCompiledPack(coffee)
+    const p2 = getCompiledPack({ ...coffee, version: coffee.version + 1 })
+    expect(p2).not.toBe(p1)
+  })
+
+  test("composeWithBrand = compiled pack üstünde composeInstruction", () => {
+    const viaBrand = composeWithBrand(
+      { packId: "x", categoryId: "main", shotId: "hero", metadata: { SUBJECT: "bag" } },
+      coffee
+    ).instruction
+    const viaPack = composeInstruction(
+      { packId: "x", categoryId: "main", shotId: "hero", metadata: { SUBJECT: "bag" } },
+      compilePack(coffee),
+      {}
+    ).instruction
+    expect(viaBrand).toBe(viaPack)
+    expect(viaBrand).toContain("Ember Roasters")
   })
 })

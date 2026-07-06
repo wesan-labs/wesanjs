@@ -6,6 +6,8 @@
  * __dirname-relative okumaları bundle'a taşımıyor (bkz. prompt-library.ts:60).
  */
 
+import type { BrandIdentity } from "../brand/types"
+import { compilePack } from "./compiler"
 import begahomeFurniture from "./data/begahome-furniture.pack.json"
 import mobileGameUa from "./data/mobile-game-ua.pack.json"
 import { furnitureResolvers } from "./resolvers/furniture"
@@ -85,3 +87,30 @@ export const compose = (input: FillInput): FillOutput => {
   if (!pack) throw new ComposeError(`Unknown pack "${input.packId}"`)
   return composeInstruction(input, pack, getResolverSet(pack))
 }
+
+/**
+ * COMPILE-AND-CACHE (mimari v2 §2): marka bir kez PackDef'e derlenir, cache'lenir,
+ * sonra hot-path aynı donmuş pack'ten deterministik çalışır. Cache key = brand
+ * id@version → marka değişince (version artar) otomatik yeniden derlenir.
+ */
+const COMPILED_CACHE = new Map<string, PackDef>()
+
+/** Markanın derlenmiş pack'ini getir (cache miss'te derle). O(1) amortized. */
+export const getCompiledPack = (brand: BrandIdentity): PackDef => {
+  const key = `${brand.id}@${brand.version}`
+  let pack = COMPILED_CACHE.get(key)
+  if (!pack) {
+    pack = compilePack(brand)
+    COMPILED_CACHE.set(key, pack)
+  }
+  return pack
+}
+
+/**
+ * Marka-güdümlü compose: derlenmiş (cache'li) pack üstünden deterministik
+ * instruction. Derlenmiş pack direct-token (resolver yok). O(m).
+ */
+export const composeWithBrand = (
+  input: FillInput,
+  brand: BrandIdentity
+): FillOutput => composeInstruction(input, getCompiledPack(brand), {})

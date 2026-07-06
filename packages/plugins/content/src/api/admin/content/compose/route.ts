@@ -3,11 +3,15 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { MedusaError } from "@medusajs/framework/utils"
-import { compose } from "../../../../lib/packs/loader"
+import type { BrandIdentity } from "../../../../lib/brand/types"
+import { compose, composeWithBrand } from "../../../../lib/packs/loader"
 import { ComposeError } from "../../../../lib/packs/types"
 
 interface ComposeBody {
-  packId: string
+  /** hazır pack yolu (elle-yazım / seed) */
+  packId?: string
+  /** VEYA marka-güdümlü yol: markayı derle (cache'li) → compose (compile-and-cache) */
+  brand?: BrandIdentity
   categoryId: string
   shotId: string
   metadata?: Record<string, string>
@@ -16,9 +20,9 @@ interface ComposeBody {
 
 /**
  * POST /admin/content/compose
- * Deterministik instruction önizlemesi — pack template engine'i çalıştırır,
- * görsel model çağrısı YAPMAZ. Aynı gövde → byte-identical instruction.
- * edit-image bu çıktıyı tek hop olarak kullanır (LLM ara katmanı yok).
+ * Deterministik instruction önizlemesi — görsel model çağrısı YAPMAZ, byte-identical.
+ * İki yol: (a) `packId` ile hazır pack, (b) `brand` ile derlenmiş (cache'li) pack —
+ * ikincisi keyfi alan için, kimse dikey-özel pack yazmaz (compile-and-cache).
  */
 export const POST = async (
   req: AuthenticatedMedusaRequest<ComposeBody>,
@@ -26,21 +30,24 @@ export const POST = async (
 ) => {
   const body = (req.validatedBody ?? req.body) as ComposeBody
 
-  if (!body.packId || !body.categoryId || !body.shotId) {
+  if (!body.categoryId || !body.shotId || (!body.packId && !body.brand)) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      "packId, categoryId ve shotId gerekli"
+      "categoryId, shotId ve (packId VEYA brand) gerekli"
     )
   }
 
   try {
-    const result = compose({
-      packId: body.packId,
+    const input = {
+      packId: body.packId ?? `brand-${body.brand?.id}`,
       categoryId: body.categoryId,
       shotId: body.shotId,
       metadata: body.metadata ?? {},
       style: body.style,
-    })
+    }
+    const result = body.brand
+      ? composeWithBrand(input, body.brand)
+      : compose(input)
     res.json(result)
   } catch (err) {
     if (err instanceof ComposeError) {
