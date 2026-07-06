@@ -12,6 +12,7 @@ import {
   toast,
 } from "@medusajs/ui"
 import { useEffect, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { PlatformGlyph } from "../../content/components/prompt-meta"
 import { accountsRequireMedia } from "../../../lib/social-platform-rules"
 import { usePublishSocial, useSocialAccounts } from "../../../hooks/api/social"
@@ -38,7 +39,9 @@ export const PublishComposer = ({
   const { data } = useSocialAccounts()
   const accounts = data?.accounts ?? []
   const imageHost = data?.imageHost ?? false
+  const noAccounts = accounts.length === 0
   const publish = usePublishSocial()
+  const navigate = useNavigate()
 
   const [content, setContent] = useState(initialContent ?? "")
   const [mediaUrl, setMediaUrl] = useState("")
@@ -208,10 +211,22 @@ export const PublishComposer = ({
 
           <div className="flex flex-col gap-y-2">
             <Label size="small">Hesaplar</Label>
-            {accounts.length === 0 ? (
-              <Text size="small" className="text-ui-fg-muted">
-                Bağlı hesap yok.
-              </Text>
+            {noAccounts ? (
+              <div className="border-ui-border-base bg-ui-bg-subtle flex flex-col items-start gap-y-2 rounded-lg border border-dashed p-3">
+                <Text size="small" className="text-ui-fg-subtle">
+                  Henüz bağlı sosyal hesap yok. Paylaşmak için önce bir hesap bağla.
+                </Text>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  onClick={() => {
+                    onOpenChange(false)
+                    navigate("/social-media")
+                  }}
+                >
+                  Hesap bağla
+                </Button>
+              </div>
             ) : (
               accounts.map((a) => (
                 <label
@@ -266,7 +281,7 @@ export const PublishComposer = ({
           <Button
             onClick={submit}
             isLoading={publish.isPending}
-            disabled={needsMedia && !hasMedia}
+            disabled={noAccounts || (needsMedia && !hasMedia)}
           >
             {cta}
           </Button>
