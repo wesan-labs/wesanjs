@@ -4,7 +4,7 @@ import {
   StepResponse,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
-import { MedusaError } from "@medusajs/framework/utils"
+import { MedusaError, Modules } from "@medusajs/framework/utils"
 import { TENANT_MODULE } from "../modules/tenant"
 import type TenantModuleService from "../modules/tenant/service"
 
@@ -64,6 +64,31 @@ const addOwnerMembershipStep = createStep(
   }
 )
 
+const emitTenantCreatedStep = createStep(
+  "emit-tenant-created",
+  async (
+    tenant: { id: string; name: string; slug: string },
+    { container }
+  ) => {
+    try {
+      const eventBus = container.resolve(Modules.EVENT_BUS) as {
+        emit: (payload: { name: string; data: object }) => Promise<void>
+      }
+      await eventBus.emit({
+        name: "tenant.created",
+        data: {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+        },
+      })
+    } catch {
+      /* event bus optional in tests */
+    }
+    return new StepResponse(tenant)
+  }
+)
+
 export const createTenantWorkflow = createWorkflow(
   "create-tenant",
   (input: CreateTenantInput) => {
@@ -72,6 +97,7 @@ export const createTenantWorkflow = createWorkflow(
       tenant_id: tenant.id,
       user_id: input.owner_user_id,
     })
+    emitTenantCreatedStep(tenant)
     return new WorkflowResponse(tenant)
   }
 )

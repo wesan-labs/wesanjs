@@ -12,6 +12,7 @@ export type AddMemberInput = {
   tenant_id: string
   user_id: string
   role?: string
+  rbac_role_id?: string | null
 }
 
 const addMemberStep = createStep(
@@ -32,6 +33,7 @@ const addMemberStep = createStep(
       tenant_id: input.tenant_id,
       user_id: input.user_id,
       role: input.role ?? "admin",
+      rbac_role_id: input.rbac_role_id ?? null,
     })
     return new StepResponse(membership, membership.id)
   },

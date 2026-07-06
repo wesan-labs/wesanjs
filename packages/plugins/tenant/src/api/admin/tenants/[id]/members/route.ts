@@ -22,7 +22,11 @@ export const POST = async (
     res.status(403).json(forbidden())
     return
   }
-  const body = req.body as { email: string; role?: string }
+  const body = req.body as {
+    email: string
+    role?: string
+    rbac_role_id?: string | null
+  }
   const email = body.email?.trim().toLowerCase()
   if (!email) {
     res.status(400).json({
@@ -45,7 +49,12 @@ export const POST = async (
   }
 
   const { result } = await addTenantMemberWorkflow(req.scope).run({
-    input: { tenant_id: id, user_id: user.id, role: body.role ?? "admin" },
+    input: {
+      tenant_id: id,
+      user_id: user.id,
+      role: body.role ?? "admin",
+      rbac_role_id: body.rbac_role_id ?? null,
+    },
   })
   res.status(200).json({ member: { ...result, email: user.email } })
 }

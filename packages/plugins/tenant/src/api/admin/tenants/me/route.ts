@@ -26,11 +26,20 @@ export const GET = async (
   const tenants = await service.listTenants({
     id: memberships.map((m) => m.tenant_id),
   })
-  const roleByTenant = new Map(memberships.map((m) => [m.tenant_id, m.role]))
+  const roleByTenant = new Map(
+    memberships.map((m) => [
+      m.tenant_id,
+      { role: m.role, rbac_role_id: m.rbac_role_id ?? null },
+    ])
+  )
   res.json({
-    tenants: tenants.map((t) => ({
-      ...t,
-      role: roleByTenant.get(t.id) ?? null,
-    })),
+    tenants: tenants.map((t) => {
+      const membership = roleByTenant.get(t.id)
+      return {
+        ...t,
+        role: membership?.role ?? null,
+        rbac_role_id: membership?.rbac_role_id ?? null,
+      }
+    }),
   })
 }

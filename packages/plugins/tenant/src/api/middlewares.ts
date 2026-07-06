@@ -1,11 +1,21 @@
 import {
   defineMiddlewares,
+  type AuthenticatedMedusaRequest,
   type MedusaNextFunction,
   type MedusaRequest,
   type MedusaResponse,
 } from "@medusajs/framework/http"
 import { TENANT_MODULE } from "../modules/tenant"
 import type TenantModuleService from "../modules/tenant/service"
+import { resolveTenantRbacRoleIds } from "./lib/resolve-tenant-rbac-roles"
+
+/** Tenant context fields set by tenant middleware on authenticated admin requests. */
+export type AuthenticatedTenantRequest = AuthenticatedMedusaRequest & {
+  tenant_id?: string
+  tenant_role?: string
+  /** Set when x-tenant-id is present; empty array = deny module APIs. */
+  tenant_rbac_role_ids?: string[]
+}
 
 // A1 tenant context: `x-tenant-id` başlığı → üyelik doğrulaması → req'e tenant bağla.
 // Başlık yoksa geç (tek-tenant/legacy mod — geriye uyum). Başlık var ama kullanıcı
@@ -48,8 +58,15 @@ async function tenantContext(
     return
   }
 
-  ;(req as any).tenant_id = tenantId
-  ;(req as any).tenant_role = membership.role
+  ;(req as AuthenticatedTenantRequest).tenant_id = tenantId
+  ;(req as AuthenticatedTenantRequest).tenant_role = membership.role
+
+  const globalRoleIds =
+    ((req as AuthenticatedMedusaRequest).auth_context?.app_metadata
+      ?.roles as string[] | undefined) ?? []
+
+  ;(req as AuthenticatedTenantRequest).tenant_rbac_role_ids =
+    resolveTenantRbacRoleIds(membership, { globalRoleIds })
   return next()
 }
 

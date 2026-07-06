@@ -9,7 +9,11 @@ const TenantMembership = model.define("tenant_membership", {
   id: model.id().primaryKey(),
   tenant_id: model.text(),
   user_id: model.text(),
+  // Org admin actions: admin | manager | member
   role: model.text().default("admin"),
+  // Module RBAC role for this org (#0007). When set, overrides global user roles
+  // for requests scoped with x-tenant-id.
+  rbac_role_id: model.text().nullable(),
 })
 
 export default TenantMembership

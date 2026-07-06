@@ -28,6 +28,7 @@ export const GET = async (
     return
   }
   const ids = mine.map((m) => m.tenant_id)
+  const membershipByTenant = new Map(mine.map((m) => [m.tenant_id, m]))
   const tenants = await service.listTenants(
     { id: ids },
     { order: { created_at: "DESC" } }
@@ -42,10 +43,15 @@ export const GET = async (
     counts.set(m.tenant_id, (counts.get(m.tenant_id) ?? 0) + 1)
   }
   res.json({
-    tenants: tenants.map((t) => ({
-      ...t,
-      member_count: counts.get(t.id) ?? 0,
-    })),
+    tenants: tenants.map((t) => {
+      const membership = membershipByTenant.get(t.id)
+      return {
+        ...t,
+        member_count: counts.get(t.id) ?? 0,
+        role: membership?.role ?? null,
+        rbac_role_id: membership?.rbac_role_id ?? null,
+      }
+    }),
     count: tenants.length,
   })
 }
