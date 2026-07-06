@@ -1,6 +1,8 @@
 # Content Studio — Pack & Template Engine Mimarisi
 
-> **Durum:** Taslak mimari (2026-07-06)  
+> ⚠️ **SUPERSEDED (2026-07-06):** Bu v1 doküman *tek dikey (mobilya)* için doğru ama **çok-alanlı SaaS için ezberci** kaldı (her sektöre elle pack yazmak ölçeklenmez). Yerini alan v2: [content-studio-adaptive-engine.md](./content-studio-adaptive-engine.md) — *compile-and-cache* (marka → pack derlenir, donar). Buradaki hot-path (deterministik `fillTemplate`, fidelity prefix) v2'de **L4/L6 olarak korunur**; değişen: pack'in kökeni (elle-yazım → markadan-derleme). Referans için saklanıyor.
+>
+> **Durum:** Taslak mimari (2026-07-06) — *superseded*  
 > **Bağlam:** Bega Home `scripts/` pipeline'ının Levios İçerik Stüdyosu'na taşınması  
 > **İlgili:** [content-studio ürün niyeti](../../../helm/docs/content-studio.md) · [content plugin](./plugins/content.md) · [Task #0011](../tasks/0011-content-studio-pack-engine.md)
 
