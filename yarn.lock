@@ -1332,7 +1332,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.8.7":
+"@babel/runtime@npm:^7.17.2, @babel/runtime@npm:^7.8.7":
   version: 7.29.7
   resolution: "@babel/runtime@npm:7.29.7"
   checksum: ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
@@ -3928,6 +3928,7 @@ __metadata:
     react-country-flag: ^3.1.0
     react-currency-input-field: ^3.6.11
     react-dom: ^18.3.1
+    react-filerobot-image-editor: ^4.9.1
     react-helmet-async: ^2.0.5
     react-hook-form: 7.49.1
     react-i18next: 13.5.0
@@ -4744,6 +4745,7 @@ __metadata:
   resolution: "@medusajs/revenue-plugin@workspace:packages/plugins/revenue"
   dependencies:
     "@medusajs/admin-sdk": 2.15.5
+    "@medusajs/analytics": 2.17.2
     "@medusajs/cli": 2.15.5
     "@medusajs/dashboard": 2.15.5
     "@medusajs/framework": 2.15.5
@@ -4759,6 +4761,7 @@ __metadata:
     typescript: ^5.7.3
   peerDependencies:
     "@medusajs/admin-sdk": 2.15.5
+    "@medusajs/analytics": 2.17.2
     "@medusajs/cli": 2.15.5
     "@medusajs/dashboard": 2.15.5
     "@medusajs/framework": 2.15.5
@@ -6626,6 +6629,13 @@ __metadata:
   version: 1.0.0-next.29
   resolution: "@polka/url@npm:1.0.0-next.29"
   checksum: 0d58e081844095cb029d3c19a659bfefd09d5d51a2f791bc61eba7ea826f13d6ee204a8a448c2f5a855c17df07b37517373ff916dd05801063c0568ae9937684
+  languageName: node
+  linkType: hard
+
+"@popperjs/core@npm:^2.6.0, @popperjs/core@npm:^2.9.0":
+  version: 2.11.8
+  resolution: "@popperjs/core@npm:2.11.8"
+  checksum: 4681e682abc006d25eb380d0cf3efc7557043f53b6aea7a5057d0d1e7df849a00e281cd8ea79c902a35a414d7919621fc2ba293ecec05f413598e0b23d5a1e63
   languageName: node
   linkType: hard
 
@@ -10927,6 +10937,50 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@scaleflex/icons@npm:2.10.27":
+  version: 2.10.27
+  resolution: "@scaleflex/icons@npm:2.10.27"
+  peerDependencies:
+    "@types/react": ">=16.0.0"
+    "@types/react-dom": ">=16.0.0"
+    react: ">=16.0.0"
+    react-dom: ">=16.0.0"
+  checksum: 3870f87c8f6d75af2d6b48f1772ba6e037a63675be51e7cdb7fa61cf439de4d7c909ad90fec93b6712111398d3457a03da02fe3a04b1e7d212dffd6632ce30e1
+  languageName: node
+  linkType: hard
+
+"@scaleflex/icons@npm:^2.10.27":
+  version: 2.11.10
+  resolution: "@scaleflex/icons@npm:2.11.10"
+  peerDependencies:
+    "@types/react": ">=16.0.0"
+    "@types/react-dom": ">=16.0.0"
+    react: ">=16.0.0"
+    react-dom: ">=16.0.0"
+  checksum: 689f4b8ac671efb56c44feba3c3db618f6fa7b11b5034ae3752c7034446fb934c1f57dbcc4a6fae29a35b3db67a1a8611c1126261e7a012e748a8d400919b736
+  languageName: node
+  linkType: hard
+
+"@scaleflex/ui@npm:2.10.27":
+  version: 2.10.27
+  resolution: "@scaleflex/ui@npm:2.10.27"
+  dependencies:
+    "@popperjs/core": ^2.6.0
+    "@scaleflex/icons": ^2.10.27
+    "@tippyjs/react": ^4.2.6
+    "@types/lodash.merge": ^4.6.9
+    lodash.merge: ^4.6.2
+    prop-types: ^15.7.2
+  peerDependencies:
+    "@types/react": ">=16.0.0"
+    "@types/react-dom": ">=16.0.0"
+    react: ">=16.0.0"
+    react-dom: ">=16.0.0"
+    styled-components: ">=5.0.0"
+  checksum: 88da9a95f11d4b14c5aee4d6229dad843b3123cf1b5b6e2cd532af84c7c6d2a2c4848cc7506e627535d1c551f5352c081015fb4153704865d43c3887ad0337bb
+  languageName: node
+  linkType: hard
+
 "@sendgrid/client@npm:^8.1.5":
   version: 8.1.6
   resolution: "@sendgrid/client@npm:8.1.6"
@@ -12847,6 +12901,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tippyjs/react@npm:^4.2.6":
+  version: 4.2.6
+  resolution: "@tippyjs/react@npm:4.2.6"
+  dependencies:
+    tippy.js: ^6.3.1
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: b174f2fbd27c16c5a8554ee8b26f3cc61bc37507669a1cef3e3333bfb3db85c84a57a93003c972ede8007786cf0e813d489781aa9caf46fb3bf1b851e3f4daba
+  languageName: node
+  linkType: hard
+
 "@trysound/sax@npm:0.2.0":
   version: 0.2.0
   resolution: "@trysound/sax@npm:0.2.0"
@@ -13354,6 +13420,15 @@ __metadata:
   dependencies:
     "@types/lodash": "*"
   checksum: 6db28cacf165d55421fbf2970ccfb1682a7b82b743bb7aba4398fa8ab98f1711fca2fe4afa1aa2b7b4afb3eff76c8aca13b22206f5efeb038d99e41300589bca
+  languageName: node
+  linkType: hard
+
+"@types/lodash.merge@npm:^4.6.9":
+  version: 4.6.9
+  resolution: "@types/lodash.merge@npm:4.6.9"
+  dependencies:
+    "@types/lodash": "*"
+  checksum: 2e2ccacdceb2e23343a514e8c24540fc4e1f1ffd616b645eb72ec685da9389d99a2544f04d61921e46a6768f8cc0fe5f58d4f7edaba9bc50552f0ca7df905e83
   languageName: node
   linkType: hard
 
@@ -22700,6 +22775,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"konva@npm:9.3.6":
+  version: 9.3.6
+  resolution: "konva@npm:9.3.6"
+  checksum: ad4c9abe7b9e61bd4a119f3cf17525be9437645cfa1e38e2fc2c0bd157d2d00db6d5a7304adf3e1056e793889794d99d695e11be3df0109c71d8b5ccccd6ef96
+  languageName: node
+  linkType: hard
+
 "kuler@npm:^2.0.0":
   version: 2.0.0
   resolution: "kuler@npm:2.0.0"
@@ -26024,7 +26106,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.5.0, prop-types@npm:^15.6.2, prop-types@npm:^15.8.1":
+"prop-types@npm:15.7.2":
+  version: 15.7.2
+  resolution: "prop-types@npm:15.7.2"
+  dependencies:
+    loose-envify: ^1.4.0
+    object-assign: ^4.1.1
+    react-is: ^16.8.1
+  checksum: 4eb527daec962acd789c621ce3234a6f077ce202049291642d8efd13b19805adf07227672c570531cdb56a357640ea27e336527682b7ed4be0c5b392a01662ab
+  languageName: node
+  linkType: hard
+
+"prop-types@npm:^15.5.0, prop-types@npm:^15.6.2, prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -26493,6 +26586,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-filerobot-image-editor@npm:^4.9.1":
+  version: 4.9.1
+  resolution: "react-filerobot-image-editor@npm:4.9.1"
+  dependencies:
+    "@babel/runtime": ^7.17.2
+    "@scaleflex/icons": 2.10.27
+    "@scaleflex/ui": 2.10.27
+    konva: 9.3.6
+    prop-types: 15.7.2
+  peerDependencies:
+    react: ">=17.0.0"
+    react-dom: ">=17.0.0"
+    react-konva: ">=17.0.0"
+    styled-components: ">=5.3.5"
+  checksum: 249995ee21a44f7a9f6d7f03ded6d3476ac7b30e87e5db9185c944279af8844fdbccd1a24d3af69f32c6611cc6f4adb828f0e437a8187538dfcade6a85dd9caf
+  languageName: node
+  linkType: hard
+
 "react-helmet-async@npm:^2.0.5":
   version: 2.0.5
   resolution: "react-helmet-async@npm:2.0.5"
@@ -26540,7 +26651,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-is@npm:^16.13.1":
+"react-is@npm:^16.13.1, react-is@npm:^16.8.1":
   version: 16.13.1
   resolution: "react-is@npm:16.13.1"
   checksum: 33977da7a5f1a287936a0c85639fec6ca74f4f15ef1e59a6bc20338fc73dc69555381e211f7a3529b8150a1f71e4225525b41b60b52965bda53ce7d47377ada1
@@ -29372,6 +29483,15 @@ __metadata:
   version: 4.0.4
   resolution: "tinyspy@npm:4.0.4"
   checksum: a8020fc17799251e06a8398dcc352601d2770aa91c556b9531ecd7a12581161fd1c14e81cbdaff0c1306c93bfdde8ff6d1c1a3f9bbe6d91604f0fd4e01e2f1eb
+  languageName: node
+  linkType: hard
+
+"tippy.js@npm:^6.3.1":
+  version: 6.3.7
+  resolution: "tippy.js@npm:6.3.7"
+  dependencies:
+    "@popperjs/core": ^2.9.0
+  checksum: ec3677beb8caec791ee1f715663f28f42d60e0f7250074a047d13d5e6db95fdb6d26d8a3ac16cecb4ebcaf33ae919dbc889cf97948d115e8d3c81518c911b379
   languageName: node
   linkType: hard
 

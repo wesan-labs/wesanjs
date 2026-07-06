@@ -8,6 +8,7 @@ import {
   Language,
   MagnifyingGlass,
   PaperPlane,
+  PencilSquare,
   Photo,
   Plus,
   Spinner,
@@ -53,6 +54,7 @@ import { LibraryDrawer } from "./components/library-drawer"
 import { BriefCard } from "./components/brief-card"
 import { CompareSlider } from "./components/compare-slider"
 import { CopyButton } from "./components/copy-button"
+import { ImageEditor } from "./components/image-editor"
 import { ImageMethod, ImageTab } from "./components/image-tab"
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./components/languages"
 import { PackPicker } from "./components/pack-picker"
@@ -209,6 +211,7 @@ export const Component = () => {
 
   // Brand profile (filled once → auto-fills every prompt). localStorage-backed.
   const [brandOpen, setBrandOpen] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
   const [brandProfile, setBrandProfile] = useState<BrandProfile>({})
   useEffect(() => setBrandProfile(loadBrandProfile()), [])
   const updateBrandProfile = (p: BrandProfile) => {
@@ -278,6 +281,16 @@ export const Component = () => {
         profile={brandProfile}
         onSave={updateBrandProfile}
       />
+      {editorOpen && source && (
+        <ImageEditor
+          source={source.url}
+          onSave={(dataUrl) => {
+            applyImageResult(dataUrl, "Düzenlendi")
+            setEditorOpen(false)
+          }}
+          onClose={() => setEditorOpen(false)}
+        />
+      )}
 
       <div
         className={clx(
@@ -391,6 +404,14 @@ export const Component = () => {
                   {source.label} · {versions.length} versiyon
                 </Text>
                 <div className="flex items-center gap-x-2">
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={() => setEditorOpen(true)}
+                  >
+                    <PencilSquare />
+                    Düzenle
+                  </Button>
                   <Button
                     variant="secondary"
                     size="small"
