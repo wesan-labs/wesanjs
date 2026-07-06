@@ -1,0 +1,208 @@
+{
+  "id": "begahome-furniture",
+  "version": "1.0.0",
+  "sector": "furniture",
+  "label": "Mobilya / E-ticaret",
+  "resolverSet": "furniture",
+  "fidelity": {
+    "global": "CRITICAL: The generated furniture must be an EXACT replica of the reference image. Preserve the exact proportions, dimensions, shape, colors, material tones, wood grain, fabric color, and all design details. Do NOT alter the color palette, do NOT change wood stain shade, do NOT shift fabric hue. The furniture color and material must match the reference image pixel-perfectly. Keep the size ratio, leg height, seat depth, armrest width, and every structural element identical."
+  },
+  "categories": {
+    "zigon": {
+      "label": "Zigon sehpa",
+      "identity": null,
+      "metadataSchema": ["color", "legs", "style", "name"],
+      "shots": {
+        "lifestyle": {
+          "label": "Yaşam alanı",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a photorealistic editorial interior photo: A set of {COUNT} {COLOR} nesting tables with {LEGS}, placed beside a {SOFA_COLOR} sofa in a bright modern Turkish living room, warm oak parquet flooring, a small succulent plant on the largest table, soft natural daylight from large windows, minimalist contemporary decor, 4K quality, 4:3 aspect ratio"
+        },
+        "angle": {
+          "label": "Stüdyo açı",
+          "mode": "transform",
+          "aspect": "1:1",
+          "template": "Create a product photo: A set of {COUNT} {COLOR} nesting tables with {LEGS}, photographed from directly above showing the graduated sizes and {SURFACE} on the tabletops, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, flat lay product photography, high resolution, square format"
+        },
+        "detail": {
+          "label": "Detay",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a close-up detail shot: A {COLOR} nesting table corner showing the {LEGS} joint and {SURFACE}, shallow depth of field, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, macro product photography, 4K quality"
+        },
+        "usage": {
+          "label": "Kullanım",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a lifestyle photo: Three {COLOR} nesting tables with {LEGS} in daily use — the largest holds a tray with Turkish coffee cups and lokum, the middle one has a small ceramic vase with dried flowers, the smallest is pulled aside with a magazine on it, warm cozy living room atmosphere, afternoon sunlight, photorealistic"
+        }
+      }
+    },
+    "orta": {
+      "label": "Orta sehpa",
+      "identity": null,
+      "metadataSchema": ["color", "legs"],
+      "shots": {
+        "lifestyle": {
+          "label": "Yaşam alanı",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a photorealistic editorial interior photo: A rectangular {COLOR} coffee table with {LEGS} centered on a handwoven kilim rug in a bright modern Turkish living room, a {SOFA_COLOR} sofa in the background, a ceramic vase with dried pampas grass on the table, warm natural light, 4K quality, 4:3 aspect ratio"
+        },
+        "angle": {
+          "label": "Stüdyo açı",
+          "mode": "transform",
+          "aspect": "1:1",
+          "template": "Create a product photo: A {COLOR} coffee table with {LEGS} photographed from a low side angle at table height, showing the elegant leg profile and {SURFACE}, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, studio product photography, high resolution, square format"
+        },
+        "detail": {
+          "label": "Detay",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a close-up: A {COLOR} coffee table surface showing the {SURFACE} and subtle craftsmanship details, warm directional lighting creating gentle wood highlights, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, macro product photography, 4K quality"
+        },
+        "usage": {
+          "label": "Kullanım",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a lifestyle photo: A {COLOR} coffee table with {LEGS} in a living room with a marble tray holding a Turkish tea set, a design magazine, and reading glasses on the surface, soft afternoon sunlight casting gentle shadows, cozy home atmosphere, photorealistic"
+        }
+      }
+    },
+    "c-sehpa": {
+      "label": "C sehpa",
+      "identity": null,
+      "metadataSchema": ["color", "legs"],
+      "shots": {
+        "lifestyle": {
+          "label": "Yaşam alanı",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a photorealistic editorial interior photo: A C-shaped {COLOR} side table with {LEGS} positioned next to a {SOFA_COLOR} sofa with its base sliding under the couch, a laptop and coffee mug on the tabletop, modern minimalist Turkish living room, warm natural light, 4K quality, 4:3 aspect ratio"
+        },
+        "angle": {
+          "label": "Stüdyo açı",
+          "mode": "transform",
+          "aspect": "1:1",
+          "template": "Create a product photo: A C-shaped {COLOR} side table with {LEGS} photographed from directly front showing the curved support connecting top and bottom surfaces, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, studio product photography, high resolution, square format"
+        },
+        "detail": {
+          "label": "Detay",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a close-up: A C-shaped {COLOR} side table showing the curved frame with smooth {SURFACE} transition, shallow depth of field, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, product detail photography, 4K quality"
+        },
+        "usage": {
+          "label": "Kullanım",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a lifestyle photo: A person using a laptop on a C-shaped {COLOR} side table while lounging on a sofa, a cup of Turkish tea and a small green plant on the table, cozy home atmosphere, soft natural window light, photorealistic"
+        }
+      }
+    },
+    "kanepe": {
+      "label": "Kanepe",
+      "identity": null,
+      "metadataSchema": ["color", "legs"],
+      "shots": {
+        "lifestyle": {
+          "label": "Yaşam alanı",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a photorealistic editorial interior photo: A modern {COLOR} sofa with {LEGS}, placed in a spacious bright Turkish living room with warm oak herringbone flooring, a handwoven kilim rug underneath, a walnut coffee table in front, soft natural daylight from floor-to-ceiling windows, minimalist contemporary decor with subtle earth tones, 4K quality, 4:3 aspect ratio"
+        },
+        "angle": {
+          "label": "Stüdyo açı",
+          "mode": "transform",
+          "aspect": "1:1",
+          "template": "Create a product photo: A modern {COLOR} sofa with {LEGS}, photographed from a 45-degree rear angle showing the backrest structure and wooden frame details, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, product photography, clean and minimal, high resolution, square format"
+        },
+        "detail": {
+          "label": "Detay",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a close-up detail shot: A modern sofa arm showing the contrast between {FABRIC_DESC} and {WOOD_DESC}, visible textile weave texture, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, macro product photography, 4K quality"
+        },
+        "usage": {
+          "label": "Kullanım",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a lifestyle photo: A cozy living room scene, a modern {COLOR} sofa with decorative earth-tone cushions, a woman reading a book comfortably, a cup of Turkish tea on the armrest tray, warm afternoon golden hour light, a knitted throw blanket draped casually, warm tones, photorealistic"
+        }
+      }
+    },
+    "berjer": {
+      "label": "Berjer",
+      "identity": null,
+      "metadataSchema": ["color", "legs"],
+      "shots": {
+        "lifestyle": {
+          "label": "Yaşam alanı",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a photorealistic editorial interior photo: A mid-century {COLOR} armchair with {LEGS}, placed in a cozy reading corner next to a tall brass floor lamp and a small round walnut side table with a stack of books, warm interior with neutral earth tones, soft window light, framed art on the wall behind, 4K quality, 4:3 aspect ratio"
+        },
+        "angle": {
+          "label": "Stüdyo açı",
+          "mode": "transform",
+          "aspect": "1:1",
+          "template": "Create a product photo: A mid-century {COLOR} armchair with {LEGS}, photographed from direct side profile showing the elegant curved armrest and angled legs, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, product photography, high resolution, square format"
+        },
+        "detail": {
+          "label": "Detay",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a close-up: A mid-century armchair backrest showing button-tufted {FABRIC_DESC} detail with visible fabric texture, {WOOD_DESC} frame edge visible, shallow depth of field, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, product detail photography, 4K quality"
+        },
+        "usage": {
+          "label": "Kullanım",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a lifestyle photo: A person sitting comfortably in a mid-century walnut armchair reading a book, soft knitted blanket over the armrest, a cup of Turkish tea on a small round side table, warm cozy atmosphere, natural daylight, shallow depth of field, photorealistic"
+        }
+      }
+    },
+    "kose": {
+      "label": "Köşe takımı",
+      "identity": null,
+      "metadataSchema": ["color", "legs"],
+      "shots": {
+        "lifestyle": {
+          "label": "Yaşam alanı",
+          "mode": "transform",
+          "aspect": "16:9",
+          "template": "Create a photorealistic editorial interior photo: A large L-shaped {COLOR} sectional sofa with {LEGS}, arranged in a spacious modern Turkish living room with panoramic windows, warm oak flooring, a large round walnut coffee table in front, subtle earth-tone decor, dried pampas grass in a ceramic vase, 4K quality, 16:9 aspect ratio"
+        },
+        "angle": {
+          "label": "Stüdyo açı",
+          "mode": "transform",
+          "aspect": "16:9",
+          "template": "Create a product photo: A large L-shaped {COLOR} sectional sofa with {LEGS}, photographed from an elevated 45-degree angle showing the full L-shape configuration and all cushion sections, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, product photography, high resolution, 16:9 format"
+        },
+        "detail": {
+          "label": "Detay",
+          "mode": "transform",
+          "aspect": "4:3",
+          "template": "Create a close-up: A sectional sofa corner section showing the {FABRIC_DESC} stitching detail and how the modular pieces connect, {WOOD_DESC} base visible, shallow depth of field, seamless neutral warm grey (#E8E4E0) studio background, soft even lighting with no harsh shadows, product detail photography, 4K quality"
+        },
+        "usage": {
+          "label": "Kullanım",
+          "mode": "transform",
+          "aspect": "16:9",
+          "template": "Create a lifestyle photo: A family movie night scene on a large L-shaped {COLOR} sectional sofa, cozy blankets, scattered cushions, popcorn bowl on the coffee table, warm ambient lamp light, lived-in comfortable atmosphere, photorealistic"
+        }
+      }
+    }
+  },
+  "catalog": {
+    "source": "medusa-products",
+    "mapping": {
+      "category": "metadata.furniture_category",
+      "color": "metadata.color",
+      "legs": "metadata.legs",
+      "style": "metadata.style",
+      "name": "title"
+    }
+  }
+}
