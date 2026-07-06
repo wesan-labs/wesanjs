@@ -10,6 +10,7 @@ import type { ThemeDefinition } from "../types"
 export const cyberpunk: ThemeDefinition = {
   name: "cyberpunk",
   label: "Cyberpunk",
+  intensity: "operator",
   light: {
     // --- backgrounds (page = subtle, card = base) ---
     "--bg-base": "#f4f8fa",
@@ -44,7 +45,7 @@ export const cyberpunk: ThemeDefinition = {
     // --- foreground ---
     "--fg-base": "#0b1015",
     "--fg-subtle": "#3e4a52",
-    "--fg-muted": "#6b7a82",
+    "--fg-muted": "#556268",
     "--fg-disabled": "#a6b3ba",
     "--fg-on-color": "#f7fafb",
     "--fg-on-inverted": "#f7fafb",
@@ -122,7 +123,14 @@ export const cyberpunk: ThemeDefinition = {
     "--shadow-pressed": "inset 0 1px 2px 0 rgba(11, 16, 21, 0.18)",
     "--blur": "6px",
     "--glow": "0 0 0 1px #0a6b7a, 0 0 4px 0 rgba(10, 107, 122, 0.30)",
+    "--glow-subtle": "0 0 0 1px rgba(10, 107, 122, 0.2)",
+    "--glow-active": "0 0 0 1px #0a6b7a, 0 0 8px 0 rgba(10, 107, 122, 0.45)",
     "--opacity-surface": "1",
+    "--chart-series-1": "#0a6b7a",
+    "--chart-series-2": "#7a5c8a",
+    "--chart-series-3": "#5c7a6a",
+    "--chart-series-4": "#8a6a5c",
+    "--chart-series-5": "#6a7a8a",
     "--neon-cyan": "#00bfd8",
     "--neon-magenta": "#ff1f8e",
     "--neon-purple": "#7a2bff",
@@ -162,7 +170,7 @@ export const cyberpunk: ThemeDefinition = {
     // --- foreground (cyan-white) ---
     "--fg-base": "#e7f6f9",
     "--fg-subtle": "#8fa3ad",
-    "--fg-muted": "#5c6b73",
+    "--fg-muted": "#7a8a94",
     "--fg-disabled": "#3a4654",
     "--fg-on-color": "#03060a",
     "--fg-on-inverted": "#05070d",
@@ -242,7 +250,15 @@ export const cyberpunk: ThemeDefinition = {
     "--blur": "10px",
     "--glow":
       "0 0 1px 0 #22e0ff, 0 0 8px 0 rgba(34, 224, 255, 0.55), 0 0 18px 0 rgba(255, 45, 155, 0.30)",
+    "--glow-subtle": "0 0 0 1px rgba(34, 224, 255, 0.25)",
+    "--glow-active":
+      "0 0 1px 0 #22e0ff, 0 0 12px 0 rgba(34, 224, 255, 0.65), 0 0 24px 0 rgba(255, 45, 155, 0.35)",
     "--opacity-surface": "0.92",
+    "--chart-series-1": "#22e0ff",
+    "--chart-series-2": "#8a6ab8",
+    "--chart-series-3": "#5cb88a",
+    "--chart-series-4": "#b88a5c",
+    "--chart-series-5": "#6a8ab8",
     "--neon-cyan": "#22e0ff",
     "--neon-magenta": "#ff2d9b",
     "--neon-purple": "#a24bff",

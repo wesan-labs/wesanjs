@@ -54,7 +54,10 @@ export const MainLayout = () => {
 
 const MainSidebar = () => {
   return (
-    <aside className="flex flex-1 flex-col justify-between overflow-y-auto">
+    <aside
+      className="bg-ui-bg-subtle flex flex-1 flex-col justify-between overflow-y-auto"
+      data-glass-chrome
+    >
       <div className="flex flex-1 flex-col">
         <div className="bg-ui-bg-subtle sticky top-0">
           <WorkspaceHeader />

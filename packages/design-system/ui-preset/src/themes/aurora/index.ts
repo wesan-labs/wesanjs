@@ -1,89 +1,95 @@
-import type { ThemeDefinition } from "../types"
+import { defineTheme } from "../build-tokens"
 
-// Refs: Linear dark canvas, MagicUI/Aceternity aurora, Stripe CIELAB contrast.
-// Medusa layering: page = bg-subtle, cards = bg-base. The 4-blob aurora goes to
-// the page (var(--app-backdrop), applied fixed by the plugin); surfaces are
-// translucent + frosted (plugin adds backdrop-filter). Read text on the frosted
-// surface, not the gradient. Tightest text pair: --fg-subtle ~5.0:1. Dark
-// --fg-on-color is dark ink (white fails on the light-violet primary).
-export const aurora: ThemeDefinition = {
+const AURORA_LIGHT_BG =
+  "radial-gradient(60% 80% at 15% 10%, oklch(0.88 0.12 285 / 0.5), transparent 60%), radial-gradient(50% 70% at 85% 15%, oklch(0.90 0.10 195 / 0.4), transparent 55%), radial-gradient(55% 75% at 75% 90%, oklch(0.92 0.10 330 / 0.45), transparent 60%), radial-gradient(50% 65% at 20% 95%, oklch(0.90 0.12 250 / 0.4), transparent 55%), oklch(0.97 0.02 285)"
+
+const AURORA_DARK_BG =
+  "radial-gradient(55% 75% at 12% 8%, oklch(0.52 0.16 285 / 0.38), transparent 60%), radial-gradient(50% 70% at 88% 12%, oklch(0.48 0.14 195 / 0.28), transparent 55%), radial-gradient(60% 80% at 80% 92%, oklch(0.55 0.16 330 / 0.32), transparent 60%), radial-gradient(50% 65% at 18% 95%, oklch(0.50 0.15 250 / 0.3), transparent 55%), oklch(0.14 0.03 265)"
+
+export const aurora = defineTheme({
   name: "aurora",
   label: "Aurora UI",
+  material: "frosted",
+  glassScope: "chrome",
   frostedSurfaces: true,
   light: {
-    "--app-backdrop":
-      "radial-gradient(60% 80% at 15% 10%, hsl(265 80% 88% / 0.55), transparent 60%), radial-gradient(50% 70% at 85% 15%, hsl(180 70% 85% / 0.45), transparent 55%), radial-gradient(55% 75% at 75% 90%, hsl(325 80% 90% / 0.50), transparent 60%), radial-gradient(50% 65% at 20% 95%, hsl(215 85% 88% / 0.45), transparent 55%), #f7f5fc",
-    "--bg-base": "hsl(255 50% 99% / 0.80)",
-    "--bg-base-hover": "hsl(255 55% 99% / 0.90)",
-    "--bg-subtle": "hsl(255 40% 97% / 0.55)",
-    "--bg-component": "hsl(255 50% 99% / 0.72)",
-    "--bg-component-hover": "hsl(255 55% 99% / 0.82)",
-    "--bg-field": "hsl(255 50% 99% / 0.65)",
-    "--fg-base": "#1a1626",
-    "--fg-muted": "#4a4458",
-    "--fg-subtle": "#6b6478",
-    "--border-base": "hsl(260 35% 88% / 0.70)",
-    "--border-strong": "hsl(260 30% 78% / 0.85)",
-    "--bg-interactive": "#7c3aed",
-    "--fg-interactive": "#6d28d9",
-    "--fg-on-color": "#ffffff",
-    "--background":
-      "radial-gradient(60% 80% at 15% 10%, hsl(265 80% 88% / 0.55), transparent 60%), radial-gradient(50% 70% at 85% 15%, hsl(180 70% 85% / 0.45), transparent 55%), radial-gradient(55% 75% at 75% 90%, hsl(325 80% 90% / 0.50), transparent 60%), radial-gradient(50% 65% at 20% 95%, hsl(215 85% 88% / 0.45), transparent 55%), #f7f5fc",
-    "--surface": "hsl(255 50% 99% / 0.80)",
-    "--primary": "#7c3aed",
-    "--secondary": "#14b8a6",
-    "--text": "#1a1626",
-    "--border": "hsl(260 35% 88% / 0.70)",
-    "--radius": "16px",
-    "--border-width": "1px",
-    "--shadow":
-      "0 8px 24px -8px hsl(265 60% 50% / 0.18), 0 2px 8px -2px hsl(265 40% 40% / 0.10)",
-    "--shadow-pressed": "inset 0 2px 6px -1px hsl(265 50% 40% / 0.20)",
-    "--blur": "18px",
-    "--glow":
-      "0 0 40px -8px hsl(265 90% 70% / 0.16), 0 0 60px -12px hsl(180 85% 60% / 0.12), 0 0 50px -10px hsl(325 90% 72% / 0.14), 0 0 70px -16px hsl(215 95% 68% / 0.12)",
-    "--opacity-surface": "0.80",
-    "--neon-purple": "#9d5cf5",
-    "--neon-teal": "#2dd4bf",
-    "--neon-pink": "#f472b6",
-    "--neon-blue": "#5b9df9",
+    palette: {
+      canvas: "oklch(0.97 0.02 285 / 0.55)",
+      surface: "oklch(0.99 0.02 285 / 0.88)",
+      elevated: "oklch(0.99 0.02 285 / 0.85)",
+      field: "oklch(0.99 0.01 285 / 0.92)",
+      text: "#1a1626",
+      textMuted: "#4a4458",
+      textSubtle: "#6b6478",
+      accent: "#7c3aed",
+      accentFg: "#6d28d9",
+      onAccent: "#ffffff",
+      border: "oklch(0.88 0.04 285 / 0.7)",
+      borderStrong: "oklch(0.78 0.05 285 / 0.85)",
+      borderStyle: "soft",
+      radius: "16px",
+      borderWidth: "1px",
+      shadow:
+        "0 4px 16px -4px oklch(0.55 0.12 285 / 0.12), inset 0 1px 0 rgba(255,255,255,0.5)",
+      shadowMd:
+        "0 10px 28px -8px oklch(0.55 0.12 285 / 0.18), inset 0 1px 0 rgba(255,255,255,0.5)",
+      shadowLg:
+        "0 12px 32px -8px oklch(0.55 0.12 285 / 0.22), inset 0 1px 0 rgba(255,255,255,0.55)",
+      shadowPressed: "inset 0 2px 6px oklch(0.50 0.10 285 / 0.18)",
+      blur: "20px",
+      glow: "0 0 0 3px oklch(0.55 0.18 285 / 0.25)",
+      focusRing: "3px solid #7c3aed",
+      focusRingOffset: "2px",
+    },
+    extra: {
+      "--app-backdrop": AURORA_LIGHT_BG,
+      "--opacity-surface": "0.88",
+      "--opacity-field": "0.92",
+      "--surface-solid-fallback": "oklch(0.98 0.02 285)",
+      "--atmosphere-violet": "#9d5cf5",
+      "--atmosphere-teal": "#2dd4bf",
+      "--atmosphere-rose": "#f472b6",
+      "--atmosphere-blue": "#5b9df9",
+    },
   },
   dark: {
-    "--app-backdrop":
-      "radial-gradient(55% 75% at 12% 8%, hsl(265 75% 55% / 0.40), transparent 60%), radial-gradient(50% 70% at 88% 12%, hsl(180 70% 50% / 0.28), transparent 55%), radial-gradient(60% 80% at 80% 92%, hsl(322 80% 58% / 0.34), transparent 60%), radial-gradient(50% 65% at 18% 95%, hsl(218 85% 58% / 0.32), transparent 55%), #0a0a1a",
-    "--bg-base": "hsl(248 40% 16% / 0.72)",
-    "--bg-base-hover": "hsl(248 42% 20% / 0.82)",
-    "--bg-subtle": "hsl(245 35% 9% / 0.55)",
-    "--bg-component": "hsl(248 40% 16% / 0.62)",
-    "--bg-component-hover": "hsl(248 42% 20% / 0.72)",
-    "--bg-field": "hsl(248 40% 16% / 0.50)",
-    "--fg-base": "#f4f2ff",
-    "--fg-muted": "#b8b4d8",
-    "--fg-subtle": "#8a86ae",
-    "--border-base": "hsl(250 30% 35% / 0.50)",
-    "--border-strong": "hsl(250 35% 50% / 0.65)",
-    "--bg-interactive": "#a78bfa",
-    "--fg-interactive": "#c4b5fd",
-    "--fg-on-color": "#0a0a1a",
-    "--background":
-      "radial-gradient(55% 75% at 12% 8%, hsl(265 75% 55% / 0.40), transparent 60%), radial-gradient(50% 70% at 88% 12%, hsl(180 70% 50% / 0.28), transparent 55%), radial-gradient(60% 80% at 80% 92%, hsl(322 80% 58% / 0.34), transparent 60%), radial-gradient(50% 65% at 18% 95%, hsl(218 85% 58% / 0.32), transparent 55%), #0a0a1a",
-    "--surface": "hsl(248 40% 16% / 0.72)",
-    "--primary": "#a78bfa",
-    "--secondary": "#2dd4bf",
-    "--text": "#f4f2ff",
-    "--border": "hsl(250 30% 35% / 0.50)",
-    "--radius": "16px",
-    "--border-width": "1px",
-    "--shadow":
-      "0 12px 32px -8px hsl(250 80% 6% / 0.60), 0 4px 12px -4px hsl(250 70% 4% / 0.50)",
-    "--shadow-pressed": "inset 0 2px 8px -1px hsl(250 80% 4% / 0.65)",
-    "--blur": "20px",
-    "--glow":
-      "0 0 48px -8px hsl(265 95% 68% / 0.30), 0 0 64px -12px hsl(180 90% 55% / 0.22), 0 0 56px -10px hsl(322 95% 65% / 0.26), 0 0 72px -16px hsl(218 95% 62% / 0.24)",
-    "--opacity-surface": "0.72",
-    "--neon-purple": "#a78bfa",
-    "--neon-teal": "#2dd4bf",
-    "--neon-pink": "#f472b6",
-    "--neon-blue": "#60a5fa",
+    palette: {
+      canvas: "oklch(0.18 0.04 265 / 0.55)",
+      surface: "oklch(0.22 0.05 265 / 0.85)",
+      elevated: "oklch(0.24 0.05 265 / 0.82)",
+      field: "oklch(0.20 0.04 265 / 0.88)",
+      text: "#f4f2ff",
+      textMuted: "#b8b4d8",
+      textSubtle: "#8a86ae",
+      accent: "#a78bfa",
+      accentFg: "#c4b5fd",
+      onAccent: "#0a0a1a",
+      border: "oklch(0.38 0.06 265 / 0.5)",
+      borderStrong: "oklch(0.48 0.08 265 / 0.65)",
+      borderStyle: "soft",
+      radius: "16px",
+      borderWidth: "1px",
+      shadow:
+        "0 8px 24px -6px oklch(0.12 0.06 265 / 0.55), inset 0 1px 0 rgba(255,255,255,0.06)",
+      shadowMd:
+        "0 12px 32px -8px oklch(0.10 0.06 265 / 0.6), inset 0 1px 0 rgba(255,255,255,0.06)",
+      shadowLg:
+        "0 16px 40px -8px oklch(0.08 0.06 265 / 0.65), inset 0 1px 0 rgba(255,255,255,0.08)",
+      shadowPressed: "inset 0 2px 8px oklch(0.08 0.05 265 / 0.6)",
+      blur: "22px",
+      glow: "0 0 0 3px oklch(0.65 0.18 285 / 0.35)",
+      focusRing: "3px solid #a78bfa",
+      focusRingOffset: "2px",
+    },
+    extra: {
+      "--app-backdrop": AURORA_DARK_BG,
+      "--opacity-surface": "0.85",
+      "--opacity-field": "0.88",
+      "--surface-solid-fallback": "oklch(0.18 0.04 265)",
+      "--atmosphere-violet": "#a78bfa",
+      "--atmosphere-teal": "#2dd4bf",
+      "--atmosphere-rose": "#f472b6",
+      "--atmosphere-blue": "#60a5fa",
+    },
   },
-}
+})

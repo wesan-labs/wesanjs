@@ -29,7 +29,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useLogout, useMe } from "../../../hooks/api"
 import { queryClient } from "../../../lib/query-client"
 import { useGlobalShortcuts } from "../../../providers/keybind-provider/hooks"
-import { THEME_STYLES, useTheme } from "../../../providers/theme-provider"
+import { THEME_STYLE_GROUPS, ThemeStyle, useTheme } from "../../../providers/theme-provider"
 import { useDocumentDirection } from "../../../hooks/use-document-direction"
 
 export const UserMenu = () => {
@@ -209,18 +209,19 @@ const StyleToggle = () => {
         <span className="rtl:rotate-180">Style</span>
       </DropdownMenu.SubMenuTrigger>
       <DropdownMenu.SubMenuContent>
-        <DropdownMenu.RadioGroup value={style}>
-          {THEME_STYLES.map((option) => (
-            <DropdownMenu.RadioItem
-              key={option.value}
-              value={option.value}
-              onClick={(e) => {
-                e.preventDefault()
-                setStyle(option.value)
-              }}
-            >
-              {option.label}
-            </DropdownMenu.RadioItem>
+        <DropdownMenu.RadioGroup
+          value={style}
+          onValueChange={(value) => setStyle(value as ThemeStyle)}
+        >
+          {THEME_STYLE_GROUPS.map((group) => (
+            <div key={group.label}>
+              <DropdownMenu.Label>{group.label}</DropdownMenu.Label>
+              {group.options.map((option) => (
+                <DropdownMenu.RadioItem key={option.value} value={option.value}>
+                  {option.label}
+                </DropdownMenu.RadioItem>
+              ))}
+            </div>
           ))}
         </DropdownMenu.RadioGroup>
       </DropdownMenu.SubMenuContent>

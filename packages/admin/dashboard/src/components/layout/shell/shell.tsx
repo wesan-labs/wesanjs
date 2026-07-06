@@ -39,13 +39,13 @@ export const Shell = ({ children }: PropsWithChildren) => {
     <KeybindProvider shortcuts={globalShortcuts}>
       <DocumentTitle />
       <LayoutCustomizerHostProvider>
-        <div className="relative flex h-screen flex-col items-start overflow-hidden lg:flex-row">
+        <div className="relative flex h-screen flex-col items-start overflow-hidden bg-ui-bg-subtle lg:flex-row">
           <NavigationBar loading={loading} />
           <div>
             <MobileSidebarContainer>{children}</MobileSidebarContainer>
             <DesktopSidebarContainer>{children}</DesktopSidebarContainer>
           </div>
-          <div className="flex h-screen w-full flex-col overflow-auto">
+          <div className="flex h-screen w-full flex-col overflow-auto bg-ui-bg-subtle">
             <Topbar />
             <main
               className={clx(
@@ -207,7 +207,7 @@ const ToggleSidebar = () => {
 
 const Topbar = () => {
   return (
-    <div className="grid w-full grid-cols-2 border-b p-3">
+    <div className="grid w-full grid-cols-2 border-b p-3" data-glass-chrome>
       <div className="flex items-center gap-x-1.5">
         <ToggleSidebar />
         <Breadcrumbs />

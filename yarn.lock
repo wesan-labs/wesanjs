@@ -1884,10 +1884,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@emotion/is-prop-valid@npm:1.4.0":
+  version: 1.4.0
+  resolution: "@emotion/is-prop-valid@npm:1.4.0"
+  dependencies:
+    "@emotion/memoize": ^0.9.0
+  checksum: 5f857814ec7d8c7e727727346dfb001af6b1fb31d621a3ce9c3edf944a484d8b0d619546c30899ae3ade2f317c76390ba4394449728e9bf628312defc2c41ac3
+  languageName: node
+  linkType: hard
+
 "@emotion/memoize@npm:^0.8.1":
   version: 0.8.1
   resolution: "@emotion/memoize@npm:0.8.1"
   checksum: dffed372fc3b9fa2ba411e76af22b6bb686fb0cb07694fdfaa6dd2baeb0d5e4968c1a7caa472bfcf06a5997d5e7c7d16b90e993f9a6ffae79a2c3dbdc76dfe78
+  languageName: node
+  linkType: hard
+
+"@emotion/memoize@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "@emotion/memoize@npm:0.9.0"
+  checksum: 13f474a9201c7f88b543e6ea42f55c04fb2fdc05e6c5a3108aced2f7e7aa7eda7794c56bba02985a46d8aaa914fcdde238727a98341a96e2aec750d372dadd15
   languageName: node
   linkType: hard
 
@@ -3915,6 +3931,7 @@ __metadata:
     eslint: 8
     i18next: 23.7.11
     i18next-browser-languagedetector: 7.2.0
+    konva: ^10.3.0
     lodash.debounce: ^4.0.8
     lodash.isequal: ^4.5.0
     maplibre-gl: ^5.24.0
@@ -3933,8 +3950,10 @@ __metadata:
     react-hook-form: 7.49.1
     react-i18next: 13.5.0
     react-jwt: ^1.2.0
+    react-konva: ^19.2.5
     react-router-dom: 6.30.4
     recharts: ^2.15.0
+    styled-components: ^6.4.3
     typescript: 5.9.3
     zod: 4.2.0
   languageName: unknown
@@ -13677,6 +13696,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-reconciler@npm:^0.28.9":
+  version: 0.28.9
+  resolution: "@types/react-reconciler@npm:0.28.9"
+  peerDependencies:
+    "@types/react": "*"
+  checksum: 9fe71fa856aab2cd4742fe0416bdd4f5c82ecc05ef6451ee7fcb65a5efdf5fa588f5820fbe2a665b15371b0da3bfc4097f28bb6d450b9a834af2d0fc00f403bd
+  languageName: node
+  linkType: hard
+
+"@types/react-reconciler@npm:^0.33.0":
+  version: 0.33.0
+  resolution: "@types/react-reconciler@npm:0.33.0"
+  peerDependencies:
+    "@types/react": "*"
+  checksum: 190c203d93c0df9a42fabd693ce059dbdf6c53e15eb14502d9e5b946c981231c5846b867de15522ff61368e9218a8508a9db5476f3e47b5d664bbb2c84b31ac7
+  languageName: node
+  linkType: hard
+
 "@types/react@npm:^18.3.2":
   version: 18.3.27
   resolution: "@types/react@npm:18.3.27"
@@ -17335,7 +17372,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csstype@npm:^3.0.2, csstype@npm:^3.2.2":
+"csstype@npm:3.2.3, csstype@npm:^3.0.2, csstype@npm:^3.2.2":
   version: 3.2.3
   resolution: "csstype@npm:3.2.3"
   checksum: cd29c51e70fa822f1cecd8641a1445bed7063697469d35633b516e60fe8c1bde04b08f6c5b6022136bb669b64c63d4173af54864510fbb4ee23281801841a3ce
@@ -21733,6 +21770,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"its-fine@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "its-fine@npm:2.0.0"
+  dependencies:
+    "@types/react-reconciler": ^0.28.9
+  peerDependencies:
+    react: ^19.0.0
+  checksum: 1ff1ff3257c0c7eb115c9c26cf0506eb84162edc1a63d3136780d146f7c7833298b240d0fcb46888909773f1a7d16539e0c03f2482cff1a5a502d6436686fe21
+  languageName: node
+  linkType: hard
+
 "jackspeak@npm:^3.1.2":
   version: 3.4.3
   resolution: "jackspeak@npm:3.4.3"
@@ -22779,6 +22827,13 @@ __metadata:
   version: 9.3.6
   resolution: "konva@npm:9.3.6"
   checksum: ad4c9abe7b9e61bd4a119f3cf17525be9437645cfa1e38e2fc2c0bd157d2d00db6d5a7304adf3e1056e793889794d99d695e11be3df0109c71d8b5ccccd6ef96
+  languageName: node
+  linkType: hard
+
+"konva@npm:^10.3.0":
+  version: 10.3.0
+  resolution: "konva@npm:10.3.0"
+  checksum: f97bf5b370633b97e8860209f3248f0641cd88116036c0ec8c1c1227c9e988e500ef07482fc6677300e066312841fe1851119eafcfcdf93c0e747b958582bef0
   languageName: node
   linkType: hard
 
@@ -26679,6 +26734,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-konva@npm:^19.2.5":
+  version: 19.2.5
+  resolution: "react-konva@npm:19.2.5"
+  dependencies:
+    "@types/react-reconciler": ^0.33.0
+    its-fine: ^2.0.0
+    react-reconciler: 0.33.0
+    scheduler: 0.27.0
+  peerDependencies:
+    konva: ^8.0.1 || ^7.2.5 || ^9.0.0 || ^10.0.0
+    react: ^19.2.0
+    react-dom: ^19.2.0
+  checksum: 6f222c47cc4c105a3f4b662a9a86a31983c77bf254aebac9ca21c4e0bf7d3f78a6c2b0c6c2cf23d44fbded1260c69e2a90766ef4eeec85d19457f8aebd978ad1
+  languageName: node
+  linkType: hard
+
+"react-reconciler@npm:0.33.0":
+  version: 0.33.0
+  resolution: "react-reconciler@npm:0.33.0"
+  dependencies:
+    scheduler: ^0.27.0
+  peerDependencies:
+    react: ^19.2.0
+  checksum: 3f7b27ea8d0ff4c8bf0e402a285e1af9b7d0e6f4c1a70a28f4384938bc1130bc82a90a31df0b79ef5e380e2e55e2598bd90b4dbf802b1203d735ba0355817d3a
+  languageName: node
+  linkType: hard
+
 "react-refresh@npm:^0.17.0":
   version: 0.17.0
   resolution: "react-refresh@npm:0.17.0"
@@ -27929,6 +28011,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"scheduler@npm:0.27.0, scheduler@npm:^0.27.0":
+  version: 0.27.0
+  resolution: "scheduler@npm:0.27.0"
+  checksum: 4f03048cb05a3c8fddc45813052251eca00688f413a3cee236d984a161da28db28ba71bd11e7a3dd02f7af84ab28d39fb311431d3b3772fed557945beb00c452
+  languageName: node
+  linkType: hard
+
 "scheduler@npm:^0.20.2":
   version: 0.20.2
   resolution: "scheduler@npm:0.20.2"
@@ -27945,13 +28034,6 @@ __metadata:
   dependencies:
     loose-envify: ^1.1.0
   checksum: 26383305e249651d4c58e6705d5f8425f153211aef95f15161c151f7b8de885f24751b377e4a0b3dd42cce09aad3f87a61dab7636859c0d89b7daf1a1e2a5c78
-  languageName: node
-  linkType: hard
-
-"scheduler@npm:^0.27.0":
-  version: 0.27.0
-  resolution: "scheduler@npm:0.27.0"
-  checksum: 4f03048cb05a3c8fddc45813052251eca00688f413a3cee236d984a161da28db28ba71bd11e7a3dd02f7af84ab28d39fb311431d3b3772fed557945beb00c452
   languageName: node
   linkType: hard
 
@@ -29001,10 +29083,41 @@ __metadata:
   languageName: node
   linkType: hard
 
+"styled-components@npm:^6.4.3":
+  version: 6.4.3
+  resolution: "styled-components@npm:6.4.3"
+  dependencies:
+    "@emotion/is-prop-valid": 1.4.0
+    css-to-react-native: 3.2.0
+    csstype: 3.2.3
+    stylis: 4.3.6
+  peerDependencies:
+    css-to-react-native: ">= 3.2.0"
+    react: ">= 16.8.0"
+    react-dom: ">= 16.8.0"
+    react-native: ">= 0.68.0"
+  peerDependenciesMeta:
+    css-to-react-native:
+      optional: true
+    react-dom:
+      optional: true
+    react-native:
+      optional: true
+  checksum: 158514feb0a502dfa7f95610a8270faa56be2572c12902b7bf5c2855bf9fdd5d76a5909d67dcbecf627ee40511f4161f8016b23f9fef22c14f7911337359647c
+  languageName: node
+  linkType: hard
+
 "stylis@npm:4.3.2":
   version: 4.3.2
   resolution: "stylis@npm:4.3.2"
   checksum: 0410e1404cbeee3388a9e17587875211ce2f014c8379af0d1e24ca55878867c9f1ccc7b0ce9a156ca53f5d6e301391a82b0645522a604674a378b3189a4a1994
+  languageName: node
+  linkType: hard
+
+"stylis@npm:4.3.6":
+  version: 4.3.6
+  resolution: "stylis@npm:4.3.6"
+  checksum: e736d484983a34f7c65d362c67dc79b7bce388054b261c2b7b23d02eaaf280617033f65d44b1ea341854f4331a5074b885668ac8741f98c13a6cfd6443ae85d0
   languageName: node
   linkType: hard
 

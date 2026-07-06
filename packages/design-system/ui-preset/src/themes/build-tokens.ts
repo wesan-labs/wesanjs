@@ -1,4 +1,11 @@
-import type { ThemeDefinition, ThemeTokens } from "./types"
+import type {
+  GlassScope,
+  GlassVariant,
+  ThemeDefinition,
+  ThemeIntensity,
+  ThemeMaterial,
+  ThemeTokens,
+} from "./types"
 
 /** Semantic palette → full Medusa UI token contract. */
 export type ThemePalette = {
@@ -26,6 +33,17 @@ export type ThemePalette = {
   danger?: string
   dangerHover?: string
   onDanger?: string
+  warning?: string
+  warningHover?: string
+  onWarning?: string
+  info?: string
+  infoHover?: string
+  onInfo?: string
+  shadowSm?: string
+  shadowMd?: string
+  shadowLg?: string
+  focusRing?: string
+  focusRingOffset?: string
   border: string
   borderStrong: string
   borderInteractive?: string
@@ -193,6 +211,17 @@ export const buildMedusaTokens = (
   const danger = p.danger ?? (mode === "light" ? "#e11d48" : "#fb7185")
   const dangerHover = p.dangerHover ?? danger
   const onDanger = p.onDanger ?? "#ffffff"
+  const warning = p.warning ?? (mode === "light" ? "#d97706" : "#fbbf24")
+  const warningHover = p.warningHover ?? warning
+  const onWarning = p.onWarning ?? (mode === "light" ? "#1c1917" : "#1c1917")
+  const info = p.info ?? (mode === "light" ? "#2563eb" : "#60a5fa")
+  const infoHover = p.infoHover ?? info
+  const onInfo = p.onInfo ?? "#ffffff"
+  const shadowSm = p.shadowSm ?? p.shadow
+  const shadowMd = p.shadowMd ?? p.shadow
+  const shadowLg = p.shadowLg ?? shadowMd
+  const focusRing = p.focusRing ?? `3px solid ${p.accent}`
+  const focusRingOffset = p.focusRingOffset ?? "2px"
   const borderInteractive = p.borderInteractive ?? p.accent
   const highlight = p.highlight ?? `${p.accent}18`
   const highlightHover = p.highlightHover ?? `${p.accent}28`
@@ -207,7 +236,9 @@ export const buildMedusaTokens = (
   const textDisabled = p.textDisabled ?? p.textSubtle
   const borders = borderEffect(p)
   const btnShadow = buttonShadow(p)
-  const flyoutShadow = p.shadow === "none" ? borders : p.shadow
+  const cardShadow = p.shadow === "none" ? borders : p.shadow
+  const flyoutShadow = shadowMd === "none" ? borders : shadowMd
+  const modalShadow = shadowLg === "none" ? flyoutShadow : shadowLg
 
   return {
     "--bg-subtle": p.canvas,
@@ -309,14 +340,25 @@ export const buildMedusaTokens = (
     "--radius": p.radius,
     "--border-width": p.borderWidth,
     "--shadow": p.shadow,
+    "--shadow-sm": shadowSm,
+    "--shadow-md": shadowMd,
+    "--shadow-lg": shadowLg,
     "--shadow-pressed": p.shadowPressed,
     "--blur": p.blur,
     "--glow": p.glow,
+    "--focus-ring": focusRing,
+    "--focus-ring-offset": focusRingOffset,
+    "--warning": warning,
+    "--warning-hover": warningHover,
+    "--on-warning": onWarning,
+    "--info": info,
+    "--info-hover": infoHover,
+    "--on-info": onInfo,
     "--opacity-surface": "1",
-    "--elevation-card-rest": flyoutShadow,
-    "--elevation-card-hover": flyoutShadow,
+    "--elevation-card-rest": cardShadow,
+    "--elevation-card-hover": cardShadow,
     "--elevation-flyout": flyoutShadow,
-    "--elevation-modal": flyoutShadow,
+    "--elevation-modal": modalShadow,
     "--elevation-tooltip": flyoutShadow,
     "--elevation-code-block": flyoutShadow,
     "--borders-base": borders,
@@ -329,6 +371,11 @@ type DefineThemeOpts = {
   name: string
   label: string
   frostedSurfaces?: boolean
+  material?: ThemeMaterial
+  liquidGlass?: boolean
+  glassVariant?: GlassVariant
+  glassScope?: GlassScope
+  intensity?: ThemeIntensity
   hardSurface?: boolean
   light: { palette: ThemePalette; extra?: ThemeTokens }
   dark: { palette: ThemePalette; extra?: ThemeTokens }
@@ -338,6 +385,11 @@ export const defineTheme = (opts: DefineThemeOpts): ThemeDefinition => ({
   name: opts.name,
   label: opts.label,
   frostedSurfaces: opts.frostedSurfaces,
+  material: opts.material,
+  liquidGlass: opts.liquidGlass,
+  glassVariant: opts.glassVariant,
+  glassScope: opts.glassScope,
+  intensity: opts.intensity,
   hardSurface: opts.hardSurface,
   light: {
     ...buildMedusaTokens(opts.light.palette, "light"),

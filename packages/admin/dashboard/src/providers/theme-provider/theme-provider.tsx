@@ -53,47 +53,52 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
   }
 
   useEffect(() => {
-    const html = document.querySelector("html")
-    if (html) {
-      /**
-       * Temporarily disable transitions to prevent
-       * the theme change from flashing.
-       */
-      const css = document.createElement("style")
-      css.appendChild(
-        document.createTextNode(
-          `* {
+    const html = document.documentElement
+
+    /**
+     * Temporarily disable transitions to prevent
+     * the theme change from flashing.
+     */
+    const css = document.createElement("style")
+    css.appendChild(
+      document.createTextNode(
+        `* {
             -webkit-transition: none !important;
             -moz-transition: none !important;
             -o-transition: none !important;
             -ms-transition: none !important;
             transition: none !important;
           }`
-        )
       )
-      document.head.appendChild(css)
+    )
+    document.head.appendChild(css)
 
-      // MODE axis -> .dark/.light class (base tokens + class-based checks, e.g. data-grid)
-      html.classList.remove(value === "light" ? "dark" : "light")
-      html.classList.add(value)
-      // Ensures that native elements respect the theme, e.g. the scrollbar.
-      html.style.colorScheme = value
+    // MODE axis -> .dark/.light class (base tokens + class-based checks, e.g. data-grid)
+    html.classList.remove(value === "light" ? "dark" : "light")
+    html.classList.add(value)
+    // Ensures that native elements respect the theme, e.g. the scrollbar.
+    html.style.colorScheme = value
 
-      // STYLE axis -> data-theme attribute (design-language token overlay).
-      // Combined with .dark above, [data-theme].dark supplies the dark variant.
-      if (style && style !== "default") {
-        html.setAttribute("data-theme", style)
-      } else {
-        html.removeAttribute("data-theme")
-      }
-
-      /**
-       * Re-enable transitions after the theme has been set,
-       * and force the browser to repaint.
-       */
-      window.getComputedStyle(css).opacity
-      document.head.removeChild(css)
+    // STYLE axis -> data-theme attribute (design-language token overlay).
+    // Combined with .dark above, [data-theme].dark supplies the dark variant.
+    if (style && style !== "default") {
+      html.setAttribute("data-theme", style)
+    } else {
+      html.removeAttribute("data-theme")
     }
+
+    if (style === "cyberpunk") {
+      html.setAttribute("data-theme-intensity", "operator")
+    } else {
+      html.removeAttribute("data-theme-intensity")
+    }
+
+    /**
+     * Re-enable transitions after the theme has been set,
+     * and force the browser to repaint.
+     */
+    window.getComputedStyle(css).opacity
+    document.head.removeChild(css)
   }, [value, style])
 
   return (

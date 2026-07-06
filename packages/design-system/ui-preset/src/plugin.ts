@@ -6,6 +6,16 @@ import { components } from "./theme/tokens/components"
 import { effects } from "./theme/tokens/effects"
 import { typography } from "./theme/tokens/typography"
 import { themes } from "./themes"
+import { resolveGlassScope, resolveMaterial } from "./themes/types"
+
+const GLASS_FILTER =
+  "blur(var(--glass-blur, var(--blur))) saturate(180%) brightness(1.05) contrast(1.05)"
+
+const CHROME_SURFACE_SELECTOR =
+  ":is([data-glass-chrome], .shadow-elevation-flyout, .shadow-elevation-modal)"
+
+const ALL_FROSTED_SELECTOR =
+  ":is(.bg-ui-bg-base, .bg-ui-bg-base-hover, .bg-ui-bg-component, .bg-ui-bg-component-hover, .bg-ui-bg-field)"
 
 export default plugin(
   function medusaUi({ addBase, addComponents, config }) {
@@ -40,38 +50,132 @@ export default plugin(
     }
 
     // Design-language themes (STYLE axis): opt-in via <html data-theme="...">.
-    // Light tokens at [data-theme]; dark tokens at [data-theme].dark (higher
-    // specificity), so STYLE × MODE compose independently. Emitted after
-    // :root/.dark so equal-specificity light rules win by source order.
-    for (const theme of Object.values(themes)) {
+    for (const themeDef of Object.values(themes)) {
+      const themeSelector = `[data-theme="${themeDef.name}"]`
+      const material = resolveMaterial(themeDef)
+      const glassScope = resolveGlassScope(themeDef)
+      const isTranslucent = material === "frosted" || material === "liquid"
+
       addBase({
-        [`[data-theme="${theme.name}"]`]: {
+        [themeSelector]: {
           colorScheme: "light",
-          ...theme.light,
+          backgroundColor: "var(--bg-subtle)",
+          minHeight: "100%",
+          ...themeDef.light,
         },
-        [`[data-theme="${theme.name}"].dark`]: {
+        [`${themeSelector}.dark`]: {
           colorScheme: "dark",
-          ...theme.dark,
+          backgroundColor: "var(--bg-subtle)",
+          ...themeDef.dark,
+        },
+        [`${themeSelector} #root`]: {
+          minHeight: "100vh",
+        },
+        [`${themeSelector} [data-glass-chrome]`]: {
+          backgroundColor: "var(--bg-subtle)",
+          borderColor: "var(--border-base)",
         },
       })
 
-      // Translucent styles need real compositing: backdrop-filter is a CSS
-      // property (not a variable), so the token bridge alone can't frost
-      // surfaces. Paint the gradient as a single fixed page backdrop and blur
-      // Medusa surface utilities (cards = bg-base, inputs = bg-component/field).
-      if (theme.frostedSurfaces) {
+      // Global focus ring per theme tokens.
+      addBase({
+        [`${themeSelector} :focus-visible`]: {
+          outline: "var(--focus-ring)",
+          outlineOffset: "var(--focus-ring-offset)",
+        },
+      })
+
+      if (isTranslucent) {
+        const frostedTarget =
+          glassScope === "chrome"
+            ? `${themeSelector} ${CHROME_SURFACE_SELECTOR}`
+            : `${themeSelector} ${ALL_FROSTED_SELECTOR}`
+
         addBase({
-          [`[data-theme="${theme.name}"]`]: {
+          [themeSelector]: {
             backgroundImage: "var(--app-backdrop)",
             backgroundAttachment: "fixed",
             backgroundSize: "cover",
             backgroundRepeat: "no-repeat",
+            backgroundColor: "var(--surface-solid-fallback, var(--bg-subtle))",
           },
-          [`[data-theme="${theme.name}"] :is(.bg-ui-bg-base, .bg-ui-bg-base-hover, .bg-ui-bg-component, .bg-ui-bg-component-hover, .bg-ui-bg-field)`]:
-            {
-              backdropFilter: "blur(var(--blur)) saturate(180%)",
-              WebkitBackdropFilter: "blur(var(--blur)) saturate(180%)",
+          [frostedTarget]: {
+            backdropFilter: GLASS_FILTER,
+            WebkitBackdropFilter: GLASS_FILTER,
+          },
+        })
+
+        if (material === "liquid" || themeDef.liquidGlass) {
+          addBase({
+            [frostedTarget]: {
+              boxShadow:
+                "var(--shadow), var(--glass-specular, inset 0 1px 0 rgba(255,255,255,0.45))",
             },
+          })
+        }
+
+        // Solid fallback when user prefers reduced transparency.
+        addBase({
+          "@media (prefers-reduced-transparency: reduce)": {
+            [frostedTarget]: {
+              backdropFilter: "none",
+              WebkitBackdropFilter: "none",
+            },
+            [`${themeSelector} ${ALL_FROSTED_SELECTOR}`]: {
+              backgroundColor: "var(--surface-solid-fallback, var(--bg-base))",
+            },
+          },
+        })
+      }
+
+      const surfaceSelectors = [
+        ".shadow-elevation-card-rest",
+        ".shadow-elevation-card-hover",
+        ".shadow-elevation-flyout",
+        ".shadow-elevation-modal",
+        ".shadow-elevation-tooltip",
+      ].join(", ")
+
+      addBase({
+        [`${themeSelector} :is(.rounded-lg, .rounded-md, .rounded-xl)`]: {
+          borderRadius: "var(--radius)",
+        },
+        [`${themeSelector} ${surfaceSelectors}`]: {
+          boxShadow: "var(--shadow)",
+        },
+        [`${themeSelector} .shadow-elevation-flyout`]: {
+          boxShadow: "var(--shadow-md, var(--shadow))",
+        },
+        [`${themeSelector} .shadow-elevation-modal`]: {
+          boxShadow: "var(--shadow-lg, var(--shadow-md, var(--shadow)))",
+        },
+        [`${themeSelector} :is(.shadow-borders-base, .shadow-buttons-neutral)`]:
+          {
+            boxShadow: "var(--borders-base)",
+          },
+      })
+
+      if (themeDef.hardSurface) {
+        addBase({
+          [`${themeSelector} .shadow-elevation-card-rest`]: {
+            boxShadow: "var(--shadow)",
+            borderWidth: "var(--border-width)",
+            borderStyle: "solid",
+            borderColor: "var(--border-base)",
+          },
+        })
+
+        addBase({
+          "@media (prefers-reduced-motion: no-preference)": {
+            [`${themeSelector} .shadow-elevation-card-rest:hover`]: {
+              transform: "translate(-2px, -2px)",
+              boxShadow: "var(--shadow-md, var(--shadow))",
+            },
+            [`${themeSelector} .shadow-elevation-card-rest:active`]: {
+              transform: "translate(2px, 2px)",
+              boxShadow: "var(--shadow-pressed)",
+            },
+          },
         })
       }
     }

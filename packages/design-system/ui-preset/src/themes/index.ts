@@ -5,6 +5,7 @@ import { calm } from "./calm"
 import { claymorphism } from "./claymorphism"
 import { cyberpunk } from "./cyberpunk"
 import { glassmorphism } from "./glassmorphism"
+import { liquidGlass } from "./liquid-glass"
 import { neubrutalism } from "./neubrutalism"
 import { neumorphism } from "./neumorphism"
 import type { ThemeDefinition } from "./types"
@@ -16,15 +17,16 @@ import type { ThemeDefinition } from "./types"
  * [data-theme="<name>"].dark (dark). The two axes are independent.
  */
 export const themes = {
-  neumorphism,
-  glassmorphism,
-  brutalism,
-  bento,
-  neubrutalism,
-  aurora,
-  claymorphism,
   calm,
+  bento,
+  liquidGlass,
+  aurora,
+  glassmorphism,
+  neubrutalism,
   cyberpunk,
+  neumorphism,
+  brutalism,
+  claymorphism,
 } satisfies Record<string, ThemeDefinition>
 
 export type ThemeName = keyof typeof themes
