@@ -283,16 +283,110 @@ Faz 3'te yazdığım `PackPicker`/`ShotPreview` **çöp değil** — "intent se�
 
 ---
 
-## 11. Determinizm & karmaşıklık
+# BÖLÜM II — Pratik İş Akışı Sistemi
+
+> Bölüm I (§1-10) *üretim motorunu* (marka → adaptif → deterministik) anlatır. Bölüm II bunu **uçtan-uca çalışan bir ürüne** bağlar: üret → **düzenle** → **planla** → **paylaş** → **ölç** → **geri-besle**. Araştırma-dayanaklı (content-ops: Postiz/Mixpost/Planable/Buffer/Metricool/Publer/Lately) + mevcut kod (Zernio/snapshot) üstüne kurulu.
+
+## 11. Uçtan uca döngü + durum makinesi
+
+Ürün tek bir generation değil, kapanan bir döngü. Piece-level durum makinesi (kanıt: Postiz State enum + Planable 4-seviye onay):
+
+```
+idea → draft → in_review ⇄ changes_requested
+                   │ approved
+                   ▼
+             scheduled → publishing → published → measured
+                             │  fail     │              │
+                             └─ retry ───┘              │  kazanan → exemplar
+                                                        ▼
+        recycle / repurpose (YENİ piece, source_ref ile köken kenarı) ◄──┘
+```
+
+| Adım | Sahip katman | Durum (kod) |
+|------|--------------|-------------|
+| **Üret** | §2-8 motor (marka → derlenmiş pack → deterministik talimat → Gemini) | Faz 1-3 ✅ |
+| **Düzenle** | L7 editör (§9): AI çıktısı → insan rötuş → versiyon | `runEdit`/versions var ✅; editör YOK |
+| **Planla** | §12 takvim (variant → slot) | **YOK** (Zernio'ya delege) |
+| **Paylaş** | §13 yayın (slot zamanı → Zernio push) | Zernio publish var ✅ |
+| **Ölç** | §15 post-level metric | account-level snapshot var; **post-level YOK** |
+| **Geri-besle** | §15 kazanan → body-of-work (L5) → gelecek üretim | **YOK** |
+
+## 12. Planlama & Takvim (YENİ katman)
+
+*Gözlem (kod):* Levios'ta lokal takvim/kuyruk **yok** — `scheduledFor` doğrudan Zernio'ya pass-through. Planlanmış postların lokal görünürlüğü, drag-drop reschedule, takvim view yok.
+
+*Karar:* Takvimi **lokal sahiplen** (`schedule_slot`), Zernio'ya *yayın anında* push et. Neden: (a) takvim görünürlüğü + reschedule, (b) feedback döngüsü için slot↔metric bağı, (c) calendar-suggest. **Zernio = yayın kası; takvim = planlama beyni (lokal).**
+
+- **Campaign / pillar** gruplama — renk kodlu (Buffer tag deseni), kampanya/seri.
+- **Queue stratejileri:** `fixed` | `next_available` | `best_time` | `recycle` (Publer evergreen: her N günde, expiry/max-repost).
+- **Best-time:** `post_metric` heatmap'inden türet (integration × weekday × hour engagement).
+
+## 13. Çok-platform yayın (L8 detay)
+
+*Gözlem:* Zernio publish **var** (draft/now/scheduled, 13 platform, `image-host`→public URL, BYOK). *Eksik:* per-platform variant — şu an tek metin tüm platformlara aynı gidiyor.
+
+**Variant modeli kararı** (kanıt: Postiz *row-per-channel* vs Mixpost *embedded JSON versions* — tam zıt iki OSS modeli): **normalize `content_piece` + `platform_variant`.** JSON-blob'a kaçma (RLS + "tüm bekleyen LinkedIn'leri getir" sorgusunu öldürür); satır-patlamasına da kaçma (aynı içeriği N kez kopyala → tutarsızlık). Her kanal kendi variant satırı, ortak piece'e bağlı; **variant kendi status'unu taşır** → kısmi onay gerçeği (LinkedIn onaylı, IG revizyonda).
+
+**Onay akışı** (Planable tabanı): variant-level status + 4-seviye onay (none/optional/mandatory/multi) + post üstü thread comment + client'a görünmeyen internal note + timestamped audit.
+
+## 14. Verimlilik pattern'leri (asıl istediğin)
+
+1. **Kit — tek medya → TÜM formatlar** (Canva Magic Resize deseni; **en büyük verim kazancı**). `media_asset(focal_x/y)` [yüklemede otomatik nesne/yüz algılama + elle override] → `media_rendition(9:16 · 1:1 · 4:5 · 16:9)` smart-crop **fan-out** (sharp/ffmpeg). Tek yükleme → paralel N render → her platforma doğru rendition otomatik bağlanır. Karmaşıklık: O(N) render job, queue fan-out.
+2. **Repurpose — bir içerik → çok kanal.** `content_piece.source_ref` = DAG köken kenarı (ayrı entity değil). Uzun içerik → LLM "atomize" → N kısa piece (`source_type='atomized'`). Pillar deseni: ROI ort. +%32, üretim -%60-80.
+3. **Batch — feed → toplu üretim.** CSV/ürün-feed → satır başına piece (fan-out job, `INSERT..SELECT`, N+1 değil). ▎ **Medusa ürün kataloğunla doğal eşleşir** — ürün feed'i zaten var; her ürün → piece + variant + kit render tek batch. E-ticaret tenant'ları için öldürücü özellik.
+4. **Calendar-suggest — boş slota markaya göre öneri.** posting goal (haftada N/kanal) vs planlı slot → eksik slotları hesapla → best-time + brand `pillar` + kazanan exemplar few-shot → LLM draft → `status='draft'` takvime düşür, kullanıcı onaylar.
+
+## 15. Feedback döngüsü (analytics → üretim) — mimarinin L5'ini doldurur
+
+*Gözlem:* snapshot cron **var** ama **account-level** (takipçi/toplam engagement per gün), post-level **değil**; ve üretime **hiç beslenmiyor** — toplanan veri boşa gidiyor. **En yüksek kaldıraçlı düzeltme bu: veri zaten orada, döngü kapalı değil.**
+
+*Karar:* post-level `post_metric` (slot bazlı zaman-serisi) ekle, döngüyü kapat:
+
+```
+INGEST    published slot → platform API metric (cron: T+1h / +24h / +7d)
+SCORE     ⚠️ KANAL-İÇİ NORMALİZE — engagement'ın o hesabın kendi dağılımındaki percentile'ı
+              (ham like/sayı DEĞİL)
+LABEL     üst %25 → exemplar.is_winner  (brand × channel × pillar havuzu)
+FEED      en yakın K kazananı few-shot enjekte et → GENERATE  (= L5 body-of-work / RAG)
+REINFORCE kullanıcı thumbs up/down/edit → exemplar skoru güncelle (Lately Voice Model)
+              edit edilen metin = negatif sinyal + düzeltilmiş hâli yeni exemplar adayı
+```
+
+> ▎ **Kritik (kanıt: Lately + normalize gereği):** ham metrikle beslersen döngü BOZULUR — 500K takipçili hesabın zayıf postu, 2K'lık hesabın viralinden fazla like alır → sistem büyük hesabı taklit eder, **marka sesini değil**. Bu yüzden SCORE adımında **kanal-içi percentile normalizasyon zorunlu.** Body-of-work = `pgvector` index; üretimde pillar/konuya en yakın K kazanan retrieve → few-shot. Bu, §7'deki **L5 (Body-of-Work RAG)** katmanının pratik doldurması.
+
+## 16. İş akışı veri modeli + mevcut kod haritası
+
+**Yeni entity'ler** (Postgres, `tenant_id` + RLS-aware; kanıt: Postiz/Mixpost şemaları):
+
+| Entity | İş | Mevcut karşılığı |
+|--------|-----|------------------|
+| `content_piece` | Marka atomu / master metin (kanal-agnostik). `status`, `source_ref` (repurpose DAG), `pillar`, `campaign_id` | `content_item` (düz; normalize edilecek) |
+| `platform_variant` | Kanal-başına adapte içerik. `body`, `settings`(thread/first-comment/alt), `status`, `parent_variant_id`(thread) | **YOK** (tek metin herkese) |
+| `media_asset` | Orijinal medya + `focal_x/y` (kit çekirdeği) | `content_item`(kind=image) kısmen |
+| `media_rendition` | Aynı asset'in format türevleri (aspect_ratio) — **kit çıktısı** | **YOK** |
+| `campaign` | Kampanya/seri/pillar gruplama, renk kodu | **YOK** |
+| `schedule_slot` | Variant'ın tek yayın olayı; `queue_strategy`, `recycle_rule`, `status`, `external_post_id`, `error`, `attempt` | **YOK** (Zernio'ya delege) |
+| `post_metric` | Slot'un performans zaman-serisi (normalize skor için) | `social_snapshot` (account-level; post-level değil) |
+| `exemplar` | Kazanan içerik havuzu → feedback yakıtı → L5 | **YOK** |
+| `approval` / `comment` | Planable-tarzı onay + internal/external not | **YOK** |
+
+**Korunanlar:** `content_connection` (Zernio profil/BYOK) ✅ · `image-host` (imgbb/cloudinary/r2) ✅ · `content_library` → `content_piece`/`media_asset`'e evrilir.
+
+> ▎ **Özet gap:** motor (üret) + yayın (Zernio) + account-analytics VAR. **YOK:** editör, lokal takvim/slot, per-platform variant, kit/rendition, batch, **post-level metric + feedback döngüsü**. Bölüm II bu boşlukları kapatır.
+
+---
+
+## 17. Determinizm & karmaşıklık
 
 - **Hot path (L4):** `fillTemplate` — O(template uzunluğu), byte-identical. **Değişmedi** (bun test 20/20 kanıtlı).
 - **Adaptabilite maliyeti:** v1'de **O(dikey sayısı)** insan emeği → v2'de **O(1)** (derleme tenant başına amortize, bir kez).
 - **Cold path (L1):** derleme O(1) LLM çağrısı/tenant, nadir, cache'li. Marka değişmedikçe tekrarlanmaz.
+- **Kit render:** O(N format) fan-out job — tek asset, paralel N smart-crop.
 - **CAG/prompt-cache:** durağan marka bloğu → ~%90 maliyet / ~%85 latency düşüşü (hot path'te LLM tutulursa, ör. caption cilası).
 
 ---
 
-## 12. Mevcut koddan geçiş
+## 18. Mevcut koddan geçiş
 
 | Bileşen | v2'de |
 |---------|-------|
@@ -303,14 +397,15 @@ Faz 3'te yazdığım `PackPicker`/`ShotPreview` **çöp değil** — "intent se�
 | `POST /compose`, `GET /packs`, `edit-image` (tek-hop) | Kalır; `/packs` artık derlenmiş pack'leri listeler |
 | `PackPicker`/`ShotPreview` (Faz 3) | Kalır → intent seçici; metadata formu markaya devreder |
 | **YENİ: L1 Pack derleyici** | `BrandIdentity` → structured LLM → Zod → onay → cache |
-| **YENİ: L7 editör** | Filerobot (image) + video (§14 kararı) |
+| **YENİ: L7 editör** | Filerobot (image, önce) + OpenCut (video, sonra) — §9.2 |
 | **YENİ: L0 `BrandIdentity`** | `0012`'yi genişlet (sector enum → domain string) |
+| **YENİ: iş akışı katmanı** | content_piece/variant · takvim/slot · kit/rendition · post_metric/feedback (Bölüm II) |
 
-**Task etkisi:** #0011 (pack engine) → hot-path bileşeni olarak **tamam**. #0012 (marka kimliği) → **çekirdek**e yükselir, şema §4 ile güncellenir. Yeni task'lar: **L1 derleyici**, **L7 editör entegrasyonu**, **body-of-work/RAG (sonra)**.
+**Task etkisi:** #0011 (pack engine) → hot-path bileşeni olarak **tamam**. #0012 (marka kimliği) → **çekirdek**e yükselir, şema §4 ile güncellenir. Yeni task'lar: **L1 derleyici** · **L7 editör** (image→video) · **planlama/takvim (§12)** · **per-platform variant (§13)** · **kit üretim (§14)** · **feedback döngüsü (§15)** · **body-of-work/RAG (sonra)**. Önerilen sıra §20'de.
 
 ---
 
-## 13. Riskler & guardrail'ler
+## 19. Riskler & guardrail'ler
 
 | Risk | Önlem |
 |------|-------|
@@ -319,21 +414,38 @@ Faz 3'te yazdığım `PackPicker`/`ShotPreview` **çöp değil** — "intent se�
 | Marka-dışı/yasak iddia | `neverUse` + `forbiddenClaims` hard filter + post-gen kontrol |
 | Marka değişince bayat pack | `sourceBrandVersion != version` → invalidate + yeniden derle |
 | Context poisoning (RAG) | Çekirdek path RAG'siz (CAG); RAG yalnız body-of-work (düşük poison riski, markanın kendi metni) |
-| Video editör lisans/maliyet | §9.2 açık karar; ticari ölçekte OpenCut(MIT) vs ücretli netleştir |
+| Video editör lisans/maliyet | §9.2 karar: OpenCut (MIT); ffmpeg.wasm yedeği; ağır render server'a |
 | Editör bundle şişmesi | `React.lazy` + dynamic import (stüdyo açılınca yüklen) |
+| **Feedback döngüsü büyük hesabı taklit eder** | **Kanal-içi percentile normalizasyon (§15)** — ham metrikle asla besleme |
+| Kit render bellek/maliyet | Server-side fan-out (sharp/ffmpeg); tarayıcıda kısa klip sınırı (§9.2) |
+| Variant tutarsızlığı (master değişince) | Normalize model + `diverged` flag; otomatik overwrite YOK |
 
 ---
 
-## 14. Açık kararlar (senin onayın)
+## 20. Açık kararlar + önerilen sıra
 
-1. ~~**Video editör**~~ → **KARAR VERİLDİ: OpenCut (MIT)** (§9.2). Resim editörü zaten net: Filerobot (MIT, §9.1). Kalan editör işi: entegrasyon sırası (resim → video) ve OpenCut'ı Vite'a gömme yöntemi.
-2. **L1 derleyici LLM sağlayıcısı:** mevcut Gemini/OpenRouter mı, yoksa derleme için ayrı (daha güçlü) model mi? Derleme nadir → daha pahalı model ödenebilir.
-3. **Onay kapısı:** her tenant derlemesi insan onayı mı (kalite), yoksa auto-approve + spot-check mi (ölçek)?
-4. **Body-of-Work/RAG:** ilk sürümde mi, sonra mı? (Öneri: sonra — önce compile-and-cache çekirdeği.)
+**Kararlar (senin onayın):**
+1. ~~**Video editör**~~ → **KARAR VERİLDİ: OpenCut (MIT)** (§9.2). Resim editörü net: Filerobot (§9.1).
+2. **L1 derleyici LLM'i:** Gemini/OpenRouter mı, derleme için ayrı güçlü model mi? Derleme nadir → pahalı model ödenebilir.
+3. **Onay kapısı:** tenant derlemesi insan onayı mı (kalite), auto + spot-check mi (ölçek)?
+4. **Takvim sahipliği:** lokal `schedule_slot` (öneri — görünürlük + feedback bağı) mı, Zernio'ya tam delege mi?
+5. **Body-of-Work/RAG + feedback:** ilk sürümde mi, sonra mı? (Öneri: sonra — önce çekirdek + editör + takvim.)
+
+**Önerilen inşa sırası** (design-ahead, çalışan-dilim odaklı):
+```
+1. L0 BrandIdentity şema (sector enum → domain)      → #0012 güncelle
+2. L1 Pack derleyici (structured + Zod + onay)        → ezberciyi kırar (asıl tez)
+3. L7 image editör (Filerobot, lazy-load)             → "AI çıktısını düzenle" (en kolay, en yaygın)
+4. Kit üretim (media_asset→rendition fan-out)         → en büyük verim kazancı
+5. Planlama/takvim (schedule_slot) + per-platform variant
+6. post_metric + feedback döngüsü (L5 doldur)
+7. L7 video editör (OpenCut) · batch · calendar-suggest
+```
+Her adım kendi başına çalışan bir dilim; kredi-gated olanlar (gerçek görsel üretim) işaretli.
 
 ---
 
-## 15. Kaynaklar
+## 21. Kaynaklar
 
 **Adaptif generation & marka-as-data:** [Google Gen-AI in PMax](https://blog.google/products/ads-commerce/get-creative-with-generative-ai-in-performance-max/) · [Meta Advantage+ 2026](https://www.admove.ai/blog/meta-advantage-creative-best-practices-for-2026) · [AdCreative.ai](https://www.adcreative.ai/) · [Canva Brand Kits](https://www.canva.com/help/create-on-brand-designs/) · [Flair.ai](https://flair.ai/) · [MindStudio: Voice Profile / Body of Work / Design Tokens](https://www.mindstudio.ai/blog/ai-brand-voice-system-voice-profile-body-of-work-design-tokens)
 **Compile-and-cache & RAG:** [CAG “Don’t Do RAG” arXiv 2412.15605](https://arxiv.org/html/2412.15605v1) · [Anthropic prompt caching](https://www.anthropic.com/news/prompt-caching) · [SafeRAG arXiv 2501.18636](https://arxiv.org/pdf/2501.18636) · [Elastic: context poisoning](https://www.elastic.co/search-labs/blog/context-poisoning-llm)
@@ -341,7 +453,8 @@ Faz 3'te yazdığım `PackPicker`/`ShotPreview` **çöp değil** — "intent se�
 **Fidelity / reference conditioning:** [IP-Adapter](https://ip-adapter.github.io/)
 **Image editor:** [react-filerobot-image-editor (MIT)](https://github.com/scaleflex/filerobot-image-editor) · [tree-shaking issue #467](https://github.com/scaleflex/filerobot-image-editor/issues/467) · [Fabric.js](https://github.com/fabricjs/fabric.js) · [Konva](https://github.com/konvajs/konva)
 **Video editor:** [designcombo/react-video-editor](https://github.com/designcombo/react-video-editor) · [Remotion License](https://www.remotion.dev/docs/license) · [Remotion Player](https://www.remotion.dev/docs/player) · [OpenCut (MIT)](https://github.com/OpenCut-app/OpenCut) · [ffmpeg.wasm bellek #876](https://github.com/ffmpegwasm/ffmpeg.wasm/issues/876) · [Etro (GPL-3.0)](https://github.com/etro-js/etro)
+**Content-ops / iş akışı (Bölüm II):** [Postiz Prisma şema](https://raw.githubusercontent.com/gitroomhq/postiz-app/main/libraries/nestjs-libraries/src/database/prisma/schema.prisma) · [Mixpost post versions API](https://docs.mixpost.app/api/posts/create/) · [Planable onay akışları](https://help.planable.io/en/articles/2367643-approvals-and-approval-workflows) · [Buffer queue/tags](https://support.buffer.com/article/642-scheduling-posts) · [Later best-time + media library](https://later.com/social-media-glossary/drag-drop/) · [Metricool autolists/best-times](https://help.metricool.com/en/article/schedule-content-from-an-autolist-zj5crc/) · [Publer recycling](https://publer.com/features/recycling) · [Canva Magic Resize](https://www.canva.com/help/resize/) · [Lately.ai (atomize + Voice Model + thumbs feedback)](https://www.lately.ai/how-it-works) · [Pillar/repurpose ROI](https://www.averi.ai/learn/how-to-repurpose-one-piece-of-content-into-a-multi-channel-campaign-with-ai)
 
 ---
 
-*Oluşturulma: 2026-07-06 · Araştırma-dayanaklı (3 paralel ajan) · v1 pack-engine dokümanını supersede eder*
+*Oluşturulma: 2026-07-06 · Araştırma-dayanaklı (5 paralel ajan: editör×2, adaptif mimari, content-ops, mevcut-kod) · v1 pack-engine dokümanını supersede eder · Bölüm I = üretim motoru, Bölüm II = iş akışı sistemi*
