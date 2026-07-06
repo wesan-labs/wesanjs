@@ -2,23 +2,17 @@ import {
   ModuleProviderExports,
   ModuleServiceInitializeOptions,
 } from "@medusajs/framework/types"
+import type { PlatformAnalyticsInput } from "../lib/platform-config"
 
 export type AnalyticsModuleOptions = Partial<ModuleServiceInitializeOptions> & {
   /**
-   * Providers to be registered
+   * Platform analytics — tek config bloğu (ops, bir kez).
+   * Yoksa varsayılan `builtin`: veri Levios DB'de, tenant env yok.
    */
+  platform?: PlatformAnalyticsInput
   providers?: {
-    /**
-     * The module provider to be registered
-     */
     resolve: string | ModuleProviderExports
-    /**
-     * The id of the provider
-     */
     id: string
-    /**
-     * key value pair of the configuration to be passed to the provider constructor
-     */
     options?: Record<string, unknown>
   }[]
 }
