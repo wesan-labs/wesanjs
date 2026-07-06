@@ -237,7 +237,12 @@ Ortak desen: **müşteri alanı sağlar (marka + asset + feed); sistem alan-gene
 
 ## 9. Gömülü editör katmanı (L7) — OSS, araştırmaya dayalı
 
-AI çıktısı ham; kullanıcı **kaydetmeden önce** rötuşlar. İki editör, farklı olgunluk.
+AI çıktısı ham; kullanıcı **kaydetmeden önce** rötuşlar. **İKİ editör var — resim VE video ayrı, ikisi de birinci sınıf:**
+
+- **Resim** (Filerobot, §9.1) — daha temiz, daha olgun, **önce ship edilir** (en yaygın kullanım: ekran görüntüsü/ürün fotoğrafı).
+- **Video** (OpenCut, §9.2) — ayrı editör; OpenCut **sadece video**, resim düzenlemez.
+
+İkisi tek **"Düzenle" slotu** arkasında yaşar: stüdyo, seçili asset'in tipine (görsel/video — pipeline zaten biliyor) göre doğru editörü mount eder. Kullanıcı "iki araç" değil, **"bunu düzenle"** görür. Sıralama: **önce resim, sonra video.**
 
 ### 9.1 Image editor — net karar
 
@@ -260,7 +265,7 @@ AI çıktısı ham; kullanıcı **kaydetmeden önce** rötuşlar. İki editör, 
 | **Remotion Player** | Motor (editör'ü sen yazarsın) | ⚠️ **4+ çalışan for-profit = ücretli** (~$100/ay min) | En temiz Vite gömme + programatik → **AI-video geleceğine en uygun**; timeline'ı sen kurarsın |
 | **ffmpeg.wasm** | Export motoru | MIT wrapper (codec'e göre LGPL/GPL) | UI değil; export/merge yedeği — hangi UI olursa yanına |
 
-**Öneri:** *design-ahead* fazında **Remotion Player + kendi hafif timeline'ı** (programatik güç, AI-video ile örtüşür) VEYA hızlı-en-çok-özellik için **designcombo fork'u**; her iki yolda **ffmpeg.wasm export yedeği**. **Uzun-vade ticari netlik istiyorsan tek tam-ücretsiz yol OpenCut (MIT)** ama olgunluk bekliyor. → **Bu bir karar noktası (§14).**
+**KARAR (2026-07-06): Video = OpenCut (MIT).** Gerekçe: satılacak multi-tenant SaaS'ta **ölçekte tam ücretsiz tek yol** — Remotion (4+ çalışan) ve designcombo (>3 çalışan) büyüyünce ücretlenir; OpenCut MIT, hiç lisans yükü yok. **Kabul edilen bedel:** OpenCut yeniden-yazılıyor (olgun sürüm `opencut-classic`) → entegrasyon eforu şimdi daha fazla, component gömme zahmetli. **ffmpeg.wasm export yedeği** yanında. Video, **resimden SONRA** gelir (resim daha kolay + yaygın).
 
 ---
 
@@ -321,7 +326,7 @@ Faz 3'te yazdığım `PackPicker`/`ShotPreview` **çöp değil** — "intent se�
 
 ## 14. Açık kararlar (senin onayın)
 
-1. **Video editör:** Remotion Player (programatik/AI-video, 4+ çalışanda ücretli) · designcombo fork (en çok özellik, >3 çalışan lisansı) · OpenCut (MIT, olgunlaşıyor)? Ticari SaaS lisans etkisi taşıyor.
+1. ~~**Video editör**~~ → **KARAR VERİLDİ: OpenCut (MIT)** (§9.2). Resim editörü zaten net: Filerobot (MIT, §9.1). Kalan editör işi: entegrasyon sırası (resim → video) ve OpenCut'ı Vite'a gömme yöntemi.
 2. **L1 derleyici LLM sağlayıcısı:** mevcut Gemini/OpenRouter mı, yoksa derleme için ayrı (daha güçlü) model mi? Derleme nadir → daha pahalı model ödenebilir.
 3. **Onay kapısı:** her tenant derlemesi insan onayı mı (kalite), yoksa auto-approve + spot-check mi (ölçek)?
 4. **Body-of-Work/RAG:** ilk sürümde mi, sonra mı? (Öneri: sonra — önce compile-and-cache çekirdeği.)
