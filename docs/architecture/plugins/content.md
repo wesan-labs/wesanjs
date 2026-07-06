@@ -38,15 +38,19 @@ Ek: lib/ai (content-generator 700 satır) · lib/social.
 - env: `ZERNIO_API_KEY`, `IMAGE_HOST` (imgbb/cloudinary), OpenRouter/Gemini key
 - Dış servis: Zernio/Late (sosyal), imgbb/cloudinary (görsel host)
 
+## Pack & Template Engine (hedef mimari)
+
+Görsel üretim çekirdeği generic prompt kütüphanesi değil; **Pack + deterministik template engine** olacak (Bega Home `scripts/` modeli). Detay: [content-studio-pack-engine.md](../content-studio-pack-engine.md) · iş planı: [tasks/0011](../tasks/0011-content-studio-pack-engine.md).
+
 ## Durum
-- **Yapılan:** content-generator (vision → prompt → LLM fallback → JSON validate), snapshot cron (idempotent), image-host (imgbb/cloudinary).
-- **Yapılmayan/eksik:** admin UI; analyze impl boş; edit-image stub olabilir; prompts DB storage yok; Zernio/Late OAuth handshake tam değil — **sosyal publish server-side YOK, sadece tarayıcı-widget (bilinen tavan)**.
+- **Yapılan:** content-generator (vision → prompt → LLM fallback → JSON validate), snapshot cron (idempotent), image-host (imgbb/cloudinary), admin UI (İçerik Stüdyosu), sector-packs (26 transform prompt).
+- **Pürüzlü:** 96 legacy `image-prompt` (Midjourney/duplicate); görsel pipeline 2-hop LLM; pack engine henüz yok.
+- **Yapılmayan/eksik:** Pack loader + compose API; prompts DB storage yok; Zernio/Late OAuth handshake tam değil — **sosyal publish server-side YOK, sadece tarayıcı-widget (bilinen tavan)**.
 - **Yapılacak (sıralı):**
-  1. admin composer
-  2. analyze impl
-  3. image editor
-  4. prompt DB
-  5. OAuth handshake
+  1. **Pack & template engine** (#0011) — görsel çekirdek
+  2. Tenant brand profile DB
+  3. Batch job (Bega Home progress pattern)
+  4. OAuth handshake (sosyal)
 
 ## Hizmet ettiği dikeyler
 İçerik üretici/medya (ev sahası), mobil oyun, app/saas, DTC, el yapımı.
