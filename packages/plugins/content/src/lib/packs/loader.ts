@@ -7,6 +7,7 @@
  */
 
 import begahomeFurniture from "./data/begahome-furniture.pack.json"
+import mobileGameUa from "./data/mobile-game-ua.pack.json"
 import { furnitureResolvers } from "./resolvers/furniture"
 import { composeInstruction } from "./template-engine"
 import {
@@ -22,7 +23,9 @@ const RESOLVER_SETS: Record<string, ResolverSet> = {
   furniture: furnitureResolvers,
 }
 
-const PACKS: PackDef[] = [begahomeFurniture as PackDef]
+// furniture: resolver-türetimli (Bega). mobile-game: direct-token (resolver yok)
+// — ikisi aynı engine'den geçer → engine generic, sektöre hardcode değil.
+const PACKS: PackDef[] = [begahomeFurniture as PackDef, mobileGameUa as PackDef]
 
 const BY_ID = new Map(PACKS.map((p) => [p.id, p]))
 

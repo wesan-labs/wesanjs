@@ -96,7 +96,12 @@ export const composeInstruction = (
     )
   }
 
-  const parts: string[] = [pack.fidelity.global]
+  // fidelity.global opsiyonel: furniture'da GLOBAL_PREFIX var; mobile-game gibi
+  // paketlerde fidelity per-shot inline → boşsa prepend etme (leading-space yok).
+  const parts: string[] = []
+  if (pack.fidelity.global && pack.fidelity.global.trim() !== "") {
+    parts.push(pack.fidelity.global)
+  }
   if (category.identity) {
     parts.push(fill(category.identity, input.metadata, resolverSet, pack.defaults))
   }

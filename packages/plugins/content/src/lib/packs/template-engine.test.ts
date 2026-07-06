@@ -113,7 +113,7 @@ describe("compose — hata yolları (deny, sessiz fallback yok)", () => {
 })
 
 describe("compose — engine generic mi (furniture'a hardcode değil)", () => {
-  test("6 kategori × 4 shot hepsi compose olur, token kalmaz", () => {
+  test("furniture 6 kategori × 4 shot hepsi compose olur, token kalmaz", () => {
     const cats = ["zigon", "orta", "c-sehpa", "kanepe", "berjer", "kose"]
     const shots = ["lifestyle", "angle", "detail", "usage"]
     for (const categoryId of cats) {
@@ -127,6 +127,66 @@ describe("compose — engine generic mi (furniture'a hardcode değil)", () => {
         expect(LEFTOVER_TOKEN.test(instruction)).toBe(false)
         expect(instruction.startsWith(GLOBAL_PREFIX_START)).toBe(true)
       }
+    }
+  })
+})
+
+describe("mobile-game pack — direct-token (resolver YOK), 2. sektör kanıtı", () => {
+  const heroMeta = {
+    GAME_NAME: "Idle Tycoon Empire",
+    GAME_GENRE: "idle tycoon",
+    GAME_ART_STYLE: "stylized 3D low-poly, vibrant cartoon",
+    GAME_HERO: "cheerful cartoon tycoon boss",
+    GAME_MOOD: "fun, energetic",
+  }
+  const hero: FillInput = {
+    packId: "mobile-game-ua",
+    categoryId: "key-art",
+    shotId: "hero",
+    metadata: heroMeta,
+  }
+
+  test("resolver'sız direct token metadata'dan çözülür (determinist)", () => {
+    const a = compose(hero).instruction
+    const b = compose({ ...hero, metadata: { ...heroMeta } }).instruction
+    expect(a).toBe(b)
+    expect(a).toContain("cheerful cartoon tycoon boss in a vibrant idle tycoon game world for Idle Tycoon Empire")
+    expect(LEFTOVER_TOKEN.test(a)).toBe(false)
+  })
+
+  test("generate mode + furniture GLOBAL_PREFIX'i YOK (pack izolasyonu)", () => {
+    const out = compose(hero)
+    expect(out.mode).toBe("generate")
+    expect(out.instruction.startsWith(GLOBAL_PREFIX_START)).toBe(false)
+    // boş fidelity.global → leading space yok
+    expect(out.instruction.startsWith(" ")).toBe(false)
+  })
+
+  test("transform shot (senin ekranın) — mode transform, headline gömülü", () => {
+    const out = compose({
+      packId: "mobile-game-ua",
+      categoryId: "ua-ad",
+      shotId: "story",
+      metadata: { GAME_GENRE: "idle tycoon", GAME_HEADLINE: "Build your empire!" },
+    })
+    expect(out.mode).toBe("transform")
+    expect(out.instruction).toContain('reading "Build your empire!"')
+    expect(LEFTOVER_TOKEN.test(out.instruction)).toBe(false)
+  })
+
+  test("8 shot (5 kategori) hepsi compose olur, token kalmaz", () => {
+    const full = {
+      GAME_NAME: "X", GAME_GENRE: "idle", GAME_ART_STYLE: "cartoon",
+      GAME_HERO: "boss", GAME_MOOD: "fun", GAME_HEADLINE: "Play!",
+    }
+    const shots: [string, string][] = [
+      ["key-art", "hero"], ["aso-screenshot", "mockup"], ["aso-screenshot", "callout"],
+      ["aso-screenshot", "carousel"], ["app-icon", "default"], ["feature-graphic", "default"],
+      ["ua-ad", "story"], ["ua-ad", "tiktok"],
+    ]
+    for (const [categoryId, shotId] of shots) {
+      const { instruction } = compose({ packId: "mobile-game-ua", categoryId, shotId, metadata: full })
+      expect(LEFTOVER_TOKEN.test(instruction)).toBe(false)
     }
   })
 })

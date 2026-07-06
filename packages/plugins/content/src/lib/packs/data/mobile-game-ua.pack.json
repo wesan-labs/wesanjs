@@ -1,0 +1,94 @@
+{
+  "id": "mobile-game-ua",
+  "version": "1.0.0",
+  "sector": "mobile-game",
+  "label": "Mobil Oyun — ASO / UA",
+  "fidelity": {
+    "global": ""
+  },
+  "categories": {
+    "key-art": {
+      "label": "Key art",
+      "identity": null,
+      "metadataSchema": ["GAME_NAME", "GAME_GENRE", "GAME_ART_STYLE", "GAME_HERO", "GAME_MOOD"],
+      "shots": {
+        "hero": {
+          "label": "App Store hero",
+          "mode": "generate",
+          "aspect": "4:5",
+          "template": "{GAME_HERO} in a vibrant {GAME_GENRE} game world for {GAME_NAME}, {GAME_ART_STYLE}, dynamic heroic composition, {GAME_MOOD} mood, bold rim lighting, layered parallax depth, glossy AAA polished render, mobile game marketing key art, --ar 4:5"
+        }
+      }
+    },
+    "aso-screenshot": {
+      "label": "ASO ekran görseli",
+      "identity": null,
+      "metadataSchema": ["GAME_GENRE", "GAME_HEADLINE"],
+      "shots": {
+        "mockup": {
+          "label": "Telefon mockup",
+          "mode": "transform",
+          "aspect": "9:16",
+          "template": "Keep the provided screenshot fully intact, sharp and legible; place it inside a clean modern smartphone mockup centered on a branded {GAME_GENRE} gradient background; add a bold headline above the phone reading \"{GAME_HEADLINE}\" with a short benefit line; professional App Store screenshot composition; do NOT redraw or alter the in-app UI; --ar 9:16"
+        },
+        "callout": {
+          "label": "Özellik vurgusu",
+          "mode": "transform",
+          "aspect": "9:16",
+          "template": "Keep the provided screenshot intact in a sleek phone mockup; add 2-3 small clean callout labels with thin arrows pointing to key UI features; a branded {GAME_GENRE} gradient background; a short headline \"{GAME_HEADLINE}\"; do NOT redraw the in-app UI; --ar 9:16"
+        },
+        "carousel": {
+          "label": "Karusel paneli",
+          "mode": "transform",
+          "aspect": "1:1",
+          "template": "Place the provided {GAME_GENRE} screenshot in a clean square carousel panel, keep it intact; add one bold reason-to-play statement and a consistent swipe-series frame; do NOT redraw the in-app UI; --ar 1:1"
+        }
+      }
+    },
+    "app-icon": {
+      "label": "Uygulama ikonu",
+      "identity": null,
+      "metadataSchema": ["GAME_NAME", "GAME_ART_STYLE", "GAME_HERO"],
+      "shots": {
+        "default": {
+          "label": "İkon konsepti",
+          "mode": "generate",
+          "aspect": "1:1",
+          "template": "app icon for {GAME_NAME}, single bold focal subject ({GAME_HERO} face or signature object), {GAME_ART_STYLE}, rich saturated colors, soft inner glow, rounded-square composition, readable at tiny size, no text, --ar 1:1"
+        }
+      }
+    },
+    "feature-graphic": {
+      "label": "Feature graphic",
+      "identity": null,
+      "metadataSchema": ["GAME_NAME", "GAME_GENRE", "GAME_ART_STYLE", "GAME_HERO", "GAME_MOOD"],
+      "shots": {
+        "default": {
+          "label": "Play banner",
+          "mode": "generate",
+          "aspect": "16:9",
+          "template": "wide horizontal banner for {GAME_NAME}, {GAME_HERO} and {GAME_GENRE} world on the right, {GAME_ART_STYLE}, clear empty space on the left for the title, {GAME_MOOD} energy, cinematic lighting, --ar 16:9"
+        }
+      }
+    },
+    "ua-ad": {
+      "label": "UA reklam",
+      "identity": null,
+      "metadataSchema": ["GAME_GENRE", "GAME_HEADLINE"],
+      "shots": {
+        "story": {
+          "label": "Story/Reels reklam",
+          "mode": "transform",
+          "aspect": "9:16",
+          "template": "Place the provided {GAME_GENRE} screenshot as the hero of a vertical 9:16 ad (in a phone or as a clean panel), keep it intact; add a huge bold hook headline reading \"{GAME_HEADLINE}\" and a clear PLAY NOW button; thumb-stopping high contrast; do NOT redraw the in-app UI; --ar 9:16"
+        },
+        "tiktok": {
+          "label": "TikTok kapak",
+          "mode": "transform",
+          "aspect": "9:16",
+          "template": "Use the provided {GAME_GENRE} screenshot as the cover background/subject, keep it intact; overlay a curiosity-gap hook caption reading \"{GAME_HEADLINE}\" in big readable text; vertical, energetic; do NOT redraw the in-app UI; --ar 9:16"
+        }
+      }
+    }
+  }
+}
