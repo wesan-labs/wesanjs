@@ -45,9 +45,21 @@ Bu altı adım **kesintisiz** çalışıyorsa hedef vurulmuştur.
 
 **DoD journey artık uçtan-uca traversable** (kod seviyesinde). Kalan: Can'ın görsel doğrulaması + runtime-gated parçalar (kredi, hesap bağlama).
 
-## Sonraki faz (ship sonrası — adaptif v2)
+## Adaptif motor — KOD-TAMAM + CANLI DOĞRULANDI (2026-07-07)
 
-BrandIdentity derleyici (§20 adım 1-2) · kit üretim · feedback döngüsü · video editör (OpenCut) · lokal takvim. Bunlar shippable dilimin ÜSTÜNE gelen roadmap; ship'i bloke etmez.
+Ship'in üstüne, "ezberci değil uyarlanabilir" itirazına cevap olarak adaptif compile-and-cache motoru kuruldu ve **HTTP'de canlı doğrulandı**:
+
+- `BrandIdentity` (domain=serbest metin) + intent taksonomisi + **L1 derleyici** (kural-tabanlı, kredisiz) — `lib/brand/`, `lib/packs/compiler.ts`
+- **compose route wiring** — `brand` → derlenmiş (cache'li) pack → compose (`getCompiledPack`, `composeWithBrand`)
+- **UI wiring** — "Markandan üret (AI)" pack: flat brand-profile → BrandIdentity map + PackPicker/ShotPreview brand yolu
+- **29/29 test** + plugin build ✅
+- ▎ **HTTP CANLI (2026-07-07):** `POST /admin/content/compose` `brand` ile → kahve kavurucusu (kimsenin pack yazmadığı alan) derlendi, marka-koşullu deterministik instruction, **byte-identical** iki çağrıda. Ezberci-öldüren tez uçtan uca çalışıyor.
+
+**Operasyonel handoff (sadece kullanıcıda):** admin'de görsel onay (Filerobot + "Markandan üret" akışı) · Gemini kredisi (gerçek görsel üretimi). Motor tarafı bitti.
+
+## Sonraki faz (roadmap)
+
+kit üretim · feedback döngüsü (post-metric normalize) · video editör (OpenCut) · lokal takvim · BrandIdentity capture UI (flat map'i değiştirir). Ship'i/motoru bloke etmez.
 
 ## Referans sıra (v2 §20)
 
