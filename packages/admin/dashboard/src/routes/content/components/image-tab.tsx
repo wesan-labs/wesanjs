@@ -1,4 +1,4 @@
-import { ChevronDownMini, Photo, SquaresPlus, Buildings } from "@medusajs/icons"
+import { ChevronDownMini, Photo, Buildings } from "@medusajs/icons"
 import { Button, Text } from "@medusajs/ui"
 import { EditPanel } from "./edit-panel"
 import { QuickActions } from "./quick-actions"
@@ -7,9 +7,11 @@ type Source = { data: string; mime: string }
 
 /**
  * "free" = quick-edit tools in the rail; "pack" = deterministic pack-first
- * picker (sector → category → shot, no LLM); "library" = legacy prompt gallery.
+ * picker (sector → category → shot, no LLM). Görsel için TEK üretim yolu pack;
+ * eski 333-prompt galerisi görselde kaldırıldı (yoğunluk/seçim-yorgunluğu) —
+ * metin adımında yaşamaya devam ediyor.
  */
-export type ImageMethod = "free" | "pack" | "library"
+export type ImageMethod = "free" | "pack"
 
 /**
  * Görsel tab — the right-rail workspace. One coherent "Hızlı düzenle" tool
@@ -39,11 +41,6 @@ export const ImageTab = ({
         Sektör paketi — hazır çekimler
         <ChevronDownMini className="ml-auto" />
       </Button>
-      <Button variant="transparent" onClick={() => setMethod("library")}>
-        <SquaresPlus />
-        Hazır prompt galerisi (eski)
-        <ChevronDownMini className="ml-auto" />
-      </Button>
 
       {hasImage ? (
         <>
@@ -63,7 +60,7 @@ export const ImageTab = ({
           <Photo className="text-ui-fg-muted mt-0.5 shrink-0" />
           <Text size="small">
             Soldan bir görsel ekle — hızlı düzenle ve serbest düzenleme burada
-            açılır. Ya da yukarıdan hazır prompt galerisine göz at.
+            açılır. Ya da yukarıdan sektör paketiyle hazır çekim üret.
           </Text>
         </div>
       )}

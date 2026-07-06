@@ -56,36 +56,11 @@ import { CopyButton } from "./components/copy-button"
 import { ImageMethod, ImageTab } from "./components/image-tab"
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./components/languages"
 import { PackPicker } from "./components/pack-picker"
-import { ASPECTS } from "./components/prompt-meta"
 import { PromptLibrarySection } from "./components/prompt-library-section"
 import { TextMethod, TextTab } from "./components/text-tab"
 import { VariantCard } from "./components/variant-card"
 import { PublishComposer } from "../social-media/components/publish-composer"
 
-/** Nearest aspect preset for a w×h source (log-ratio = perceptual nearest). */
-const ratioOf = (id: string): number => {
-  const [w, h] = id.split(":").map(Number)
-  return w / h
-}
-const nearestAspect = (w: number, h: number): string => {
-  if (!w || !h) return "4:5"
-  const r = w / h
-  return ASPECTS.reduce(
-    (best, a) => {
-      const d = Math.abs(Math.log(r / ratioOf(a.id)))
-      return d < best.d ? { id: a.id, d } : best
-    },
-    { id: "4:5", d: Infinity }
-  ).id
-}
-/** Load an image data URL and resolve its nearest aspect preset. */
-const measureAspect = (url: string): Promise<string> =>
-  new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => resolve(nearestAspect(img.naturalWidth, img.naturalHeight))
-    img.onerror = () => resolve("4:5")
-    img.src = url
-  })
 
 const SECTOR_LABELS: Record<string, string> = {
   "mobile-game": "Mobil Oyun",
@@ -149,9 +124,6 @@ export const Component = () => {
   // gallery to the full-width dock at the bottom of the studio.
   const [imageMethod, setImageMethod] = useState<ImageMethod>("free")
   const [textMethod, setTextMethod] = useState<TextMethod>("quick")
-  // Aspect preset detected from the uploaded source → seeds the gallery's Format
-  // so a 9:16 screen recording defaults to a 9:16 output, not 4:5.
-  const [sourceAspect, setSourceAspect] = useState<string | undefined>(undefined)
   // Vision analysis: auto-detect sector + brand on upload (toggle persists).
   const [autoAnalyze, setAutoAnalyze] = useState(
     () => localStorage.getItem("content-auto-analyze") !== "off"
@@ -185,7 +157,6 @@ export const Component = () => {
     setVersions([{ url, data: img.data, mime: img.mime, label: "Orijinal" }])
     setCurrent(0)
     setAnalysis(null)
-    measureAspect(url).then(setSourceAspect)
     if (autoAnalyze) {
       runAnalyze({ data: img.data, mime: img.mime })
     }
@@ -266,7 +237,6 @@ export const Component = () => {
     setCurrent(0)
     setBriefs([])
     setTexts([])
-    setSourceAspect(undefined)
     setAnalysis(null)
   }
 
@@ -546,31 +516,6 @@ export const Component = () => {
                   onGenerate={(instruction, label) =>
                     runEdit({ instruction }, label)
                   }
-                  onEditBrand={() => setBrandOpen(true)}
-                />
-              </div>
-            ) : imageMethod === "library" ? (
-              <div className="flex flex-col gap-y-3">
-                <button
-                  type="button"
-                  onClick={() => setImageMethod("free")}
-                  className="text-ui-fg-subtle hover:text-ui-fg-base self-start text-xs font-medium"
-                >
-                  ← Düzenlemeye dön
-                </button>
-                <PromptLibrarySection
-                  kind="image"
-                  languages={[languages[0]]}
-                  onApplyImage={(promptId, variables, label) =>
-                    runEdit({ promptId, variables }, label)
-                  }
-                  onText={() => {}}
-                  busy={editing}
-                  hasImage={!!source}
-                  suggestedAspect={sourceAspect}
-                  suggestedSector={suggestedSector}
-                  analysisFields={analysis?.fields}
-                  brandProfile={brandProfile}
                   onEditBrand={() => setBrandOpen(true)}
                 />
               </div>

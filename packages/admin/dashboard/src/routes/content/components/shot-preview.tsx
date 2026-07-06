@@ -1,15 +1,15 @@
-import { CheckCircleSolid, Photo, Sparkles, Spinner } from "@medusajs/icons"
-import { Button, Text } from "@medusajs/ui"
+import { CheckCircleSolid, Photo, Spinner } from "@medusajs/icons"
+import { Button, Text, clx } from "@medusajs/ui"
+import { useEffect, useState } from "react"
 import { PackShot, useCompose } from "../../../hooks/api/content"
 
 /**
- * Deterministik önizleme paneli — shot seçilince `POST /compose` çağırır,
- * ÜRETİLECEK talimatı aynen gösterir (LLM yok, "örnek" butonu yok). Üret,
- * bu instruction'ı tek hop olarak edit-image'e verir. Bega Home'un
- * "seç → kontrol et → üret" mantığı.
+ * Deterministik önizleme + üret. Çekim seçilince compose OTOMATİK çalışır
+ * (ayrı "Kontrol et" adımı yok — "seç → üret"); talimat default katlı, "Üret"
+ * doğrudan aktif. metadata değişince (debounced) yeniden derlenir.
  *
- * Not: parent bu component'i `key={shot.id}` ile mount ettiği için shot
- * değişince compose durumu sıfırlanır.
+ * Parent bu component'i `key={shot.id}` ile mount ettiği için shot değişince
+ * compose durumu sıfırlanır.
  */
 export const ShotPreview = ({
   packId,
@@ -32,12 +32,24 @@ export const ShotPreview = ({
   onGenerate: (instruction: string, label: string) => void
 }) => {
   const composeMut = useCompose()
+  const [showInstruction, setShowInstruction] = useState(false)
   const instruction = composeMut.data?.instruction
-  const errMsg =
-    composeMut.error instanceof Error ? composeMut.error.message : null
+  const rawErr = composeMut.error instanceof Error ? composeMut.error.message : null
+  // Eksik metadata (Unresolved token) → korkutucu hata yerine nazik ipucu.
+  const hint = rawErr?.includes("Unresolved token")
+    ? "Yukarıdaki detayları doldur — eksik alan var."
+    : rawErr
 
-  const check = () =>
-    composeMut.mutate({ packId, categoryId, shotId: shot.id, metadata })
+  // Otomatik compose (debounced) — metadata/shot değişince yeniden derle.
+  const metaKey = JSON.stringify(metadata)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      composeMut.mutate({ packId, categoryId, shotId: shot.id, metadata })
+    }, 350)
+    return () => clearTimeout(t)
+    // composeMut react-query'de stabil; metaKey/shot değişimi tetikler.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metaKey, shot.id, packId, categoryId])
 
   return (
     <div className="border-ui-border-base flex flex-col gap-y-3 rounded-lg border p-3">
@@ -51,36 +63,21 @@ export const ShotPreview = ({
         <span className="text-ui-fg-muted ml-auto text-xs">{shot.aspect}</span>
       </div>
 
-      <Button
-        variant="secondary"
-        size="small"
-        onClick={check}
-        disabled={composeMut.isPending}
-        className="self-start"
-      >
-        {composeMut.isPending ? <Spinner className="animate-spin" /> : <Sparkles />}
-        Kontrol et (önizle)
-      </Button>
+      {composeMut.isPending && (
+        <div className="text-ui-fg-subtle flex items-center gap-x-2">
+          <Spinner className="animate-spin" />
+          <Text size="xsmall">Talimat hazırlanıyor…</Text>
+        </div>
+      )}
 
-      {errMsg && (
+      {hint && (
         <Text size="xsmall" className="text-ui-fg-error">
-          {errMsg}
+          {hint}
         </Text>
       )}
 
       {instruction && (
         <>
-          <div className="border-ui-border-base bg-ui-bg-subtle max-h-40 overflow-y-auto rounded-md border p-2">
-            <Text size="xsmall" className="text-ui-fg-subtle whitespace-pre-wrap">
-              {instruction}
-            </Text>
-          </div>
-          <div className="flex items-center gap-x-2">
-            <CheckCircleSolid className="text-ui-tag-green-icon shrink-0" />
-            <Text size="xsmall" className="text-ui-fg-subtle">
-              Deterministik — aynı seçim her zaman bu talimatı verir.
-            </Text>
-          </div>
           <Button
             size="small"
             onClick={() => onGenerate(instruction, label)}
@@ -90,6 +87,31 @@ export const ShotPreview = ({
             {busy ? <Spinner className="animate-spin" /> : <Photo />}
             {hasImage ? "Üret" : "Önce görsel yükle"}
           </Button>
+
+          <div className="flex items-center gap-x-1.5">
+            <CheckCircleSolid className="text-ui-tag-green-icon shrink-0" />
+            <Text size="xsmall" className="text-ui-fg-subtle">
+              Deterministik — aynı seçim her zaman aynı talimatı verir.
+            </Text>
+            <button
+              type="button"
+              onClick={() => setShowInstruction((s) => !s)}
+              className="text-ui-fg-muted hover:text-ui-fg-base ml-auto text-xs"
+            >
+              {showInstruction ? "Talimatı gizle" : "Talimatı gör"}
+            </button>
+          </div>
+
+          <div
+            className={clx(
+              "border-ui-border-base bg-ui-bg-subtle overflow-y-auto rounded-md border p-2",
+              showInstruction ? "max-h-40" : "hidden"
+            )}
+          >
+            <Text size="xsmall" className="text-ui-fg-subtle whitespace-pre-wrap">
+              {instruction}
+            </Text>
+          </div>
         </>
       )}
     </div>

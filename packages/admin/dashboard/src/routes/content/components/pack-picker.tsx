@@ -2,7 +2,7 @@ import { Buildings, Spinner } from "@medusajs/icons"
 import { Input, Text, clx } from "@medusajs/ui"
 import { useEffect, useMemo, useState } from "react"
 import { PackSummary, usePacks } from "../../../hooks/api/content"
-import { BrandProfile } from "./brand-profile"
+import { BrandProfile, friendlyLabel } from "./brand-profile"
 import { ShotPreview } from "./shot-preview"
 
 /** Tek satır seçim chip'i (sektör / kategori / shot). */
@@ -181,7 +181,7 @@ export const PackPicker = ({
             {category.metadataSchema.map((k) => (
               <div key={k} className="flex flex-col gap-y-1">
                 <Text size="xsmall" className="text-ui-fg-muted">
-                  {k}
+                  {friendlyLabel(k)}
                 </Text>
                 <Input
                   size="small"
