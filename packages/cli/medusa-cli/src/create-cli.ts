@@ -74,13 +74,33 @@ function buildLocalCommands(cli, isLocalProject) {
       process.exit(1)
     }
 
-    try {
-      const cmdPath = resolveCwd.silent(`@medusajs/medusa/commands/${command}`)!
-      return require(cmdPath).default
-    } catch (err) {
-      console.error(err)
-      cli.showHelp((s: string) => console.error(s))
+    const medusaPkg = resolveCwd.silent(`@medusajs/medusa/package.json`)
+    const medusaRoot = medusaPkg ? path.dirname(medusaPkg) : null
+
+    const candidates = [
+      resolveCwd.silent(`@medusajs/medusa/commands/${command}`),
+      medusaRoot ? path.join(medusaRoot, `dist/commands/${command}.js`) : null,
+      medusaRoot
+        ? path.join(medusaRoot, `dist/medusa/src/commands/${command}.js`)
+        : null,
+    ].filter((p): p is string => !!p && existsSync(p))
+
+    for (const cmdPath of candidates) {
+      try {
+        const mod = require(cmdPath)
+        if (typeof mod?.default === "function") {
+          return mod.default
+        }
+      } catch (err) {
+        console.error(err)
+      }
     }
+
+    console.error(
+      `Could not load Medusa command "${command}". Run \`yarn build\` in packages/medusa (wesanjs fork).`
+    )
+    cli.showHelp((s: string) => console.error(s))
+    process.exit(1)
   }
 
   function getCommandHandler(command, handler) {

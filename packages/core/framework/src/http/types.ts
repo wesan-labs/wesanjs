@@ -204,6 +204,23 @@ export interface MedusaRequest<
    * 3. Store's default locale
    */
   locale?: string
+
+  /**
+   * Active organization id when `x-tenant-id` header is sent (#0004).
+   */
+  tenant_id?: string
+
+  /**
+   * Org membership role: admin | manager | member (org management, not module RBAC).
+   */
+  tenant_role?: string
+
+  /**
+   * Effective module RBAC role ids for the active org (#0007).
+   * `undefined` = no tenant scope (use global JWT roles).
+   * `[]` = tenant scoped but no module permissions.
+   */
+  tenant_rbac_role_ids?: string[]
 }
 
 export interface AuthContext {

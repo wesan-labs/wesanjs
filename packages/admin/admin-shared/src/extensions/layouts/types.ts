@@ -32,6 +32,7 @@ export interface LayoutSectionRegistry {
   [CORE_LAYOUT_IDS.SINGLE_COLUMN]: "main"
   [CORE_LAYOUT_IDS.SINGLE_ROW]: "main"
   [CORE_LAYOUT_IDS.TWO_COLUMN]: "main" | "side"
+  [CORE_LAYOUT_IDS.DASHBOARD_GRID]: "main"
   [CORE_LAYOUT_IDS.SETTINGS_SIDEBAR]:
     | "general"
     | "developer"

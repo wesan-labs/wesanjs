@@ -3800,6 +3800,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@medusajs/content-plugin@workspace:packages/plugins/content"
   dependencies:
+    "@aws-sdk/client-s3": ^3.556.0
     "@medusajs/admin-sdk": 2.15.5
     "@medusajs/cli": 2.15.5
     "@medusajs/dashboard": 2.15.5

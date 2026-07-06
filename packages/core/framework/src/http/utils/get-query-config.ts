@@ -10,7 +10,7 @@ import {
   promiseAll,
   stringToSelectRelationObject,
 } from "@medusajs/utils"
-import { AuthContext, MedusaRequest } from "../types"
+import { AuthContext, AuthenticatedMedusaRequest, MedusaRequest } from "../types"
 import {
   AllowedFieldFilter,
   FieldParser,
@@ -18,6 +18,7 @@ import {
   RestrictedFieldFilter,
 } from "./field-filtering"
 import { RBACFieldFilter } from "./policies/rbac-field-filter"
+import { resolveEffectiveRbacRoleIds } from "./resolve-effective-rbac-roles"
 
 export function pickByConfig<TModel>(
   obj: TModel | TModel[],
@@ -71,7 +72,9 @@ export async function prepareListQuery<T extends RequestQueryFields, TEntity>(
     filters.push(
       new RBACFieldFilter({
         policies: req.policies,
-        userRoles: (req.auth_context?.app_metadata?.roles as string[]) || [],
+        userRoles: req.auth_context
+          ? resolveEffectiveRbacRoleIds(req as AuthenticatedMedusaRequest)
+          : [],
         container: req.scope,
       })
     )
