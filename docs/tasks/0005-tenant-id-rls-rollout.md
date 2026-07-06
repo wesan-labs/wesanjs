@@ -13,10 +13,10 @@
 modül modül, her birini canlı doğrula.
 
 ## Kapsam
-- [ ] **revenue-plugin** tabloları (App, RevenueSource, RevenueEvent, MetricSnapshot, Expense) → tenant_id + RLS
-- [ ] **cms-plugin** tabloları (CmsSite, CmsCollection, CmsEntry) → tenant_id + RLS
+- [x] **revenue-plugin** tabloları (App, RevenueSource, RevenueEvent, MetricSnapshot, Expense) → tenant_id + RLS ✅ (2026-07-02)
+- [x] **cms-plugin** tabloları (CmsSite, CmsCollection, CmsEntry) → tenant_id + RLS
 - [ ] **Medusa core** (ürün/sipariş/müşteri) → Store Module `store_id` tenant anahtarı olarak; veya RLS ile scope
-- [ ] Her modülde yazma yolunda tenant_id enjeksiyonu
+- [x] Her modülde yazma yolunda tenant_id enjeksiyonu — revenue + content + cms app-layer ✅
 - [ ] Migration'lar geriye-uyumlu (mevcut veriye default tenant ata)
 
 ## Bitti sayılır

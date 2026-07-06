@@ -1,50 +1,119 @@
-# analytics — Pluggable analytics provider relay   [🟡 Kısmi]
+# analytics — Hosted vertical analytics engine   🟡 ADR-0003
 
 ## Ne yapar
-Segment vb. tracking aracını Medusa event'lerine bağlar ve track/identify çağrılarını yapılandırılmış provider'a yönlendirir. Bir adapter/proxy katmanı; kendi veri persistence'ı yok.
+
+Tenant-scoped **hosted analytics** engine: ürün registry, bootstrap token, PostHog/GlitchTip
+provisioning, günlük metric snapshot sync ve `track`/`identify` relay.
+
+**Karar:** [ADR-0003](../../adr/0003-hosted-vertical-analytics.md) — PostHog (davranış) +
+GlitchTip (crash). BYOK matrisi MVP'de yok.
 
 ## Tür & katman
-Modül · servis katmanı (persistence yok) · tenant_id yok.
+
+| | |
+|---|---|
+| **Tür** | infrastructure module (`@medusajs/analytics`) |
+| **Katman** | servis + persistence + OSS motor client'ları |
+| **tenant_id** | Evet — RLS |
+| **Admin UI** | Analytics plugin kabuğu + dashboard `/analytics` |
+
+## Bugün vs hedef (ADR-0003)
+
+| | Bugün | Hedef |
+|---|-------|-------|
+| Persistence | Yok | `analytics_metric_snapshot`, `analytics_bootstrap_token` |
+| Provider | Tek global PostHog relay | Tenant-aware PostHog + GlitchTip routing |
+| tenant_id | Yok | RLS + scope filter |
+| Provisioning | Yok | Tenant → PH project; product → PH group |
+| Bootstrap | Yok | Token → SDK config API |
+| Panel grafikleri | Yok | Snapshot + PostHog API özet |
 
 ## Mimari / katmanlar
-| Katman | Var mı | Sayı / İçerik |
-|--------|--------|---------------|
-| models | ❌ | YOK (persistence yok) |
-| services | ✅ | 2 service (AnalyticsService: track/identify/shutdown; AnalyticsProviderService: DI provider routing) |
-| repositories | — | — |
-| loaders | ✅ | providers loader |
-| migrations | ❌ | YOK |
-| api | ❌ | yok |
-| admin | ❌ | yok |
 
-Ek: types (IAnalyticsProvider).
+| Katman | Bugün | Hedef |
+|--------|-------|-------|
+| models | ❌ | snapshot, bootstrap_token |
+| services | ✅ relay only | + ProductService, BootstrapService, SnapshotSync |
+| providers | PostHog, Local | PostHog tenant-aware; GlitchTip DSN provision |
+| jobs | ❌ | daily PostHog/GlitchTip sync |
+| api | ❌ | Analytics plugin'de |
 
 ## Veri modeli
-YOK — modül veri saklamaz, çağrıları dış provider'a relay eder.
 
-## Public yüzey
-- `track()`
-- `identify()`
-- `shutdown()`
-- Provider DI discovery (`aly_*` prefix), validation (tam 1 provider gerekli), `onApplicationShutdown` graceful.
+### analytics_metric_snapshot
+
+Revenue `metric_snapshot` pattern — panel grafikleri.
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| tenant_id | text | RLS |
+| product_id | text | RevApp id |
+| date | date | UTC gün |
+| source | enum | `posthog` \| `glitchtip` \| `gameanalytics` |
+| metric | text | `dau`, `crash_count`, `funnel_step_*`, … |
+| value | numeric | |
+| dimensions | jsonb | platform, version |
+
+### analytics_bootstrap_token
+
+| Alan | Tip |
+|------|-----|
+| tenant_id, product_id | text |
+| token_hash | text |
+
+### Ürün kaynağı (Faz 1)
+
+Revenue `RevApp` + yeni alanlar: `vertical` (`mobile_game` \| `mobile_app` \| `web`),
+`runtime` (`unity` \| `godot` \| `expo` \| `nextjs` \| …).
+
+## Vertical pack (Wesan katmanı — config, fork değil)
+
+| Vertical | PostHog events | Dashboard |
+|----------|----------------|-----------|
+| mobile_game | level_*, session_*, ad_*, iap_* | D1/D7, level drop-off |
+| mobile_app | onboarding_*, subscribe_* | Onboarding hunisi |
+| web | pageview, cta_*, signup | Conversion hunisi |
+
+## Provider stratejisi
+
+```
+Platform infra:
+  PostHog self-host (MIT) — tenant = project, product = group
+  GlitchTip self-host (MIT) — tenant = org, product = project
+
+medusa-config:
+  providers: [{ resolve: "@medusajs/analytics-posthog", … platform PH }]
+
+AnalyticsService.track(event, { tenant_id, product_id }):
+  → resolve tenant PostHog project key
+  → capture with groups: { product: product_id }
+```
+
+## Public yüzey (hedef)
+
+| Method | Açıklama |
+|--------|----------|
+| `listProducts(tenantId)` | RevApp + vertical |
+| `provisionProduct(...)` | PH group + GlitchTip project |
+| `getBootstrapConfig(token)` | SDK init JSON |
+| `rotateBootstrapToken(productId)` | |
+| `syncSnapshots(tenantId?)` | Job entry |
+| `track` / `identify` | Mevcut — tenant context eklenir |
 
 ## Bağımlılıklar & linkler
-Dış analytics provider'ı (Segment vb.) `IAnalyticsProvider` arayüzü üzerinden DI ile bağlanır. Tam 1 provider zorunlu.
+
+- [ADR-0003](../../adr/0003-hosted-vertical-analytics.md)
+- [observability plugin](../plugins/observability.md)
+- [vertical-analytics.md](../../observability/vertical-analytics.md)
+- Revenue snapshot: `packages/plugins/revenue/src/modules/revenue/models/metric-snapshot.ts`
 
 ## Durum
-- **Yapılan:** Adapter/proxy layer tam, provider abstraction (IAnalyticsProvider), DI-driven discovery, error handling.
-- **Yapılmayan / eksik:** VERİ MODELİ YOK, persistence yok, event logging/audit yok, API, admin, migration.
-- **Yapılacak (sıralı):**
-  1. Event modeli (actor_id, event_type, properties, timestamp, tenant_id)
-  2. Logging service (log/filter/export)
-  3. API (events)
-  4. Predefined events registry
-  5. Admin viewer + CSV export
 
-## Hizmet ettiği dikeyler
-Tüm dikeyler (analitik yatay).
+- **Yapılan:** PostHog + Local provider relay, track/identify API
+- **Yapılacak:** ADR-0003 engine (snapshot, bootstrap, sync, tenant-aware PH)
+- **Kaldırılacak:** ADR-0002 BYOK `AnalyticsConnection` matris modeli (enterprise Faz 5)
 
 ## Kanıt yolları
-- `packages/modules/analytics/src/services`
-- `packages/modules/analytics/src/loaders`
-- `packages/modules/analytics/src/types`
+
+- `packages/modules/analytics/src/services/`
+- `packages/modules/providers/analytics-posthog/`

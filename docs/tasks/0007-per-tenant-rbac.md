@@ -2,26 +2,51 @@
 
 | | |
 |---|---|
-| **Durum** | 📋 Backlog (#0004 ile paralel ilerleyebilir) |
+| **Durum** | 🟡 Temel wire tamam — UI atama + varsayılan roller bekliyor |
 | **Öncelik** | Orta-Yüksek |
 | **Etiketler** | multi-tenant · rbac · auth |
 | **Bağımlı** | #0004 |
 | **Karar** | ADR-0001 |
 
 ## Amaç
-Per-tenant roller (admin / yönetici / sosyal-medya-uzmanı / yazılımcı …). Sıfırdan yazma
-— Medusa'nın **`@medusajs/rbac`**'i zaten var (`RbacRole` + `RbacPolicy{resource,operation}`
-+ rol kalıtımı); auth + modül taksonomisine bağla.
 
-## Kapsam
-- [ ] `@medusajs/rbac` modülünü helm config'e ekle + migrate
-- [ ] **Resource taksonomisi:** her modül/plugin = resource namespace; operation = read/write/publish/delete/...
-- [ ] **Varsayılan roller** (tenant kurulunca seed): admin (hepsi), yönetici (çoğu, sil hariç), sosyal-uzman (social/content), yazılımcı (geniş + ayarlar)
-- [ ] **Atama tenant-içi:** `TenantMembership.role` (#0004) ↔ RbacRole
-- [ ] **AuthZ guard:** route'larda resource+operation kontrolü (entitlement #0006 ile birlikte)
-- [ ] (Sonra) bağlam-bağımlı kurallar için ABAC katmanı (Cerbos/OPA) — sadece gerekirse
+Per-tenant modül rolleri. Medusa `@medusajs/rbac` + `TenantMembership.rbac_role_id` ile org başına atama.
+
+## Tamamlanan (dikkatli MVP)
+
+- [x] `tenant_membership.rbac_role_id` kolonu + migration
+- [x] Çözümleme kuralları dokümante (`control-plane.md` tablo)
+- [x] `resolveTenantRbacRoleIds` + unit test dosyası
+- [x] Framework: `check-permissions`, `me/permissions`, field filter → tenant-scoped
+- [x] `PATCH /admin/tenants/:id/members/:membershipId` (role + rbac_role_id)
+- [x] Finance pilot: global rol kaldırıldı, Acme membership'e taşındı
+- [x] `verify-onboarding-pilot` per-tenant assert'leri
+
+## Bekleyen (bilinçli olarak sonraya)
+
+- [ ] Dashboard: üye satırında modül rolü göster + düzenle
+- [ ] Varsayılan tenant rolleri seed (admin → tenant-admin template)
+- [ ] Content/social policy taksonomisi + sosyal-uzman rolü
+- [ ] ABAC (Cerbos/OPA) — yalnız gerekirse
+
+## Çözümleme kuralları
+
+`x-tenant-id` varken:
+
+1. `role_super_admin` (global) → platform bypass
+2. `rbac_role_id` → o rol
+3. `membership.role === admin` → global modül rolleri inherit
+4. Diğer → `[]`
 
 ## Bitti sayılır
-- [ ] Sosyal-uzman kullanıcı revenue'ya erişemiyor (403); social/content'e erişiyor
-- [ ] Rol değişimi anında yetkiyi değiştiriyor (micromanage permission yok)
-- [ ] Roller tenant-scoped (A'daki admin, B'de hiçbir şey)
+
+- [x] Finance: Acme'de revenue, Beta'da modül izni yok (verify script)
+- [ ] UI'dan `rbac_role_id` atanabiliyor
+- [ ] Sosyal-uzman şablonu revenue'ya 403 veriyor
+- [ ] Dokümante edilmiş operatör runbook
+
+## Dosyalar
+
+- `packages/plugins/tenant/src/api/lib/resolve-tenant-rbac-roles.ts`
+- `packages/core/framework/src/http/utils/resolve-effective-rbac-roles.ts`
+- `packages/medusa/src/migration-scripts/wire-per-tenant-rbac.ts`
