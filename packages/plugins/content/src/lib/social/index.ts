@@ -1,19 +1,51 @@
-import { lateProvider } from "./late"
-import { SocialProvider } from "./types"
+import type { AuthenticatedMedusaRequest } from "@medusajs/framework/http"
+import type { MedusaContainer } from "@medusajs/framework/types"
+import { createLateProvider } from "./late"
+import { resolveSocialContext } from "./context"
+import type { SocialProvider } from "./types"
 
 export * from "./types"
 export { SocialProviderError } from "./late"
+export { createLateProvider } from "./late"
+export {
+  platformZernioApiKey,
+  resolveSocialContext,
+} from "./context"
 
-/**
- * Provider-agnostic selector. SOCIAL_PROVIDER picks the backing aggregator;
- * one impl today (late/zernio). Swapping = add a file + a case, no route changes.
- */
-export const getSocialProvider = (): SocialProvider => {
-  const name = (process.env.SOCIAL_PROVIDER || "late").toLowerCase()
-  switch (name) {
-    case "late":
-    case "zernio":
-    default:
-      return lateProvider
+const noopProvider: SocialProvider = {
+  name: "late",
+  isConfigured: () => false,
+  listAccounts: async () => [],
+  connectUrl: async () => {
+    throw new Error("Social provider not configured")
+  },
+  getAnalytics: async () => {
+    throw new Error("Social provider not configured")
+  },
+  publish: async () => {
+    throw new Error("Social provider not configured")
+  },
+}
+
+/** @deprecated Use getSocialProviderForRequest — tenant-scoped. */
+export const getSocialProvider = (): SocialProvider => noopProvider
+
+export async function getSocialProviderForRequest(
+  req: AuthenticatedMedusaRequest,
+  container: MedusaContainer
+): Promise<SocialProvider> {
+  const tenantId = (req as { tenant_id?: string }).tenant_id
+  const ctx = await resolveSocialContext(container, tenantId)
+  if (!ctx) {
+    return noopProvider
   }
+  return createLateProvider(ctx)
+}
+
+export async function getSocialProviderForTenant(
+  container: MedusaContainer,
+  tenantId: string
+): Promise<SocialProvider | null> {
+  const ctx = await resolveSocialContext(container, tenantId)
+  return ctx ? createLateProvider(ctx) : null
 }

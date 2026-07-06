@@ -1,8 +1,11 @@
-import { MedusaContainer } from "@medusajs/framework/types"
-import { getSocialProvider } from "./index"
+import type { MedusaContainer } from "@medusajs/framework/types"
+import type { SocialProvider } from "./types"
 import { SOCIAL_SNAPSHOT_MODULE } from "../../modules/social-snapshot"
+import {
+  getSocialProviderForTenant,
+  platformZernioApiKey,
+} from "./index"
 
-/** UTC day key (YYYY-MM-DD) so re-runs on the same day upsert one row. */
 const todayKey = (): string => new Date().toISOString().slice(0, 10)
 
 export interface CaptureResult {
@@ -12,21 +15,17 @@ export interface CaptureResult {
   reason?: string
 }
 
-/**
- * Capture one daily metrics snapshot per connected account. Idempotent per
- * (account, day): re-running the same day overwrites that day's row, so the
- * cron can fire often and restarts are safe. Builds the history the provider lacks.
- */
-export async function captureSnapshots(
-  container: MedusaContainer
+async function captureForProvider(
+  container: MedusaContainer,
+  provider: SocialProvider,
+  tenantId: string | null
 ): Promise<CaptureResult> {
   const date = todayKey()
-  const provider = getSocialProvider()
-  if (!provider.isConfigured()) {
-    return { captured: 0, skipped: 0, date, reason: "provider not configured" }
+  const service = container.resolve(SOCIAL_SNAPSHOT_MODULE) as {
+    listSocialSnapshots: (f: object, c?: object) => Promise<{ id: string }[]>
+    updateSocialSnapshots: (d: object) => Promise<unknown>
+    createSocialSnapshots: (d: object) => Promise<unknown>
   }
-
-  const service = container.resolve(SOCIAL_SNAPSHOT_MODULE) as any
   const accounts = await provider.listAccounts()
   let captured = 0
 
@@ -48,7 +47,9 @@ export async function captureSnapshots(
         avgWatchTime: overview.avgWatchTime,
       }
 
-      const existing = await service.listSocialSnapshots({ account_id: a.id, date })
+      const filter: Record<string, unknown> = { account_id: a.id, date }
+      if (tenantId) filter.tenant_id = tenantId
+      const existing = await service.listSocialSnapshots(filter)
       if (existing.length) {
         await service.updateSocialSnapshots({
           id: existing[0].id,
@@ -61,6 +62,7 @@ export async function captureSnapshots(
           platform: a.platform,
           date,
           metrics,
+          tenant_id: tenantId,
         })
       }
       captured++
@@ -72,4 +74,57 @@ export async function captureSnapshots(
   }
 
   return { captured, skipped: accounts.length - captured, date }
+}
+
+/** Snapshot all tenants that have a Zernio profile (cron). */
+export async function captureSnapshots(
+  container: MedusaContainer
+): Promise<CaptureResult> {
+  const date = todayKey()
+  if (!platformZernioApiKey()) {
+    return { captured: 0, skipped: 0, date, reason: "platform key missing" }
+  }
+
+  const TENANT_MODULE = "tenant"
+  let tenants: { id: string }[] = []
+  try {
+    const tenantService = container.resolve(TENANT_MODULE) as {
+      listTenants: (f: object, c?: object) => Promise<{ id: string }[]>
+    }
+    tenants = await tenantService.listTenants({}, { take: 500 })
+  } catch {
+    return { captured: 0, skipped: 0, date, reason: "tenant module unavailable" }
+  }
+
+  let captured = 0
+  let skipped = 0
+  for (const t of tenants) {
+    const provider = await getSocialProviderForTenant(container, t.id)
+    if (!provider) {
+      continue
+    }
+    const r = await captureForProvider(container, provider, t.id)
+    captured += r.captured
+    skipped += r.skipped
+  }
+
+  return { captured, skipped, date }
+}
+
+/** Manual snapshot for one org (admin POST). */
+export async function captureTenantSnapshots(
+  container: MedusaContainer,
+  tenantId: string
+): Promise<CaptureResult> {
+  const date = todayKey()
+  const provider = await getSocialProviderForTenant(container, tenantId)
+  if (!provider) {
+    return {
+      captured: 0,
+      skipped: 0,
+      date,
+      reason: "tenant social not configured",
+    }
+  }
+  return captureForProvider(container, provider, tenantId)
 }

@@ -3,6 +3,7 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { SOCIAL_SNAPSHOT_MODULE } from "../../../../../modules/social-snapshot"
+import { tenantScopeFilter } from "../../../../lib/tenant-guard"
 
 /**
  * GET /admin/content/social/trends?accountId=…&days=30
@@ -23,7 +24,7 @@ export const GET = async (
   const service = req.scope.resolve(SOCIAL_SNAPSHOT_MODULE) as any
 
   const snapshots = await service.listSocialSnapshots(
-    { account_id: accountId },
+    tenantScopeFilter(req, { account_id: accountId }),
     { order: { date: "ASC" }, take: days }
   )
 

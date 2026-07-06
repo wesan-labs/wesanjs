@@ -16,6 +16,8 @@
     "./package.json": "./package.json",
     "./modules/content-library": "./.medusa/server/src/modules/content-library/index.js",
     "./.medusa/server/src/modules/content-library": "./.medusa/server/src/modules/content-library/index.js",
+    "./modules/content-connection": "./.medusa/server/src/modules/content-connection/index.js",
+    "./.medusa/server/src/modules/content-connection": "./.medusa/server/src/modules/content-connection/index.js",
     "./modules/social-snapshot": "./.medusa/server/src/modules/social-snapshot/index.js",
     "./.medusa/server/src/modules/social-snapshot": "./.medusa/server/src/modules/social-snapshot/index.js",
     "./.medusa/server/src/*": "./.medusa/server/src/**/*.js"
@@ -95,6 +97,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.556.0"
   },
   "packageManager": "yarn@3.2.1"
 }

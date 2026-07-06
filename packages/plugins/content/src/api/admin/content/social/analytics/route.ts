@@ -3,14 +3,10 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import {
-  getSocialProvider,
+  getSocialProviderForRequest,
   SocialProviderError,
 } from "../../../../../lib/social"
 
-/**
- * GET /admin/content/social/analytics?accountId=…
- * Per-account insights (overview aggregates + per-post metrics) from the provider.
- */
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
@@ -20,11 +16,11 @@ export const GET = async (
     res.status(400).json({ error: "accountId gerekli." })
     return
   }
-  const provider = getSocialProvider()
+  const provider = await getSocialProviderForRequest(req, req.scope)
   if (!provider.isConfigured()) {
-    res
-      .status(400)
-      .json({ error: "ZERNIO_API_KEY tanımlı değil — önce key ekleyin." })
+    res.status(400).json({
+      error: "Sosyal analitik yapılandırılmamış.",
+    })
     return
   }
   try {

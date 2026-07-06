@@ -13,6 +13,7 @@ export interface CreateContentItemInput {
   language?: string | null
   platform?: string | null
   prompt_id?: string | null
+  tenant_id?: string | null
 }
 
 const createContentItemStep = createStep(

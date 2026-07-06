@@ -3,26 +3,21 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import {
-  getSocialProvider,
+  getSocialProviderForRequest,
   SocialProviderError,
 } from "../../../../../../lib/social"
 
-/**
- * GET /admin/content/social/connect/:platform
- * Returns a hosted OAuth URL; the UI opens it so the user authorizes the account
- * on the platform. The provider stores the token and the account appears in
- * /accounts after authorization.
- */
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
   const { platform } = req.params
-  const provider = getSocialProvider()
+  const provider = await getSocialProviderForRequest(req, req.scope)
   if (!provider.isConfigured()) {
-    res
-      .status(400)
-      .json({ error: "ZERNIO_API_KEY tanımlı değil — önce key ekleyin." })
+    res.status(400).json({
+      error:
+        "Sosyal yayın platform tarafından yapılandırılmamış. Levios operatörüne başvurun.",
+    })
     return
   }
   try {

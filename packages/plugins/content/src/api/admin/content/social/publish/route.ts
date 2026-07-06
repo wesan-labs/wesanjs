@@ -3,9 +3,13 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import {
-  getSocialProvider,
+  getSocialProviderForRequest,
   SocialProviderError,
 } from "../../../../../lib/social"
+import {
+  mediaRequiredError,
+  targetsRequiringMedia,
+} from "../../../../../lib/social/platform-rules"
 import {
   isImageHostConfigured,
   uploadImage,
@@ -52,11 +56,12 @@ export const POST = async (
     return
   }
 
-  const provider = getSocialProvider()
+  const provider = await getSocialProviderForRequest(req, req.scope)
   if (!provider.isConfigured()) {
-    res
-      .status(400)
-      .json({ error: "ZERNIO_API_KEY tanımlı değil — önce key ekleyin." })
+    res.status(400).json({
+      error:
+        "Sosyal yayın yapılandırılmamış. Organizasyon profili oluşturulamadı veya platform anahtarı eksik.",
+    })
     return
   }
 
@@ -66,7 +71,7 @@ export const POST = async (
     if (!isImageHostConfigured()) {
       res.status(400).json({
         error:
-          "Görsel barındırma yapılandırılmamış (IMAGE_HOST). Public URL gir ya da IMGBB_API_KEY/CLOUDINARY_* ekle.",
+          "Görsel barındırma aktif değil (platform IMAGE_HOST). Public medya URL'i girin.",
       })
       return
     }
@@ -78,6 +83,12 @@ export const POST = async (
       res.status(502).json({ error: `Görsel yüklenemedi: ${(e as Error).message}` })
       return
     }
+  }
+
+  const mediaPlatforms = targetsRequiringMedia(targets)
+  if (mediaPlatforms.length && !finalMediaUrls.length) {
+    res.status(400).json({ error: mediaRequiredError(mediaPlatforms) })
+    return
   }
 
   try {
