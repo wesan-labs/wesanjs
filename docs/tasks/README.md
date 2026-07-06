@@ -11,10 +11,14 @@ Issues mantığıyla: durum · öncelik · etiket · kapsam (checklist) · "bitt
 
 | # | Başlık | Durum | Öncelik | Etiket |
 |---|--------|-------|---------|--------|
-| [0004](0004-tenant-foundation.md) | **Tenant foundation + kanıt dilimi** | 🟢 Hazır — **ŞİMDİ** | Yüksek | multi-tenant |
-| [0005](0005-tenant-id-rls-rollout.md) | tenant_id + RLS rollout | 📋 Backlog | Yüksek | multi-tenant |
+| [0008](0008-rbac-finance-pilot.md) | **RBAC Finance pilot + onboarding** | 🟡 Service ✅ UI kaldı | Yüksek | rbac · onboarding |
+| [0009](0009-tenant-isolation-proof.md) | İki tenant izolasyon kanıtı | 🟡 Service ✅ UI kaldı | Yüksek | multi-tenant · qa |
+| [0011](0011-content-studio-pack-engine.md) | **Content Studio Pack & Template Engine** | 📋 Backlog | Yüksek | content-studio · ai · packs |
+| [0010](0010-observability-plugin.md) | **Hosted vertical analytics (ADR-0003)** | 🟢 Hazır | Orta-Yüksek | analytics · posthog · glitchtip |
+| [0004](0004-tenant-foundation.md) | Tenant foundation + kanıt dilimi | 🚧 Devam | Yüksek | multi-tenant |
+| [0005](0005-tenant-id-rls-rollout.md) | tenant_id + RLS rollout | 🚧 Devam (cms/content/revenue ✅) | Yüksek | multi-tenant |
 | [0006](0006-entitlements-composable-panel.md) | Entitlements + kompoze panel | 📋 Backlog | Orta-Yüksek | multi-tenant |
-| [0007](0007-per-tenant-rbac.md) | Per-tenant RBAC | 📋 Backlog | Orta-Yüksek | multi-tenant · auth |
+| [0007](0007-per-tenant-rbac.md) | Per-tenant RBAC | 🟡 Temel wire — UI atama bekliyor | Orta-Yüksek | multi-tenant · auth |
 | [0001](0001-tailwind-v4-migration.md) | Tailwind v3 → v4 geçişi | 📋 Backlog | Orta | infra · design-system |
 | [0002](0002-ui-kit-chart-primitives.md) | UI kit: chart primitive port | 🟢 Hazır | Orta | ui · design-system |
 | [0003](0003-geo-viz-kit.md) | Geo-viz kit (deck.gl + MapLibre) | 📋 Backlog (Faz 4) | Düşük | ui · geo |

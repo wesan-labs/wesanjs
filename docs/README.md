@@ -4,6 +4,8 @@ Bu dizin, **wesanjs** SaaS panel platformunun modüler mimarisini, veri modeller
 
 Detaylı pazar analizi, sektör kaldıraç matrisi ve yol haritası için: [Sektör × Modül Haritası](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/research/2026-06-29-sector-module-map.md)
 
+**Ana mimari doküman (ürün + 4 modül + plugin sözleşmesi):** [levios-platform-architecture.md](architecture/levios-platform-architecture.md)
+
 ---
 
 ## Mimari Özet ve Kavram Ayrımı
@@ -14,18 +16,38 @@ Medusa v2 katman mimarisi şu akışı izler:
 *   **Modül (Module):** Tek bir iş alanından sorumlu, veri modelleri, CRUD servis metotları, migration ve repository içeren bağımsız birimdir. HTTP katmanı veya UI barındırmaz. Diğer modüllerle doğrudan konuşmaz, **Module Link** ile bağlanır.
 *   **Plugin:** Bir veya birden fazla **modülü**, HTTP API rotalarını, admin panel bileşenlerini (UI), cron işlerini (jobs) ve mutasyon akışlarını (workflows) bir araya getirip projeye komple kurulabilir paket haline getiren bohçadır.
 
+**Kontrol düzlemi vs feature plugin:** `tenant` teknik olarak bir plugin paketidir ama mimari olarak **feature değildir** — tüm katmanları dikey kesen platform omurgasıdır (izolasyon, kimlik, üyelik). Admin UI'da Settings altında **Organization / Team** olarak durur; sidebar feature listesinde yer almaz. Bkz. [Kontrol Düzlemi](architecture/control-plane.md).
+
 ---
 
-## 1. Plugin'ler (Packages / Plugins)
+## 0. Platform Omurgası (Control Plane)
+
+Yatay katman — feature plugin'lerin ve commerce modüllerinin **üstünde** scope + kimlik + izolasyon sağlar.
+
+| Durum | Birim | Tek Satır Özet | Dosya Linki |
+| :---: | :--- | :--- | :--- |
+| 🟡 | `tenant` | Multi-tenant omurga: Tenant + Membership + context middleware + RLS | [tenant.md](architecture/plugins/tenant.md) |
+| 🟡 | `rbac` | Per-tenant rol/policy (model ✅, enforcement 🔴) | [rbac.md](architecture/modules/custom/rbac.md) |
+| 🔮 | `entitlement` | Plan + feature gate + modül mağazası runtime | [entitlement.md](architecture/planned/entitlement.md) |
+
+**Karar:** [ADR-0001 — Multi-tenancy](adr/0001-multi-tenancy.md) · [ADR-0002 — Analytics engine + observability shell](adr/0002-analytics-engine-observability-shell.md) (BYOK kısmı superseded) · **[ADR-0003 — Hosted vertical analytics](adr/0003-hosted-vertical-analytics.md)** · **Platform mimarisi:** [levios-platform-architecture.md](architecture/levios-platform-architecture.md) · **Analytics:** [observability.md](architecture/plugins/observability.md) · **Engine:** [analytics.md](architecture/modules/custom/analytics.md)
+
+```
+tenant_id + RLS ──► cms · revenue · content · loyalty · … · commerce core
+```
+
+---
+
+## 1. Feature Plugin'ler (Packages / Plugins)
 
 | Durum | Adı | Tek Satır Özet | Dosya Linki |
 | :---: | :--- | :--- | :--- |
 | ✅ | `loyalty` | Hediye kartı + store-credit (dijital cüzdan) sistemi | [loyalty.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/loyalty.md) |
 | 🟡 | `revenue` | RevenueCat ve AdMob abonelik/reklam geliri agregasyonu | [revenue.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/revenue.md) |
 | 🟡 | `content` | AI içerik stüdyosu + sosyal medya metrik snapshot | [content.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/content.md) |
-| 🟡 | `cms` | Çok-siteli içerik (site/collection/entry) draft/publish | [cms.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/cms.md) |
-| 🟡 | `tenant` | Çok-kiracılı (multi-tenant) sistem omurgası | [tenant.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/tenant.md) |
-| 🟡 | `mail` | Stalwart-backed personel e-posta kutusu yönetimi | [mail.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/mail.md) |
+| 🟡 | `cms` | Çok-siteli içerik (site/collection/entry) draft/publish | [cms.md](architecture/plugins/cms.md) |
+| 🟡 | `mail` | Stalwart-backed personel e-posta kutusu yönetimi | [mail.md](architecture/plugins/mail.md) |
+| 🔴 | `observability` | Hosted vertical analytics — PostHog + GlitchTip, `/analytics` UI (ADR-0003) | [observability.md](architecture/plugins/observability.md) |
 | 🔴 | `draft-order` | Admin panelden müşteri adına taslak sipariş oluşturma (sadece UI) | [draft-order.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/plugins/draft-order.md) |
 
 ---
@@ -37,7 +59,7 @@ Medusa v2 katman mimarisi şu akışı izler:
 | ✅ | `rbac` | Rol-bazlı yetkilendirme (rol/policy/hiyerarşi) | [rbac.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/modules/custom/rbac.md) |
 | ✅ | `settings` | Admin panel tablosu görünüm ve kullanıcı tercihleri | [settings.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/modules/custom/settings.md) |
 | ✅ | `translation` | Çoklu-dil translatable şema ve çeviri deposu | [translation.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/modules/custom/translation.md) |
-| 🟡 | `analytics` | Segment vb. sağlayıcılara yönlendirici analitik geçidi | [analytics.md](file:///Users/canakyuz/Developer/wesan/levios/wesanjs/docs/architecture/modules/custom/analytics.md) |
+| 🟡 | `analytics` | Hosted vertical analytics **engine** (snapshot, bootstrap, PostHog/GlitchTip sync) | [analytics.md](architecture/modules/custom/analytics.md) |
 
 ---
 
