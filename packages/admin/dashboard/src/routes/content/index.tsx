@@ -55,6 +55,7 @@ import { CompareSlider } from "./components/compare-slider"
 import { CopyButton } from "./components/copy-button"
 import { ImageMethod, ImageTab } from "./components/image-tab"
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./components/languages"
+import { PackPicker } from "./components/pack-picker"
 import { ASPECTS } from "./components/prompt-meta"
 import { PromptLibrarySection } from "./components/prompt-library-section"
 import { TextMethod, TextTab } from "./components/text-tab"
@@ -527,7 +528,28 @@ export const Component = () => {
         {/* Sağ: tek panel — düzenle araçları VEYA galeri (canvas'la yan yana) */}
         <div className="min-h-0 overflow-y-auto p-6">
           <div className={clx(panel !== "image" && "hidden")}>
-            {imageMethod === "library" ? (
+            {imageMethod === "pack" ? (
+              <div className="flex flex-col gap-y-3">
+                <button
+                  type="button"
+                  onClick={() => setImageMethod("free")}
+                  className="text-ui-fg-subtle hover:text-ui-fg-base self-start text-xs font-medium"
+                >
+                  ← Düzenlemeye dön
+                </button>
+                <PackPicker
+                  suggestedSector={suggestedSector}
+                  analysisFields={analysis?.fields}
+                  brandProfile={brandProfile}
+                  hasImage={!!source}
+                  busy={editing}
+                  onGenerate={(instruction, label) =>
+                    runEdit({ instruction }, label)
+                  }
+                  onEditBrand={() => setBrandOpen(true)}
+                />
+              </div>
+            ) : imageMethod === "library" ? (
               <div className="flex flex-col gap-y-3">
                 <button
                   type="button"

@@ -1,12 +1,15 @@
-import { ChevronDownMini, Photo, SquaresPlus } from "@medusajs/icons"
+import { ChevronDownMini, Photo, SquaresPlus, Buildings } from "@medusajs/icons"
 import { Button, Text } from "@medusajs/ui"
 import { EditPanel } from "./edit-panel"
 import { QuickActions } from "./quick-actions"
 
 type Source = { data: string; mime: string }
 
-/** "free" = quick-edit tools in the rail; "library" = the bottom prompt gallery. */
-export type ImageMethod = "free" | "library"
+/**
+ * "free" = quick-edit tools in the rail; "pack" = deterministic pack-first
+ * picker (sector → category → shot, no LLM); "library" = legacy prompt gallery.
+ */
+export type ImageMethod = "free" | "pack" | "library"
 
 /**
  * Görsel tab — the right-rail workspace. One coherent "Hızlı düzenle" tool
@@ -31,9 +34,14 @@ export const ImageTab = ({
 }) => {
   return (
     <div className="flex flex-col gap-y-4">
-      <Button variant="secondary" onClick={() => setMethod("library")}>
+      <Button onClick={() => setMethod("pack")}>
+        <Buildings />
+        Sektör paketi — hazır çekimler
+        <ChevronDownMini className="ml-auto" />
+      </Button>
+      <Button variant="transparent" onClick={() => setMethod("library")}>
         <SquaresPlus />
-        Hazır prompt galerisi
+        Hazır prompt galerisi (eski)
         <ChevronDownMini className="ml-auto" />
       </Button>
 

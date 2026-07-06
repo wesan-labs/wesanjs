@@ -44,6 +44,8 @@ export interface PackSummary {
   categories: {
     id: string
     label: string
+    /** UI'nın hangi metadata alanlarını soracağını bilmesi için (color, legs…). */
+    metadataSchema: string[]
     shots: { id: string; label: string; mode: string; aspect: string }[]
   }[]
 }
@@ -55,6 +57,7 @@ const toSummary = (p: PackDef): PackSummary => ({
   categories: Object.entries(p.categories).map(([cid, c]) => ({
     id: cid,
     label: c.label,
+    metadataSchema: c.metadataSchema,
     shots: Object.entries(c.shots).map(([sid, s]) => ({
       id: sid,
       label: s.label,

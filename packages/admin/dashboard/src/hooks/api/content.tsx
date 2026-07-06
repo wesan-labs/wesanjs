@@ -314,7 +314,10 @@ export const useDeleteContentItem = (
 
 export interface EditImageInput {
   image: GenerateContentImage
+  /** pack compose'dan gelen deterministik instruction — tek hop (LLM ara katmanı yok) */
+  instruction?: string
   prompt?: string
+  /** @deprecated 2-hop library path — pack compose'a geç */
   promptId?: string
   variables?: Record<string, string>
 }
@@ -463,6 +466,75 @@ export const useRunPrompt = (
   useMutation({
     mutationFn: (input: { id: string; variables: Record<string, string> }) =>
       sdk.client.fetch<RunPromptResponse>("/admin/content/prompts/run", {
+        method: "POST",
+        body: input,
+      }),
+    ...options,
+  })
+
+/* ── Pack engine (deterministik görsel talimatı — LLM yok) ────────────── */
+
+export interface PackShot {
+  id: string
+  label: string
+  mode: "transform" | "generate"
+  aspect: string
+}
+
+export interface PackCategory {
+  id: string
+  label: string
+  /** UI'nın soracağı metadata alan anahtarları (furniture: color/legs; game: GAME_NAME…) */
+  metadataSchema: string[]
+  shots: PackShot[]
+}
+
+export interface PackSummary {
+  id: string
+  sector: string
+  label: string
+  categories: PackCategory[]
+}
+
+export const usePacks = (
+  options?: Omit<
+    UseQueryOptions<{ packs: PackSummary[] }, FetchError>,
+    "queryFn" | "queryKey"
+  >
+) =>
+  useQuery({
+    queryKey: ["content-packs"],
+    queryFn: () =>
+      sdk.client.fetch<{ packs: PackSummary[] }>("/admin/content/packs"),
+    ...options,
+  })
+
+export interface ComposeInput {
+  packId: string
+  categoryId: string
+  shotId: string
+  metadata?: Record<string, string>
+  style?: { aspect?: string; concept?: string }
+}
+
+export interface ComposeResponse {
+  /** Gemini'ye giden tek deterministik metin */
+  instruction: string
+  mode: "transform" | "generate"
+  meta: {
+    packId: string
+    categoryId: string
+    shotId: string
+    templateVersion: string
+  }
+}
+
+export const useCompose = (
+  options?: UseMutationOptions<ComposeResponse, FetchError, ComposeInput>
+) =>
+  useMutation({
+    mutationFn: (input: ComposeInput) =>
+      sdk.client.fetch<ComposeResponse>("/admin/content/compose", {
         method: "POST",
         body: input,
       }),
