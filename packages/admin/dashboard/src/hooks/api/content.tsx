@@ -509,8 +509,38 @@ export const usePacks = (
     ...options,
   })
 
+/** Marka kimliği — derleyiciye giden çekirdek (backend BrandIdentity aynası). */
+export interface BrandIdentity {
+  id: string
+  tenantId: string
+  version: number
+  name: string
+  tagline?: string
+  domain: string
+  offering: string
+  audience: string
+  positioning?: string
+  voice: {
+    formality: number
+    energy: number
+    warmth: number
+    complexity: number
+    archetype?: string
+  }
+  vocabulary?: { neverUse?: string[]; forbiddenClaims?: string[] }
+  visual: {
+    colors: { primary: string; secondary?: string; accent?: string }
+    photographyStyle?: string
+    moodKeywords?: string[]
+    compositionAvoid?: string[]
+  }
+}
+
 export interface ComposeInput {
-  packId: string
+  /** hazır pack yolu VEYA (brand ile) derlenmiş pack yolu */
+  packId?: string
+  /** marka-güdümlü: derleyici pack'i cache'ler → compose (compile-and-cache) */
+  brand?: BrandIdentity
   categoryId: string
   shotId: string
   metadata?: Record<string, string>

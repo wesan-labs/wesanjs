@@ -1,9 +1,20 @@
 import { Buildings, Spinner } from "@medusajs/icons"
 import { Input, Text, clx } from "@medusajs/ui"
 import { useEffect, useMemo, useState } from "react"
-import { PackSummary, usePacks } from "../../../hooks/api/content"
-import { BrandProfile, friendlyLabel } from "./brand-profile"
+import { PackShot, PackSummary, usePacks } from "../../../hooks/api/content"
+import { BrandProfile, brandProfileToIdentity, friendlyLabel } from "./brand-profile"
 import { ShotPreview } from "./shot-preview"
+
+const BRAND_PACK_ID = "__brand__"
+
+// Derleyicinin ürettiği intent shot'ları (backend intents.ts aynası, UI için).
+const BRAND_INTENTS: PackShot[] = [
+  { id: "hero", label: "Hero / kapak", mode: "generate", aspect: "4:5" },
+  { id: "lifestyle", label: "Yaşam / kullanım", mode: "transform", aspect: "4:3" },
+  { id: "detail", label: "Detay", mode: "transform", aspect: "1:1" },
+  { id: "social-cover", label: "Sosyal kapak", mode: "transform", aspect: "9:16" },
+  { id: "feature-callout", label: "Özellik vurgusu", mode: "transform", aspect: "4:5" },
+]
 
 /** Tek satır seçim chip'i (sektör / kategori / shot). */
 const Chip = ({
@@ -60,7 +71,25 @@ export const PackPicker = ({
   onEditBrand: () => void
 }) => {
   const { data, isLoading } = usePacks()
-  const packs: PackSummary[] = useMemo(() => data?.packs ?? [], [data])
+  // Marka kuruluysa "Markandan üret (AI)" derleyici-pack'ini başa ekle (adaptif yol).
+  const packs: PackSummary[] = useMemo(() => {
+    const fetched = data?.packs ?? []
+    if (!brandProfile.BRAND_NAME?.trim()) return fetched
+    const brandPack: PackSummary = {
+      id: BRAND_PACK_ID,
+      sector: "markan",
+      label: `Markandan üret (AI) — ${brandProfile.BRAND_NAME}`,
+      categories: [
+        {
+          id: "main",
+          label: brandProfile.PRODUCT_NAME?.trim() || "Marka görseli",
+          metadataSchema: ["SUBJECT"],
+          shots: BRAND_INTENTS,
+        },
+      ],
+    }
+    return [brandPack, ...fetched]
+  }, [data, brandProfile])
 
   const [packId, setPackId] = useState<string | undefined>()
   const [categoryId, setCategoryId] = useState<string | undefined>()
@@ -220,6 +249,12 @@ export const PackPicker = ({
         <ShotPreview
           key={`${pack.id}:${category.id}:${shot.id}`}
           packId={pack.id}
+          // Brand pack → derleyici yolu: packId yerine derlenmiş (cache'li) markayı gönder.
+          brand={
+            pack.id === BRAND_PACK_ID
+              ? brandProfileToIdentity(brandProfile)
+              : undefined
+          }
           categoryId={category.id}
           shot={shot}
           label={`${category.label} · ${shot.label}`}

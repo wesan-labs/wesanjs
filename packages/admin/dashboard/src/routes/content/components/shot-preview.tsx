@@ -1,7 +1,7 @@
 import { CheckCircleSolid, Photo, Spinner } from "@medusajs/icons"
 import { Button, Text, clx } from "@medusajs/ui"
 import { useEffect, useState } from "react"
-import { PackShot, useCompose } from "../../../hooks/api/content"
+import { BrandIdentity, PackShot, useCompose } from "../../../hooks/api/content"
 
 /**
  * Deterministik önizleme + üret. Çekim seçilince compose OTOMATİK çalışır
@@ -13,6 +13,7 @@ import { PackShot, useCompose } from "../../../hooks/api/content"
  */
 export const ShotPreview = ({
   packId,
+  brand,
   categoryId,
   shot,
   label,
@@ -22,6 +23,8 @@ export const ShotPreview = ({
   onGenerate,
 }: {
   packId: string
+  /** verilirse derleyici yolu: markayı derle (cache'li) → compose (packId yok sayılır) */
+  brand?: BrandIdentity
   categoryId: string
   shot: PackShot
   /** üretilen versiyonun etiketi, ör. "Zigon · Yaşam alanı" */
@@ -42,14 +45,19 @@ export const ShotPreview = ({
 
   // Otomatik compose (debounced) — metadata/shot değişince yeniden derle.
   const metaKey = JSON.stringify(metadata)
+  const brandKey = brand ? `${brand.id}@${brand.version}` : ""
   useEffect(() => {
     const t = setTimeout(() => {
-      composeMut.mutate({ packId, categoryId, shotId: shot.id, metadata })
+      composeMut.mutate(
+        brand
+          ? { brand, categoryId, shotId: shot.id, metadata }
+          : { packId, categoryId, shotId: shot.id, metadata }
+      )
     }, 350)
     return () => clearTimeout(t)
-    // composeMut react-query'de stabil; metaKey/shot değişimi tetikler.
+    // composeMut react-query'de stabil; metaKey/shot/brand değişimi tetikler.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [metaKey, shot.id, packId, categoryId])
+  }, [metaKey, shot.id, packId, categoryId, brandKey])
 
   return (
     <div className="border-ui-border-base flex flex-col gap-y-3 rounded-lg border p-3">

@@ -76,6 +76,9 @@ const FIELD_LABELS: Record<string, string> = {
   legs: "Ayak",
   style: "Stil",
   name: "Ürün adı",
+  // derleyici (markadan) — vision'dan gelen özne
+  SUBJECT: "Özne / konu (ne görünüyor)",
+  AUDIENCE: "Hedef kitle",
   // pack — mobil oyun
   GAME_NAME: "Oyun adı",
   GAME_GENRE: "Tür",
@@ -93,3 +96,34 @@ const humanize = (key: string): string => {
 /** Ham alan anahtarını insan-okunur etikete çevir. */
 export const friendlyLabel = (key: string): string =>
   FIELD_LABELS[key] ?? humanize(key)
+
+/** İçerik-tabanlı sayısal hash — profil değişince derleyici cache'i invalidate olsun. */
+const profileVersion = (p: BrandProfile): number => {
+  const s = JSON.stringify(profileValues(p))
+  let h = 5381
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+/**
+ * Düz brand-profile (BRAND_VARS) → BrandIdentity (derleyici girdisi). Geçici
+ * köprü: gerçek BrandIdentity capture UI gelene kadar mevcut markayı adaptif
+ * motora bağlar. `version` = içerik hash'i → marka değişince cache yenilenir.
+ */
+export const brandProfileToIdentity = (
+  p: BrandProfile
+): import("../../../hooks/api/content").BrandIdentity => ({
+  id: "brand-profile",
+  tenantId: "local",
+  version: profileVersion(p),
+  name: p.BRAND_NAME?.trim() || "Markan",
+  domain: p.PRODUCT_CATEGORY?.trim() || "genel",
+  offering: p.PRODUCT_NAME?.trim() || p.PRODUCT_CATEGORY?.trim() || "ürün",
+  audience: p.TARGET_AUDIENCE?.trim() || "genel kitle",
+  positioning: p.BENEFIT?.trim() || undefined,
+  voice: { formality: 50, energy: 50, warmth: 50, complexity: 50 },
+  visual: {
+    colors: { primary: p.COLOR?.trim() || "brand color palette" },
+    moodKeywords: [p.BRAND_VOICE, p.TONE].map((v) => v?.trim()).filter(Boolean) as string[],
+  },
+})
