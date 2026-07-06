@@ -4,6 +4,10 @@ import {
 } from "@medusajs/framework/http"
 import { z } from "zod"
 import { encryptSecret } from "../../../../modules/revenue/lib/crypto"
+import {
+  listWithLegacyTenantScope,
+  stampTenantId,
+} from "../../../../api/lib/tenant-guard"
 import { REVENUE_MODULE } from "../../../../modules/revenue/types"
 
 export const GET = async (
@@ -11,8 +15,9 @@ export const GET = async (
   res: MedusaResponse
 ) => {
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const raw = await service.listRevenueSources(
-    {},
+  const raw = await listWithLegacyTenantScope(
+    req,
+    (filter, config) => service.listRevenueSources(filter, config),
     { order: { name: "ASC" }, take: 200 }
   )
   // secret_enc ASLA dışarı dönmez — sadece "kayıtlı mı" bilgisi.
@@ -41,10 +46,12 @@ export const POST = async (
 ) => {
   const { secret, ...rest } = PostSource.parse(req.body)
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const created = await service.createRevenueSources({
-    ...rest,
-    secret_enc: secret ? encryptSecret(secret) : null,
-  })
+  const created = await service.createRevenueSources(
+    stampTenantId(req, {
+      ...rest,
+      secret_enc: secret ? encryptSecret(secret) : null,
+    })
+  )
   res.status(201).json({
     source: {
       ...created,

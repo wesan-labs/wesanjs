@@ -5,6 +5,7 @@ export default model
     { tableName: "revenue_metric_snapshot", name: "MetricSnapshot" },
     {
       id: model.id({ prefix: "rsnap" }).primaryKey(),
+      tenant_id: model.text().nullable(),
       date: model.dateTime(),
       app_id: model.text().nullable(),
       platform: model.text().default("all"),

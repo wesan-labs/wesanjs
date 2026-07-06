@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { sdk } from "../../lib/client"
+import { backendUrl, sdk, tenantHeaders } from "../../lib/client"
+import { useFeatureFlag } from "../../providers/feature-flag-provider"
+import { usePermissions } from "../../providers/permissions-provider"
+import { useTenantQueryKey } from "./tenants"
 import { useStore } from "./store"
 
 // Sayfalardaki gösterim para birimi = store default (Money ile aynı kaynak).
@@ -33,6 +36,17 @@ export type RevenueOverview = {
   expenseTotal: number
   net: number
   currency: string
+  expensesThisMonth?: {
+    id: string
+    description: string
+    category: string
+    amount: number
+    currency: string
+    occurred_at: string
+    vendor?: string | null
+    invoice_number?: string | null
+    invoice_url?: string | null
+  }[]
   activeTrials: number
   newCustomers: number
   activeUsers: number
@@ -44,6 +58,12 @@ export type RevenueOverview = {
   }[]
   recentEvents: RevenueEventRow[]
   mrrTrend: { date: string; mrr: number }[]
+  sync?: {
+    revenuecatLastSyncedAt: string | null
+    admobLastSyncedAt: string | null
+    subscriptionDataThrough: string | null
+    adDataThrough: string | null
+  }
 }
 
 export type ChartPoint = { date: string; value: number; segment?: string }
@@ -56,6 +76,9 @@ export type ExpenseRow = {
   currency: string
   occurred_at: string
   recurring: boolean
+  vendor?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
 }
 
 export type CreateExpenseInput = {
@@ -65,6 +88,21 @@ export type CreateExpenseInput = {
   category: string
   occurred_at: string
   recurring: boolean
+  vendor?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
+}
+
+export type UpdateExpenseInput = {
+  vendor?: string | null
+  invoice_number?: string | null
+  invoice_url?: string | null
+  description?: string
+  amount?: number
+  currency?: string
+  category?: string
+  occurred_at?: string
+  recurring?: boolean
 }
 
 export const revenueQueryKeys = {
@@ -73,16 +111,31 @@ export const revenueQueryKeys = {
 }
 
 export const useRevenueOverview = () => {
+  const isRbacEnabled = useFeatureFlag("rbac")
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions()
+  const canRead =
+    !isRbacEnabled || (!permissionsLoading && hasPermission("revenue:read"))
   const display = useDisplayCurrency()
+  const overviewKey = useTenantQueryKey([...revenueQueryKeys.overview, display ?? null])
+
   const { data, ...rest } = useQuery({
-    queryKey: [...revenueQueryKeys.overview, display ?? null],
-    queryFn: async () =>
-      sdk.client.fetch<{ overview: RevenueOverview }>(
+    queryKey: overviewKey,
+    queryFn: async () => {
+      const response = await sdk.client.fetch<{ overview: RevenueOverview }>(
         `/admin/revenue/overview${display ? `?display=${display}` : ""}`
-      ),
+      )
+      return response.overview
+    },
+    enabled: canRead,
+    retry: false,
   })
 
-  return { overview: data?.overview, ...rest }
+  return {
+    overview: data,
+    dataUpdatedAt: rest.dataUpdatedAt,
+    ...rest,
+    isLoading: rest.isLoading || (isRbacEnabled && permissionsLoading),
+  }
 }
 
 export type AdBreakdown = {
@@ -129,26 +182,42 @@ export const useSaveFinanceSettings = () => {
 }
 
 export const useAdBreakdown = () => {
+  const isRbacEnabled = useFeatureFlag("rbac")
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions()
+  const canRead =
+    !isRbacEnabled || (!permissionsLoading && hasPermission("revenue:read"))
   const display = useDisplayCurrency()
+
   const { data, ...rest } = useQuery({
     queryKey: ["revenue", "ad-breakdown", display ?? null],
-    queryFn: async () =>
-      sdk.client.fetch<{ breakdown: AdBreakdown }>(
+    queryFn: async () => {
+      const response = await sdk.client.fetch<{ breakdown: AdBreakdown }>(
         `/admin/revenue/ad-breakdown${display ? `?display=${display}` : ""}`
-      ),
+      )
+      return response.breakdown
+    },
+    enabled: canRead,
     staleTime: 5 * 60 * 1000,
+    retry: false,
   })
-  return { breakdown: data?.breakdown, ...rest }
+  return { breakdown: data, ...rest }
 }
 
 export const useRevenueChart = (metric: string, segment?: string) => {
+  const isRbacEnabled = useFeatureFlag("rbac")
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions()
+  const canRead =
+    !isRbacEnabled || (!permissionsLoading && hasPermission("revenue:read"))
+
   return useQuery({
     queryKey: ["revenue", "chart", metric, segment ?? null],
     queryFn: async () =>
       sdk.client.fetch<{ points: ChartPoint[]; segments: string[] }>(
         `/admin/revenue/charts/${metric}${segment ? `?segment=${segment}` : ""}`
       ),
+    enabled: canRead,
     staleTime: 5 * 60 * 1000,
+    retry: false,
   })
 }
 
@@ -184,6 +253,44 @@ export const useDeleteExpense = () => {
   return useMutation({
     mutationFn: (id: string) =>
       sdk.client.fetch(`/admin/revenue/expenses/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: revenueQueryKeys.overview })
+      queryClient.invalidateQueries({ queryKey: revenueQueryKeys.expenses })
+    },
+  })
+}
+
+export const uploadExpenseInvoice = async (
+  file: File
+): Promise<{ url: string; id: string }> => {
+  const form = new FormData()
+  form.append("file", file)
+  const base = backendUrl.endsWith("/") ? backendUrl : `${backendUrl}/`
+  const res = await fetch(`${base}admin/revenue/expenses/invoice-upload`, {
+    method: "POST",
+    body: form,
+    credentials: "include",
+    headers: { ...tenantHeaders },
+  })
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { message?: string }
+    throw new Error(body.message ?? "Invoice upload failed")
+  }
+  return res.json()
+}
+
+export const useUploadExpenseInvoice = () =>
+  useMutation({ mutationFn: uploadExpenseInvoice })
+
+export const useUpdateExpense = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, ...body }: UpdateExpenseInput & { id: string }) =>
+      sdk.client.fetch(`/admin/revenue/expenses/${id}`, {
+        method: "PATCH",
+        body,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: revenueQueryKeys.overview })
       queryClient.invalidateQueries({ queryKey: revenueQueryKeys.expenses })

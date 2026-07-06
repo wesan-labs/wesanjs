@@ -2,27 +2,45 @@ import {
   Button,
   Container,
   FocusModal,
+  Hint,
+  IconButton,
   Input,
   Label,
   Select,
   Switch,
   Tabs,
   Text,
+  clx,
   toast,
 } from "@medusajs/ui"
-import { useState } from "react"
+import { XMark } from "@medusajs/icons"
+import { CORE_LAYOUT_IDS } from "@medusajs/admin-shared"
+import { useState, useContext, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
-import { useAppsOverview, type AppOverviewRow } from "../../hooks/api/apps"
+import {
+  FileUpload,
+  type FileType,
+} from "../../components/common/file-upload"
+import { LayoutComposer } from "../../components/layout-composer"
+import {
+  ENTRY_TILE_CLASS,
+  ENTRY_TILE_STRETCH,
+  type EntryTileSpan,
+} from "../../components/layout-composer/entry"
+import { LayoutEditContext } from "../../providers/layout-edit-provider/layout-edit-context"
+import { useAppsOverview, useSync, type AppOverviewRow } from "../../hooks/api/apps"
 import {
   useAdBreakdown,
   useCreateExpense,
   useRevenueChart,
   useRevenueOverview,
+  useUploadExpenseInvoice,
   type AdBreakdown,
   type RevenueEventRow,
   type RevenueOverview,
 } from "../../hooks/api/revenue"
+import { useActiveTenant } from "../../hooks/api/tenants"
 import {
   AreaChartPanel,
   BarList,
@@ -132,6 +150,7 @@ const PnlSummary = ({
     overview.commission + overview.expenseTotal + overview.taxTotal
   const positive = overview.net >= 0
   const margin = income > 0 ? Math.round((overview.net / income) * 100) : null
+  const expenseRows = overview.expensesThisMonth ?? []
 
   return (
     <Container className="flex h-full flex-col overflow-hidden p-0">
@@ -171,6 +190,55 @@ const PnlSummary = ({
           cur={cur}
         />
       </div>
+      {deductions > 0 ? (
+        <div className="border-ui-border-base border-t px-6 py-4">
+          <Text
+            size="xsmall"
+            weight="plus"
+            className="text-ui-fg-muted mb-2 uppercase tracking-wider"
+          >
+            {t("revenue.pnl.deductionDetail", {
+              defaultValue: "Deduction breakdown (this month)",
+            })}
+          </Text>
+          <div className="flex flex-col gap-y-1">
+            {overview.commission > 0 ? (
+              <div className="flex justify-between gap-x-4 text-sm">
+                <span className="text-ui-fg-subtle">
+                  {t("revenue.pnl.commission", { defaultValue: "Store commission" })}
+                </span>
+                <span className="text-ui-fg-base tabular-nums">
+                  −{getLocaleAmount(overview.commission, cur)}
+                </span>
+              </div>
+            ) : null}
+            {expenseRows.map((e) => (
+              <div
+                key={e.id}
+                className="flex justify-between gap-x-4 text-sm"
+              >
+                <span className="text-ui-fg-subtle truncate">
+                  {e.description}
+                  <span className="text-ui-fg-muted"> · {e.category}</span>
+                </span>
+                <span className="text-ui-fg-base shrink-0 tabular-nums">
+                  −{getLocaleAmount(e.amount, cur)}
+                </span>
+              </div>
+            ))}
+            {overview.taxTotal > 0 ? (
+              <div className="flex justify-between gap-x-4 text-sm">
+                <span className="text-ui-fg-subtle">
+                  {t("revenue.pnl.tax", { defaultValue: "Tax" })}
+                </span>
+                <span className="text-ui-fg-base tabular-nums">
+                  −{getLocaleAmount(overview.taxTotal, cur)}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </Container>
   )
 }
@@ -202,8 +270,8 @@ const RevenueComposition = ({
   ]
 
   return (
-    <Widget title={t("revenue.composition.title")}>
-      <div className="flex h-full flex-1 items-center gap-x-6">
+    <Widget title={t("revenue.composition.title")} className="h-full">
+      <div className="flex h-full min-h-0 flex-1 items-center gap-x-6">
         <Donut
           segments={legend}
           center={
@@ -238,9 +306,151 @@ const RevenueComposition = ({
   )
 }
 
+/** View-mode grid cell; edit mode delegates tile span to SortableEntry. */
+const TileGate = ({
+  tile,
+  children,
+}: {
+  tile: EntryTileSpan
+  children: ReactNode
+}) => {
+  const { editMode } = useContext(LayoutEditContext)
+  if (editMode) {
+    return <>{children}</>
+  }
+  return (
+    <div className={clx(ENTRY_TILE_CLASS[tile], ENTRY_TILE_STRETCH, "min-w-0")}>
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Tab filter + grid cell in one wrapper. Returns null (no grid slot) when the
+ * tab is inactive in view mode — prevents empty rows between toolbar and KPIs.
+ */
+const TabGate = ({
+  tab,
+  activeTab,
+  tile,
+  children,
+}: {
+  tab: string
+  activeTab: string
+  tile: EntryTileSpan
+  children: ReactNode
+}) => {
+  const { editMode } = useContext(LayoutEditContext)
+  if (!editMode && activeTab !== tab) {
+    return null
+  }
+  if (editMode) {
+    return <>{children}</>
+  }
+  return (
+    <div className={clx(ENTRY_TILE_CLASS[tile], ENTRY_TILE_STRETCH, "min-w-0")}>
+      {children}
+    </div>
+  )
+}
+
+const fmtSyncTime = (iso?: string | null) => {
+  if (!iso) {
+    return null
+  }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) {
+    return null
+  }
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+const RevenueSyncBar = ({
+  overview,
+  panelUpdatedAt,
+  onSync,
+  syncing,
+}: {
+  overview: RevenueOverview
+  panelUpdatedAt?: number
+  onSync: () => void
+  syncing: boolean
+}) => {
+  const { t } = useTranslation()
+  const sync = overview.sync
+  const panelLabel = panelUpdatedAt
+    ? fmtSyncTime(new Date(panelUpdatedAt).toISOString())
+    : null
+  const rcLabel = fmtSyncTime(sync?.revenuecatLastSyncedAt)
+  const admobLabel = fmtSyncTime(sync?.admobLastSyncedAt)
+  const dataThrough =
+    sync?.subscriptionDataThrough || sync?.adDataThrough || null
+
+  return (
+    <Container className="flex flex-col gap-y-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Text size="xsmall" className="text-ui-fg-muted">
+          {t("revenue.sync.panelRefreshed")}:{" "}
+          <span className="text-ui-fg-subtle tabular-nums">
+            {panelLabel ?? t("revenue.sync.never")}
+          </span>
+        </Text>
+        <Text size="xsmall" className="text-ui-fg-muted hidden sm:inline">
+          ·
+        </Text>
+        <Text size="xsmall" className="text-ui-fg-muted">
+          {t("revenue.sync.revenuecatSynced")}:{" "}
+          <span className="text-ui-fg-subtle tabular-nums">
+            {rcLabel ?? t("revenue.sync.never")}
+          </span>
+        </Text>
+        <Text size="xsmall" className="text-ui-fg-muted hidden sm:inline">
+          ·
+        </Text>
+        <Text size="xsmall" className="text-ui-fg-muted">
+          {t("revenue.sync.admobSynced")}:{" "}
+          <span className="text-ui-fg-subtle tabular-nums">
+            {admobLabel ?? t("revenue.sync.never")}
+          </span>
+        </Text>
+        {dataThrough ? (
+          <>
+            <Text size="xsmall" className="text-ui-fg-muted hidden sm:inline">
+              ·
+            </Text>
+            <Text size="xsmall" className="text-ui-fg-muted">
+              {t("revenue.sync.dataThrough")}:{" "}
+              <span className="text-ui-fg-subtle tabular-nums">
+                {dataThrough}
+              </span>
+            </Text>
+          </>
+        ) : null}
+      </div>
+      <Button
+        size="small"
+        variant="secondary"
+        isLoading={syncing}
+        onClick={onSync}
+        className="shrink-0"
+      >
+        {t("revenue.sync.syncNow")}
+      </Button>
+    </Container>
+  )
+}
+
 export const Component = () => {
   const { t } = useTranslation()
-  const { overview, isLoading, isError } = useRevenueOverview()
+  const { activeTenant, tenants } = useActiveTenant()
+  const { overview, isLoading, isError, error, dataUpdatedAt } =
+    useRevenueOverview()
+  const syncMutation = useSync()
   const revenueChart = useRevenueChart("revenue")
   const platformChart = useRevenueChart("revenue", "store")
   const countryChart = useRevenueChart("revenue", "country")
@@ -248,6 +458,7 @@ export const Component = () => {
   const { breakdown } = useAdBreakdown()
   const [fApp, setFApp] = useState("all")
   const [fPlatform, setFPlatform] = useState("all")
+  const [activeTab, setActiveTab] = useState("genel")
   const [period, setPeriod] = useState("28g")
   const [expenseOpen, setExpenseOpen] = useState(false)
   const [expense, setExpense] = useState({
@@ -256,8 +467,13 @@ export const Component = () => {
     category: "",
     occurred_at: new Date().toISOString().slice(0, 10),
     recurring: false,
+    vendor: "",
+    invoice_number: "",
   })
+  const [expenseInvoiceFile, setExpenseInvoiceFile] = useState<File | null>(null)
+  const [expenseInvoiceError, setExpenseInvoiceError] = useState<string>()
   const createExpense = useCreateExpense()
+  const uploadExpenseInvoice = useUploadExpenseInvoice()
 
   if (isLoading) {
     return (
@@ -270,10 +486,23 @@ export const Component = () => {
   }
 
   if (isError || !overview) {
+    const status = (error as { status?: number })?.status
+    const onOrgWithoutAccess =
+      status === 403 &&
+      tenants.length > 1 &&
+      activeTenant &&
+      !activeTenant.rbac_role_id
+
     return (
       <Container className="p-6">
         <Text size="small" className="text-ui-fg-error">
-          {t("revenue.loadError")}
+          {onOrgWithoutAccess
+            ? t("revenue.loadErrorWrongOrg", {
+                org: activeTenant.name,
+                defaultValue:
+                  "Revenue data is not available in {{org}}. Switch to an organization where you have a finance role.",
+              })
+            : t("revenue.loadError")}
         </Text>
       </Container>
     )
@@ -390,170 +619,299 @@ export const Component = () => {
   )
 
   return (
-    <div className="flex flex-col gap-y-3">
-      <Tabs defaultValue="genel">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Tabs.List>
-            <Tabs.Trigger value="genel">
-              {t("revenue.tabs.general")}
-            </Tabs.Trigger>
-            <Tabs.Trigger value="abonelik">
-              {t("revenue.tabs.subscription")}
-            </Tabs.Trigger>
-            <Tabs.Trigger value="reklam">{t("revenue.tabs.ads")}</Tabs.Trigger>
-          </Tabs.List>
-          <div className="flex items-center gap-x-2">
-            <Tabs value={period} onValueChange={setPeriod}>
-              <Tabs.List>
-                <Tabs.Trigger value="7g">{t("revenue.period.d7")}</Tabs.Trigger>
-                <Tabs.Trigger value="28g">
-                  {t("revenue.period.d28")}
-                </Tabs.Trigger>
-                <Tabs.Trigger value="month">
-                  {t("revenue.period.month")}
-                </Tabs.Trigger>
-              </Tabs.List>
-            </Tabs>
-            <Button size="small" onClick={() => setExpenseOpen(true)}>
-              {t("revenue.addExpense")}
-            </Button>
-          </div>
-        </div>
+    <>
+      <LayoutComposer
+        widgetsZonePrefix="revenue.overview"
+        preferredLayoutId={CORE_LAYOUT_IDS.DASHBOARD_GRID}
+        controlSize="small"
+        sections={{
+          main: (
+            <>
+              <LayoutComposer.Entry
+                id="RevenueSyncMeta"
+                label={t("revenue.layout.syncBar")}
+                tile="full"
+              >
+                <TileGate tile="full">
+                <RevenueSyncBar
+                  overview={overview}
+                  panelUpdatedAt={dataUpdatedAt}
+                  syncing={syncMutation.isPending}
+                  onSync={() =>
+                    syncMutation.mutate(undefined, {
+                      onSuccess: (r) => {
+                        toast.success(
+                          `RC ${r.revenuecat.synced} · AdMob ${r.admob.synced}`
+                        )
+                      },
+                      onError: () => toast.error(t("revenue.loadError")),
+                    })
+                  }
+                />
+                </TileGate>
+              </LayoutComposer.Entry>
 
-        {/* GENEL: hero + donut → KPI → trend → harita → tablolar (tasarım sırası) */}
-        <Tabs.Content value="genel" className="mt-2 flex flex-col gap-y-3">
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[1.4fr_1fr]">
-            <PnlSummary overview={overview} cur={cur} />
-            <RevenueComposition overview={overview} cur={cur} />
-          </div>
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-            <StatCard
-              label={t("revenue.kpi.totalRevenue")}
-              sub={t("revenue.kpi.totalRevenueSub")}
-              accent="positive"
-              value={<Money amount={income} currency={cur} />}
-              trend={totalTrend}
-            />
-            <StatCard
-              label={t("revenue.kpi.mrr")}
-              sub={t("revenue.kpi.mrrSub")}
-              accent="positive"
-              value={<Money amount={overview.mrr} currency={cur} />}
-              trend={mrrTrend}
-            />
-            <StatCard
-              label={t("revenue.kpi.activeSubs")}
-              sub={t("revenue.kpi.now")}
-              value={num(overview.activeSubscriptions)}
-            />
-            <StatCard
-              label={t("revenue.kpi.adThisMonth")}
-              sub={t("revenue.kpi.calendarMonth")}
-              accent="positive"
-              value={<Money amount={overview.adRevenue} currency={cur} />}
-              trend={adDailyTotals}
-            />
-          </div>
-
-          <Widget title={`${t("revenue.trend.totalTitle")} · ${periodLabel}`}>
-            {visibleTrend.length ? (
-              <AreaChartPanel
-                data={visibleTrend}
-                xKey="date"
-                yKey="value"
-                valueFormatter={usd}
-              />
-            ) : (
-              <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
-                {t("revenue.noData")}
-              </div>
-            )}
-          </Widget>
-
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
-            <Widget
-              title={t("revenue.regions.title")}
-              className="xl:col-span-2"
-            >
-              {mapMarkers.length ? (
-                <MapPanel markers={mapMarkers} />
-              ) : (
-                <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
-                  {t("revenue.regions.empty")}
+              <LayoutComposer.Entry
+                id="RevenueToolbar"
+                label={t("revenue.layout.toolbar")}
+                tile="full"
+              >
+                <TileGate tile="full">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <Tabs.List>
+                      <Tabs.Trigger value="genel">
+                        {t("revenue.tabs.general")}
+                      </Tabs.Trigger>
+                      <Tabs.Trigger value="abonelik">
+                        {t("revenue.tabs.subscription")}
+                      </Tabs.Trigger>
+                      <Tabs.Trigger value="reklam">
+                        {t("revenue.tabs.ads")}
+                      </Tabs.Trigger>
+                    </Tabs.List>
+                  </Tabs>
+                  <div className="flex items-center gap-x-2">
+                    <Tabs value={period} onValueChange={setPeriod}>
+                      <Tabs.List>
+                        <Tabs.Trigger value="7g">
+                          {t("revenue.period.d7")}
+                        </Tabs.Trigger>
+                        <Tabs.Trigger value="28g">
+                          {t("revenue.period.d28")}
+                        </Tabs.Trigger>
+                        <Tabs.Trigger value="month">
+                          {t("revenue.period.month")}
+                        </Tabs.Trigger>
+                      </Tabs.List>
+                    </Tabs>
+                    <Button size="small" onClick={() => setExpenseOpen(true)}>
+                      {t("revenue.addExpense")}
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </Widget>
-            <Widget title={t("revenue.regions.byCountry")}>
-              <BarList
-                items={countryItems}
-                emptyLabel={t("revenue.regions.countryEmpty")}
-              />
-              {unmappedCountries.length ? (
-                <Text size="xsmall" className="text-ui-fg-muted mt-2">
-                  {t("revenue.regions.unmapped", {
-                    list: unmappedCountries.join(", "),
-                  })}
-                </Text>
-              ) : null}
-            </Widget>
-          </div>
+                </TileGate>
+              </LayoutComposer.Entry>
 
-          <Widget title={t("revenue.apps.title")}>
-            <DataTable<AppOverviewRow>
-              columns={[
-                {
-                  key: "name",
-                  header: t("revenue.apps.app"),
-                  render: (a) => (
-                    <Link
-                      to={`/apps/${a.id}`}
-                      className="text-ui-fg-interactive hover:underline"
-                    >
-                      {a.name}
-                    </Link>
-                  ),
-                },
-                {
-                  key: "rev",
-                  header: t("revenue.apps.subscription"),
-                  align: "right",
-                  render: (a) => (
-                    <Money amount={a.revenue28d} currency={a.currency} />
-                  ),
-                },
-                {
-                  key: "ad",
-                  header: t("revenue.apps.ad"),
-                  align: "right",
-                  render: (a) => (
-                    <Money amount={a.adRevenue} currency={a.adCurrency} />
-                  ),
-                },
-                {
-                  key: "total",
-                  header: t("revenue.apps.total"),
-                  align: "right",
-                  render: (a) => (
-                    <span className="font-medium">
-                      <Money
-                        amount={a.totalDisplay}
-                        currency={a.displayCurrency}
+              <LayoutComposer.Entry
+                id="RevenuePnlSummary"
+                label={t("revenue.layout.pnlSummary")}
+                tile="hero-left"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="hero-left">
+                  <PnlSummary overview={overview} cur={cur} />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueComposition"
+                label={t("revenue.layout.composition")}
+                tile="hero-right"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="hero-right">
+                  <RevenueComposition overview={overview} cur={cur} />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueKpiTotalRevenue"
+                label={t("revenue.kpi.totalRevenue")}
+                tile="kpi"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.kpi.totalRevenue")}
+                    sub={t("revenue.kpi.totalRevenueSub")}
+                    accent="positive"
+                    value={<Money amount={income} currency={cur} />}
+                    trend={totalTrend}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueKpiMrr"
+                label={t("revenue.kpi.mrr")}
+                tile="kpi"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.kpi.mrr")}
+                    sub={t("revenue.kpi.mrrSub")}
+                    accent="positive"
+                    value={<Money amount={overview.mrr} currency={cur} />}
+                    trend={mrrTrend}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueKpiActiveSubs"
+                label={t("revenue.kpi.activeSubs")}
+                tile="kpi"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.kpi.activeSubs")}
+                    sub={t("revenue.kpi.now")}
+                    value={num(overview.activeSubscriptions)}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueKpiAdThisMonth"
+                label={t("revenue.kpi.adThisMonth")}
+                tile="kpi"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.kpi.adThisMonth")}
+                    sub={t("revenue.kpi.calendarMonth")}
+                    accent="positive"
+                    value={<Money amount={overview.adRevenue} currency={cur} />}
+                    trend={adDailyTotals}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueTotalTrend"
+                label={t("revenue.layout.totalTrend")}
+                tile="full"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="full">
+                  <Widget title={`${t("revenue.trend.totalTitle")} · ${periodLabel}`}>
+                    {visibleTrend.length ? (
+                      <AreaChartPanel
+                        data={visibleTrend}
+                        xKey="date"
+                        yKey="value"
+                        valueFormatter={usd}
                       />
-                    </span>
-                  ),
-                },
-                {
-                  key: "subs",
-                  header: t("revenue.apps.subscribers"),
-                  align: "right",
-                  render: (a) => a.activeSubscriptions.toLocaleString(),
-                },
-              ]}
-              rows={apps}
-              emptyLabel={t("revenue.apps.empty")}
-            />
-          </Widget>
+                    ) : (
+                      <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
+                        {t("revenue.noData")}
+                      </div>
+                    )}
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
 
+              <LayoutComposer.Entry
+                id="RevenueGeoMap"
+                label={t("revenue.layout.geoMap")}
+                tile="wide"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="wide">
+                  <Widget title={t("revenue.regions.title")} className="h-full">
+                    <div className="flex min-h-[320px] flex-1 flex-col">
+                      {mapMarkers.length ? (
+                        <MapPanel markers={mapMarkers} />
+                      ) : (
+                        <div className="text-ui-fg-muted flex flex-1 items-center justify-center text-sm">
+                          {t("revenue.regions.empty")}
+                        </div>
+                      )}
+                    </div>
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueGeoCountry"
+                label={t("revenue.layout.geoCountry")}
+                tile="narrow"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="narrow">
+                  <Widget title={t("revenue.regions.byCountry")} className="h-full">
+                    <div className="flex min-h-[320px] flex-1 flex-col">
+                      <BarList
+                        items={countryItems}
+                        emptyLabel={t("revenue.regions.countryEmpty")}
+                      />
+                      {unmappedCountries.length ? (
+                        <Text size="xsmall" className="text-ui-fg-muted mt-2">
+                          {t("revenue.regions.unmapped", {
+                            list: unmappedCountries.join(", "),
+                          })}
+                        </Text>
+                      ) : null}
+                    </div>
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueAppsTable"
+                label={t("revenue.layout.appsTable")}
+                tile="full"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="full">
+                  <Widget title={t("revenue.apps.title")}>
+                    <DataTable<AppOverviewRow>
+                      columns={[
+                        {
+                          key: "name",
+                          header: t("revenue.apps.app"),
+                          render: (a) => (
+                            <Link
+                              to={`/apps/${a.id}`}
+                              className="text-ui-fg-interactive hover:underline"
+                            >
+                              {a.name}
+                            </Link>
+                          ),
+                        },
+                        {
+                          key: "rev",
+                          header: t("revenue.apps.subscription"),
+                          align: "right",
+                          render: (a) => (
+                            <Money amount={a.revenue28d} currency={a.currency} />
+                          ),
+                        },
+                        {
+                          key: "ad",
+                          header: t("revenue.apps.ad"),
+                          align: "right",
+                          render: (a) => (
+                            <Money amount={a.adRevenue} currency={a.adCurrency} />
+                          ),
+                        },
+                        {
+                          key: "total",
+                          header: t("revenue.apps.total"),
+                          align: "right",
+                          render: (a) => (
+                            <span className="font-medium">
+                              <Money
+                                amount={a.totalDisplay}
+                                currency={a.displayCurrency}
+                              />
+                            </span>
+                          ),
+                        },
+                        {
+                          key: "subs",
+                          header: t("revenue.apps.subscribers"),
+                          align: "right",
+                          render: (a) => a.activeSubscriptions.toLocaleString(),
+                        },
+                      ]}
+                      rows={apps}
+                      emptyLabel={t("revenue.apps.empty")}
+                    />
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueRecentTx"
+                label={t("revenue.layout.recentTx")}
+                tile="full"
+              >
+                <TabGate tab="genel" activeTab={activeTab} tile="full">
           <Widget title={t("revenue.recent.title")}>
             <DataTable<RevenueEventRow>
               columns={[
@@ -580,61 +938,124 @@ export const Component = () => {
               emptyLabel={t("revenue.recent.empty")}
             />
           </Widget>
-        </Tabs.Content>
+                </TabGate>
+              </LayoutComposer.Entry>
 
-        {/* ABONELİK: RevenueCat dünyası */}
-        <Tabs.Content value="abonelik" className="flex flex-col gap-y-3">
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-            <StatCard
-              label={t("revenue.sub.thisMonth")}
-              sub={t("revenue.sub.thisMonthSub")}
-              accent="positive"
-              value={
-                <Money amount={overview.subscriptionRevenue} currency={cur} />
-              }
-              trend={subTrend}
-            />
-            <StatCard
-              label={t("revenue.sub.lastMonth")}
-              sub={t("revenue.sub.lastMonthSub")}
-              value={
-                <Money
-                  amount={overview.subscriptionRevenueLastMonth}
-                  currency={cur}
-                />
-              }
-            />
-            <StatCard
-              label={t("revenue.sub.mrr")}
-              sub={t("revenue.sub.mrrSub")}
-              accent="positive"
-              value={<Money amount={overview.mrr} currency={cur} />}
-              trend={mrrTrend}
-            />
-            <StatCard
-              label={t("revenue.sub.activeSubs")}
-              sub={t("revenue.sub.now")}
-              value={num(overview.activeSubscriptions)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
-            <StatCard
-              label={t("revenue.sub.trial")}
-              sub={t("revenue.sub.now")}
-              value={num(overview.activeTrials)}
-            />
-            <StatCard
-              label={t("revenue.sub.newCustomers")}
-              sub={t("revenue.sub.last28d")}
-              value={num(overview.newCustomers)}
-            />
-            <StatCard
-              label={t("revenue.sub.activeUsers")}
-              sub={t("revenue.sub.last28d")}
-              value={num(overview.activeUsers)}
-            />
-          </div>
+              <LayoutComposer.Entry
+                id="RevenueSubKpiThisMonth"
+                label={t("revenue.sub.thisMonth")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.thisMonth")}
+                    sub={t("revenue.sub.thisMonthSub")}
+                    accent="positive"
+                    value={
+                      <Money amount={overview.subscriptionRevenue} currency={cur} />
+                    }
+                    trend={subTrend}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
 
+              <LayoutComposer.Entry
+                id="RevenueSubKpiLastMonth"
+                label={t("revenue.sub.lastMonth")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.lastMonth")}
+                    sub={t("revenue.sub.lastMonthSub")}
+                    value={
+                      <Money
+                        amount={overview.subscriptionRevenueLastMonth}
+                        currency={cur}
+                      />
+                    }
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubKpiMrr"
+                label={t("revenue.sub.mrr")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.mrr")}
+                    sub={t("revenue.sub.mrrSub")}
+                    accent="positive"
+                    value={<Money amount={overview.mrr} currency={cur} />}
+                    trend={mrrTrend}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubKpiActiveSubs"
+                label={t("revenue.sub.activeSubs")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.activeSubs")}
+                    sub={t("revenue.sub.now")}
+                    value={num(overview.activeSubscriptions)}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubKpiTrial"
+                label={t("revenue.sub.trial")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.trial")}
+                    sub={t("revenue.sub.now")}
+                    value={num(overview.activeTrials)}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubKpiNewCustomers"
+                label={t("revenue.sub.newCustomers")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.newCustomers")}
+                    sub={t("revenue.sub.last28d")}
+                    value={num(overview.newCustomers)}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubKpiActiveUsers"
+                label={t("revenue.sub.activeUsers")}
+                tile="kpi"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.sub.activeUsers")}
+                    sub={t("revenue.sub.last28d")}
+                    value={num(overview.activeUsers)}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubProducts"
+                label={t("revenue.layout.subProducts")}
+                tile="full"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="full">
           <Widget title={t("revenue.sub.byProduct")}>
             <DataTable<AppOverviewRow>
               columns={[
@@ -675,99 +1096,197 @@ export const Component = () => {
               emptyLabel={t("revenue.sub.productEmpty")}
             />
           </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
 
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
-            <Widget
-              title={t("revenue.sub.trendTitle")}
-              className="xl:col-span-2"
-            >
-              {revenuePoints.length ? (
-                <AreaChartPanel
-                  data={revenuePoints}
-                  xKey="date"
-                  yKey="value"
-                  valueFormatter={usd}
-                />
-              ) : (
-                <div className="text-ui-fg-muted flex h-[240px] items-center justify-center text-sm">
-                  {t("revenue.noData")}
-                </div>
-              )}
-            </Widget>
-            <Widget title={t("revenue.sub.byPlatform")}>
-              <BarList
-                items={platformItems}
-                emptyLabel={t("revenue.sub.platformEmpty")}
-              />
-            </Widget>
-          </div>
+              <LayoutComposer.Entry
+                id="RevenueSubTrendChart"
+                label={t("revenue.layout.subTrend")}
+                tile="wide"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="wide">
+                  <Widget title={t("revenue.sub.trendTitle")} className="h-full">
+                    <div className="flex min-h-[240px] flex-1 flex-col">
+                      {revenuePoints.length ? (
+                        <AreaChartPanel
+                          data={revenuePoints}
+                          xKey="date"
+                          yKey="value"
+                          valueFormatter={usd}
+                        />
+                      ) : (
+                        <div className="text-ui-fg-muted flex flex-1 items-center justify-center text-sm">
+                          {t("revenue.noData")}
+                        </div>
+                      )}
+                    </div>
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
 
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
-            <Widget
-              title={t("revenue.regions.title")}
-              className="xl:col-span-2"
-            >
-              {mapMarkers.length ? (
-                <MapPanel markers={mapMarkers} />
-              ) : (
-                <div className="text-ui-fg-muted flex h-[320px] items-center justify-center text-sm">
-                  {t("revenue.regions.empty")}
-                </div>
-              )}
-            </Widget>
-            <Widget title={t("revenue.regions.byCountry")}>
-              <BarList
-                items={countryItems}
-                emptyLabel={t("revenue.regions.countryEmpty")}
-              />
-              {unmappedCountries.length ? (
-                <Text size="xsmall" className="text-ui-fg-muted mt-2">
-                  {t("revenue.regions.unmapped", {
-                    list: unmappedCountries.join(", "),
-                  })}
-                </Text>
+              <LayoutComposer.Entry
+                id="RevenueSubTrendPlatform"
+                label={t("revenue.layout.subPlatform")}
+                tile="narrow"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="narrow">
+                  <Widget title={t("revenue.sub.byPlatform")} className="h-full">
+                    <div className="flex min-h-[240px] flex-1 flex-col">
+                      <BarList
+                        items={platformItems}
+                        emptyLabel={t("revenue.sub.platformEmpty")}
+                      />
+                    </div>
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubGeoMap"
+                label={t("revenue.layout.geoMap")}
+                tile="wide"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="wide">
+                  <Widget title={t("revenue.regions.title")} className="h-full">
+                    <div className="flex min-h-[320px] flex-1 flex-col">
+                      {mapMarkers.length ? (
+                        <MapPanel markers={mapMarkers} />
+                      ) : (
+                        <div className="text-ui-fg-muted flex flex-1 items-center justify-center text-sm">
+                          {t("revenue.regions.empty")}
+                        </div>
+                      )}
+                    </div>
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueSubGeoCountry"
+                label={t("revenue.layout.geoCountry")}
+                tile="narrow"
+              >
+                <TabGate tab="abonelik" activeTab={activeTab} tile="narrow">
+                  <Widget title={t("revenue.regions.byCountry")} className="h-full">
+                    <div className="flex min-h-[320px] flex-1 flex-col">
+                      <BarList
+                        items={countryItems}
+                        emptyLabel={t("revenue.regions.countryEmpty")}
+                      />
+                      {unmappedCountries.length ? (
+                        <Text size="xsmall" className="text-ui-fg-muted mt-2">
+                          {t("revenue.regions.unmapped", {
+                            list: unmappedCountries.join(", "),
+                          })}
+                        </Text>
+                      ) : null}
+                    </div>
+                  </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              {overview.adRevenue === 0 && !breakdown?.daily?.length ? (
+                <LayoutComposer.Entry
+                  id="RevenueAdNotice"
+                  label={t("revenue.layout.adNotice")}
+                  tile="full"
+                >
+                  <TabGate tab="reklam" activeTab={activeTab} tile="full">
+            <Container className="p-4">
+              <Text size="small" className="text-ui-fg-subtle">
+                {t("revenue.ad.noLocalData", {
+                  defaultValue:
+                    "No AdMob data in this organization yet. Connect AdMob under Settings → Integrations and run a sync, or ask an admin to seed pilot metrics.",
+                })}
+              </Text>
+            </Container>
+                  </TabGate>
+                </LayoutComposer.Entry>
               ) : null}
-            </Widget>
-          </div>
-        </Tabs.Content>
 
-        {/* REKLAM: AdMob dünyası */}
-        <Tabs.Content value="reklam" className="flex flex-col gap-y-3">
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
-            <StatCard
-              label={t("revenue.ad.today")}
-              sub={t("revenue.ad.todaySub")}
-              accent="positive"
-              value={<Money amount={overview.adRevenueNow} currency={cur} />}
-              trend={adDailyTotals}
-              delta={adNowDelta}
-            />
-            <StatCard
-              label={t("revenue.ad.thisMonth")}
-              sub={t("revenue.ad.thisMonthSub")}
-              accent="positive"
-              value={<Money amount={overview.adRevenue} currency={cur} />}
-              trend={adDailyTotals}
-            />
-            <StatCard
-              label={t("revenue.ad.lastMonth")}
-              sub={t("revenue.ad.lastMonthSub")}
-              value={
-                <Money amount={overview.adRevenueLastMonth} currency={cur} />
-              }
-            />
-            <StatCard
-              label={t("revenue.ad.ecpm")}
-              sub={t("revenue.ad.ecpmSub")}
-              value={<Money amount={overview.adEcpm} currency={cur} />}
-            />
-            <StatCard
-              label={t("revenue.ad.impressions")}
-              sub={t("revenue.ad.impressionsSub")}
-              value={num(overview.adImpressions)}
-            />
-          </div>
+              <LayoutComposer.Entry
+                id="RevenueAdKpiToday"
+                label={t("revenue.ad.today")}
+                tile="kpi"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.ad.today")}
+                    sub={t("revenue.ad.todaySub")}
+                    accent="positive"
+                    value={<Money amount={overview.adRevenueNow} currency={cur} />}
+                    trend={adDailyTotals}
+                    delta={adNowDelta}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
 
+              <LayoutComposer.Entry
+                id="RevenueAdKpiThisMonth"
+                label={t("revenue.ad.thisMonth")}
+                tile="kpi"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.ad.thisMonth")}
+                    sub={t("revenue.ad.thisMonthSub")}
+                    accent="positive"
+                    value={<Money amount={overview.adRevenue} currency={cur} />}
+                    trend={adDailyTotals}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueAdKpiLastMonth"
+                label={t("revenue.ad.lastMonth")}
+                tile="kpi"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.ad.lastMonth")}
+                    sub={t("revenue.ad.lastMonthSub")}
+                    value={
+                      <Money amount={overview.adRevenueLastMonth} currency={cur} />
+                    }
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueAdKpiEcpm"
+                label={t("revenue.ad.ecpm")}
+                tile="kpi"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.ad.ecpm")}
+                    sub={t("revenue.ad.ecpmSub")}
+                    value={<Money amount={overview.adEcpm} currency={cur} />}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueAdKpiImpressions"
+                label={t("revenue.ad.impressions")}
+                tile="kpi"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="kpi">
+                  <StatCard
+                    label={t("revenue.ad.impressions")}
+                    sub={t("revenue.ad.impressionsSub")}
+                    value={num(overview.adImpressions)}
+                  />
+                </TabGate>
+              </LayoutComposer.Entry>
+
+              <LayoutComposer.Entry
+                id="RevenueAdDaily"
+                label={t("revenue.layout.adDaily")}
+                tile="full"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="full">
           <Widget title={t("revenue.ad.dailyTitle")}>
             {adDaily.length ? (
               <StackedAreaChart
@@ -782,7 +1301,15 @@ export const Component = () => {
               </div>
             )}
           </Widget>
+                </TabGate>
+              </LayoutComposer.Entry>
 
+              <LayoutComposer.Entry
+                id="RevenueAdBreakdown"
+                label={t("revenue.layout.adBreakdown")}
+                tile="full"
+              >
+                <TabGate tab="reklam" activeTab={activeTab} tile="full">
           <Widget
             title={t("revenue.ad.breakdown")}
             action={
@@ -861,8 +1388,12 @@ export const Component = () => {
               emptyLabel={t("revenue.ad.emptyFilter")}
             />
           </Widget>
-        </Tabs.Content>
-      </Tabs>
+                </TabGate>
+              </LayoutComposer.Entry>
+            </>
+          ),
+        }}
+      />
 
       <FocusModal open={expenseOpen} onOpenChange={setExpenseOpen}>
         <FocusModal.Content>
@@ -875,37 +1406,64 @@ export const Component = () => {
               </FocusModal.Close>
               <Button
                 size="small"
-                isLoading={createExpense.isPending}
-                disabled={!expense.description.trim() || !expense.amount}
-                onClick={() =>
-                  createExpense.mutate(
-                    {
-                      description: expense.description.trim(),
-                      amount: Number(expense.amount),
-                      currency: cur,
-                      category: expense.category.trim() || "genel",
-                      occurred_at: expense.occurred_at,
-                      recurring: expense.recurring,
-                    },
-                    {
-                      onSuccess: () => {
-                        toast.success(t("revenue.expense.created"))
-                        setExpenseOpen(false)
-                        setExpense({
-                          description: "",
-                          amount: "",
-                          category: "",
-                          occurred_at: new Date().toISOString().slice(0, 10),
-                          recurring: false,
-                        })
-                      },
-                      onError: (e: Error) =>
-                        toast.error(
-                          e?.message || t("revenue.expense.createError")
-                        ),
-                    }
-                  )
+                isLoading={
+                  createExpense.isPending || uploadExpenseInvoice.isPending
                 }
+                disabled={!expense.description.trim() || !expense.amount}
+                onClick={async () => {
+                  try {
+                    let invoice_url: string | null = null
+                    if (expenseInvoiceFile) {
+                      const uploaded = await uploadExpenseInvoice.mutateAsync(
+                        expenseInvoiceFile
+                      )
+                      invoice_url = uploaded.url
+                    }
+                    createExpense.mutate(
+                      {
+                        description: expense.description.trim(),
+                        amount: Number(expense.amount),
+                        currency: cur,
+                        category:
+                          (expense.category.trim() as
+                            | "infra"
+                            | "api"
+                            | "ads"
+                            | "other") || "other",
+                        occurred_at: expense.occurred_at,
+                        recurring: expense.recurring,
+                        vendor: expense.vendor.trim() || null,
+                        invoice_number: expense.invoice_number.trim() || null,
+                        invoice_url,
+                      },
+                      {
+                        onSuccess: () => {
+                          toast.success(t("revenue.expense.created"))
+                          setExpenseOpen(false)
+                          setExpenseInvoiceFile(null)
+                          setExpenseInvoiceError(undefined)
+                          setExpense({
+                            description: "",
+                            amount: "",
+                            category: "",
+                            occurred_at: new Date().toISOString().slice(0, 10),
+                            recurring: false,
+                            vendor: "",
+                            invoice_number: "",
+                          })
+                        },
+                        onError: (e: Error) =>
+                          toast.error(
+                            e?.message || t("revenue.expense.createError")
+                          ),
+                      }
+                    )
+                  } catch (e) {
+                    toast.error(
+                      (e as Error)?.message || t("revenue.expense.uploadError")
+                    )
+                  }
+                }}
               >
                 {t("revenue.expense.save")}
               </Button>
@@ -956,6 +1514,78 @@ export const Component = () => {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-y-2">
+                  <Label>{t("revenue.expense.vendor")}</Label>
+                  <Input
+                    value={expense.vendor}
+                    onChange={(e) =>
+                      setExpense({ ...expense, vendor: e.target.value })
+                    }
+                    placeholder={t("revenue.expense.vendorPh")}
+                  />
+                </div>
+                <div className="flex flex-col gap-y-2">
+                  <Label>{t("revenue.expense.invoiceNumber")}</Label>
+                  <Input
+                    value={expense.invoice_number}
+                    onChange={(e) =>
+                      setExpense({
+                        ...expense,
+                        invoice_number: e.target.value,
+                      })
+                    }
+                    placeholder={t("revenue.expense.invoiceNumberPh")}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-y-2">
+                <Label>{t("revenue.expense.invoiceFile")}</Label>
+                {expenseInvoiceFile ? (
+                  <div className="bg-ui-bg-component border-ui-border-base flex items-center justify-between gap-x-3 rounded-lg border px-3 py-2">
+                    <Text size="small" className="truncate">
+                      {expenseInvoiceFile.name}
+                    </Text>
+                    <IconButton
+                      size="small"
+                      variant="transparent"
+                      type="button"
+                      onClick={() => setExpenseInvoiceFile(null)}
+                    >
+                      <XMark className="text-ui-fg-muted" />
+                    </IconButton>
+                  </div>
+                ) : (
+                  <FileUpload
+                    label={t("revenue.expense.invoiceFile")}
+                    hint={t("revenue.expense.invoiceFileHint")}
+                    multiple={false}
+                    formats={[
+                      "application/pdf",
+                      "image/jpeg",
+                      "image/png",
+                      "image/webp",
+                      ".pdf,.jpg,.jpeg,.png,.webp",
+                    ]}
+                    maxFileSize={10 * 1024 * 1024}
+                    hasError={!!expenseInvoiceError}
+                    onUploaded={(files: FileType[], rejected) => {
+                      setExpenseInvoiceError(undefined)
+                      if (rejected?.length) {
+                        setExpenseInvoiceError(t("revenue.expense.uploadError"))
+                        return
+                      }
+                      const file = files[0]?.file
+                      if (file) {
+                        setExpenseInvoiceFile(file)
+                      }
+                    }}
+                  />
+                )}
+                {expenseInvoiceError ? (
+                  <Hint variant="error">{expenseInvoiceError}</Hint>
+                ) : null}
+              </div>
               <div className="flex flex-col gap-y-2">
                 <Label>{t("revenue.expense.category")}</Label>
                 <Input
@@ -984,6 +1614,6 @@ export const Component = () => {
           </FocusModal.Body>
         </FocusModal.Content>
       </FocusModal>
-    </div>
+    </>
   )
 }

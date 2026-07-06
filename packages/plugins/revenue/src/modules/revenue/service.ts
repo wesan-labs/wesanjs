@@ -15,11 +15,47 @@ class RevenueModuleService extends MedusaService({
   Expense,
   MetricSnapshot,
 }) {
+  private async listForTenant<T extends { id: string }>(
+    listFn: (
+      filter: Record<string, unknown>,
+      config?: Record<string, unknown>
+    ) => Promise<T[]>,
+    tenantId?: string,
+    base: Record<string, unknown> = {},
+    config?: Record<string, unknown>
+  ): Promise<T[]> {
+    if (!tenantId) {
+      return listFn(base, config)
+    }
+    const [scoped, legacy] = await Promise.all([
+      listFn({ ...base, tenant_id: tenantId }, config),
+      listFn({ ...base, tenant_id: null }, config),
+    ])
+    const byId = new Map<string, T>()
+    for (const row of [...legacy, ...scoped]) {
+      byId.set(row.id, row)
+    }
+    return Array.from(byId.values())
+  }
+
+  private tFilter(
+    tenantId?: string,
+    base: Record<string, unknown> = {}
+  ): Record<string, unknown> {
+    return tenantId ? { ...base, tenant_id: tenantId } : base
+  }
+
   async recordEvents(
     sourceId: string,
     sourceType: RevenueSourceType,
-    events: CanonicalEvent[]
+    events: CanonicalEvent[],
+    tenantId?: string
   ): Promise<number> {
+    const [source] = await this.listRevenueSources({ id: sourceId }, { take: 1 })
+    const rowTenantId =
+      (source as { tenant_id?: string | null } | undefined)?.tenant_id ??
+      tenantId ??
+      null
     let written = 0
     for (const e of events) {
       const existing = await this.listRevenueEvents(
@@ -36,6 +72,7 @@ class RevenueModuleService extends MedusaService({
         currency: e.currency,
         occurred_at: e.occurredAt,
         raw_payload: e.raw as Record<string, unknown>,
+        tenant_id: rowTenantId,
       })
       written++
     }
@@ -46,20 +83,23 @@ class RevenueModuleService extends MedusaService({
     date,
     metrics,
     expenseTotal,
+    tenantId,
   }: {
     date: Date
     metrics: ProviderMetrics
     expenseTotal: number
+    tenantId?: string
   }): Promise<void> {
     const day = new Date(date.toISOString().slice(0, 10))
     const existing = await this.listMetricSnapshots(
-      { date: day, app_id: null, source_type: null },
+      this.tFilter(tenantId, { date: day, app_id: null, source_type: null }),
       { take: 1 }
     )
     const data = {
       date: day,
       app_id: null,
       source_type: null,
+      tenant_id: tenantId ?? null,
       mrr: metrics.mrr,
       active_subscriptions: metrics.activeSubscriptions,
       active_trials: metrics.activeTrials,
@@ -85,16 +125,23 @@ class RevenueModuleService extends MedusaService({
     platform,
     sourceType,
     fields,
+    tenantId,
   }: {
     date: Date
     appId: string | null
     platform: string
     sourceType: string
     fields: Record<string, any>
+    tenantId?: string | null
   }): Promise<void> {
     const day = new Date(date.toISOString().slice(0, 10))
     const existing = await this.listMetricSnapshots(
-      { date: day, app_id: appId, platform, source_type: sourceType },
+      this.tFilter(tenantId ?? undefined, {
+        date: day,
+        app_id: appId,
+        platform,
+        source_type: sourceType,
+      }),
       { take: 1 }
     )
     const data = {
@@ -102,6 +149,7 @@ class RevenueModuleService extends MedusaService({
       app_id: appId,
       platform,
       source_type: sourceType,
+      tenant_id: tenantId ?? null,
       currency: fields.currency ?? "USD",
       ...fields,
     }
@@ -113,8 +161,10 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Her app'in en güncel "platform=all" revenuecat snapshot'ı.
-  private async latestPerApp(): Promise<any[]> {
-    const snaps = await this.listMetricSnapshots(
+  private async latestPerApp(tenantId?: string): Promise<any[]> {
+    const snaps = await this.listForTenant(
+      (filter, config) => this.listMetricSnapshots(filter, config),
+      tenantId,
       { platform: "all", source_type: "revenuecat" },
       { order: { date: "DESC" }, take: 2000 }
     )
@@ -128,8 +178,10 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Tüm AdMob günlük snapshot'ları (gün gün saklanır).
-  private async admobSnaps(): Promise<any[]> {
-    return this.listMetricSnapshots(
+  private async admobSnaps(tenantId?: string): Promise<any[]> {
+    return this.listForTenant(
+      (filter, config) => this.listMetricSnapshots(filter, config),
+      tenantId,
       { source_type: "admob" },
       { order: { date: "DESC" }, take: 5000 }
     )
@@ -149,10 +201,11 @@ class RevenueModuleService extends MedusaService({
   // Reklam geliri (app başına) — [start, end) takvim aralığında, kendi birimiyle.
   private async adRevenueByApp(
     start: Date,
-    end?: Date
+    end?: Date,
+    tenantId?: string
   ): Promise<Map<string, { amount: number; currency: string }>> {
     const byApp = new Map<string, { amount: number; currency: string }>()
-    for (const s of await this.admobSnaps()) {
+    for (const s of await this.admobSnaps(tenantId)) {
       if (!s.app_id) {
         continue
       }
@@ -171,9 +224,9 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Tüm abonelik (revenuecat, platform=all) günlük snapshot'ları.
-  private async subsSnaps(): Promise<any[]> {
+  private async subsSnaps(tenantId?: string): Promise<any[]> {
     return this.listMetricSnapshots(
-      { platform: "all", source_type: "revenuecat" },
+      this.tFilter(tenantId, { platform: "all", source_type: "revenuecat" }),
       { order: { date: "DESC" }, take: 5000 }
     )
   }
@@ -181,10 +234,11 @@ class RevenueModuleService extends MedusaService({
   // Abonelik geliri (app başına) — [start, end) takvim aralığında, kendi birimiyle.
   private async subsRevenueByApp(
     start: Date,
-    end?: Date
+    end?: Date,
+    tenantId?: string
   ): Promise<Map<string, { amount: number; currency: string }>> {
     const byApp = new Map<string, { amount: number; currency: string }>()
-    for (const s of await this.subsSnaps()) {
+    for (const s of await this.subsSnaps(tenantId)) {
       if (!s.app_id) {
         continue
       }
@@ -205,10 +259,11 @@ class RevenueModuleService extends MedusaService({
   // Abonelik geliri PLATFORM bazında (komisyon için) — [start, end) aralığında.
   private async subsRevenueByPlatform(
     start: Date,
-    end?: Date
+    end?: Date,
+    tenantId?: string
   ): Promise<Map<string, { amount: number; currency: string }>> {
     const snaps = await this.listMetricSnapshots(
-      { source_type: "revenuecat" },
+      this.tFilter(tenantId, { source_type: "revenuecat" }),
       { order: { date: "DESC" }, take: 5000 }
     )
     const byPlat = new Map<string, { amount: number; currency: string }>()
@@ -231,10 +286,10 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Finans ayarları (komisyon yüzdeleri + vergi oranı). Yoksa 0.
-  async getSettings() {
-    const s = (await this.listRevenueSources({}, { take: 500 })).find(
-      (x: any) => x.provider === "settings"
-    )
+  async getSettings(tenantId?: string) {
+    const s = (
+      await this.listRevenueSources(this.tFilter(tenantId), { take: 500 })
+    ).find((x: any) => x.provider === "settings")
     const c = s?.config ?? {}
     return {
       appleCommission: Number(c.apple_commission ?? 0),
@@ -260,13 +315,16 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Per-app kırılım (Apps listesi) — display birimine normalize toplam.
-  async getAppsOverview(display = "USD") {
+  async getAppsOverview(display = "USD", tenantId?: string) {
     display = (display || "USD").toUpperCase()
-    const apps = await this.listApps({}, { order: { name: "ASC" }, take: 200 })
-    const latest = await this.latestPerApp()
+    const apps = await this.listApps(this.tFilter(tenantId), {
+      order: { name: "ASC" },
+      take: 200,
+    })
+    const latest = await this.latestPerApp(tenantId)
     const { thisStart } = this.monthBounds()
-    const adByApp = await this.adRevenueByApp(thisStart)
-    const subsByApp = await this.subsRevenueByApp(thisStart)
+    const adByApp = await this.adRevenueByApp(thisStart, undefined, tenantId)
+    const subsByApp = await this.subsRevenueByApp(thisStart, undefined, tenantId)
     const byId = new Map(latest.map((s) => [s.app_id, s]))
     const rates = await this.fxMap(
       [
@@ -307,11 +365,13 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Tek app detayı: toplam metrik + platform/kaynak kırılımı.
-  async getAppDetail(appId: string) {
-    const apps = await this.listApps({ id: appId }, { take: 1 })
+  async getAppDetail(appId: string, tenantId?: string) {
+    const apps = await this.listApps(this.tFilter(tenantId, { id: appId }), {
+      take: 1,
+    })
     const app = apps[0]
     const snaps = await this.listMetricSnapshots(
-      { app_id: appId },
+      this.tFilter(tenantId, { app_id: appId }),
       { order: { date: "DESC" }, take: 500 }
     )
     const latest = new Map<string, any>()
@@ -332,8 +392,12 @@ class RevenueModuleService extends MedusaService({
       }))
       .sort((a, b) => b.revenue - a.revenue)
     const { thisStart } = this.monthBounds()
-    const ad = (await this.adRevenueByApp(thisStart)).get(appId)
-    const sub = (await this.subsRevenueByApp(thisStart)).get(appId)
+    const ad = (await this.adRevenueByApp(thisStart, undefined, tenantId)).get(
+      appId
+    )
+    const sub = (await this.subsRevenueByApp(thisStart, undefined, tenantId)).get(
+      appId
+    )
     return {
       id: appId,
       name: app?.name ?? appId,
@@ -352,10 +416,10 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Reklam detayı: günlük seri (platform kırılımlı) + ürün×platform satırları (bu ay).
-  async getAdBreakdown(display = "USD") {
+  async getAdBreakdown(display = "USD", tenantId?: string) {
     display = (display || "USD").toUpperCase()
-    const snaps = await this.admobSnaps()
-    const apps = await this.listApps({}, { take: 200 })
+    const snaps = await this.admobSnaps(tenantId)
+    const apps = await this.listApps(this.tFilter(tenantId), { take: 200 })
     const nameById = new Map(apps.map((a) => [a.id, a.name]))
     const rates = await this.fxMap(
       snaps.map((s) => s.currency ?? display),
@@ -431,12 +495,17 @@ class RevenueModuleService extends MedusaService({
   }
 
   // Genel P&L — abonelik + reklam + gider, hepsi display birimine FX-normalize.
-  async getOverview(display = "USD") {
+  async getOverview(display = "USD", tenantId?: string) {
     display = (display || "USD").toUpperCase()
-    const subs = await this.latestPerApp()
-    const adSnaps = await this.admobSnaps()
+    const subs = await this.latestPerApp(tenantId)
+    const adSnaps = await this.admobSnaps(tenantId)
     const { thisStart, lastStart } = this.monthBounds()
-    const expenses = await this.listExpenses({}, { take: 1000 })
+    const expenses = await this.listForTenant(
+      (filter, config) => this.listExpenses(filter, config),
+      tenantId,
+      {},
+      { take: 1000 }
+    )
 
     const rates = await this.fxMap(
       [
@@ -452,8 +521,8 @@ class RevenueModuleService extends MedusaService({
     const sumI = (f: string) => subs.reduce((a, s) => a + (s[f] ?? 0), 0)
 
     // Abonelik: bu ay / geçen ay (takvim) — reklamla aynı pencere.
-    const subsThis = await this.subsRevenueByApp(thisStart)
-    const subsLast = await this.subsRevenueByApp(lastStart, thisStart)
+    const subsThis = await this.subsRevenueByApp(thisStart, undefined, tenantId)
+    const subsLast = await this.subsRevenueByApp(lastStart, thisStart, tenantId)
     let mrr = 0
     for (const s of subs) {
       mrr += conv(s.mrr, s.currency)
@@ -495,14 +564,19 @@ class RevenueModuleService extends MedusaService({
     }
     const ecpm = (amount: number, imp: number) =>
       imp > 0 ? Number(((amount / imp) * 1000).toFixed(2)) : 0
-    const expenseTotal = expenses.reduce(
+
+    const expensesInMonth = expenses.filter((e) => {
+      const d = new Date(e.occurred_at)
+      return d >= thisStart
+    })
+    const expenseTotal = expensesInMonth.reduce(
       (a, e) => a + conv(e.amount, e.currency),
       0
     )
 
     // Komisyon: abonelik geliri platform bazında (Apple/Google/diğer %).
-    const settings = await this.getSettings()
-    const subsByPlat = await this.subsRevenueByPlatform(thisStart)
+    const settings = await this.getSettings(tenantId)
+    const subsByPlat = await this.subsRevenueByPlatform(thisStart, undefined, tenantId)
     let commission = 0
     for (const [plat, a] of subsByPlat) {
       const rate =
@@ -519,10 +593,11 @@ class RevenueModuleService extends MedusaService({
     const taxTotal =
       profitBeforeTax > 0 ? profitBeforeTax * (settings.taxRate / 100) : 0
 
-    const recentEvents = await this.listRevenueEvents(
-      {},
-      { order: { occurred_at: "DESC" }, take: 10 }
-    )
+    const recentEvents = await this.listRevenueEvents(this.tFilter(tenantId), {
+      order: { occurred_at: "DESC" },
+      take: 10,
+    })
+    const sync = await this.buildSyncMeta(tenantId, subs, adSnaps)
     return {
       currency: display,
       mrr: r2(mrr),
@@ -538,6 +613,17 @@ class RevenueModuleService extends MedusaService({
       totalRevenue: r2(totalRevenue),
       revenue28d: r2(subscriptionRevenue), // geri uyumluluk (abonelik)
       expenseTotal: r2(expenseTotal),
+      expensesThisMonth: expensesInMonth.map((e) => ({
+        id: e.id,
+        description: e.description,
+        category: e.category,
+        amount: r2(conv(e.amount, e.currency)),
+        currency: display,
+        occurred_at: e.occurred_at,
+        vendor: e.vendor ?? null,
+        invoice_number: e.invoice_number ?? null,
+        invoice_url: e.invoice_url ?? null,
+      })),
       net: r2(profitBeforeTax - taxTotal),
       activeSubscriptions: sumI("active_subscriptions"),
       activeTrials: sumI("active_trials"),
@@ -553,6 +639,47 @@ class RevenueModuleService extends MedusaService({
         .sort((a, b) => b.amount - a.amount),
       recentEvents,
       mrrTrend: [],
+      sync,
+    }
+  }
+
+  /** Last provider sync + latest snapshot dates for the dashboard meta bar. */
+  private async buildSyncMeta(
+    tenantId: string | undefined,
+    subs: { date: Date | string }[],
+    adSnaps: { date: Date | string }[]
+  ) {
+    const sources = await this.listRevenueSources(this.tFilter(tenantId), {
+      take: 500,
+    })
+    const latestSync = (pred: (s: { type?: string; provider?: string | null; last_synced_at?: Date | string | null }) => boolean) => {
+      let max: Date | null = null
+      for (const s of sources) {
+        if (!pred(s) || !s.last_synced_at) {
+          continue
+        }
+        const d = new Date(s.last_synced_at)
+        if (!max || d > max) {
+          max = d
+        }
+      }
+      return max?.toISOString() ?? null
+    }
+    const maxSnapshotDay = (snaps: { date: Date | string }[]) => {
+      let max: Date | null = null
+      for (const s of snaps) {
+        const d = new Date(s.date)
+        if (!max || d > max) {
+          max = d
+        }
+      }
+      return max ? max.toISOString().slice(0, 10) : null
+    }
+    return {
+      revenuecatLastSyncedAt: latestSync((s) => s.type === "revenuecat"),
+      admobLastSyncedAt: latestSync((s) => s.provider === "admob"),
+      subscriptionDataThrough: maxSnapshotDay(subs),
+      adDataThrough: maxSnapshotDay(adSnaps),
     }
   }
 }

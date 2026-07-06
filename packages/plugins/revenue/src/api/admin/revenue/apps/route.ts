@@ -3,6 +3,11 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { z } from "zod"
+import {
+  listWithLegacyTenantScope,
+  stampTenantId,
+  tenantScopeFilter,
+} from "../../../../api/lib/tenant-guard"
 import { REVENUE_MODULE } from "../../../../modules/revenue/types"
 
 export const GET = async (
@@ -10,12 +15,18 @@ export const GET = async (
   res: MedusaResponse
 ) => {
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const apps = await service.listApps({}, { order: { name: "ASC" }, take: 200 })
+  const apps = await listWithLegacyTenantScope(
+    req,
+    (filter, config) => service.listApps(filter, config),
+    { order: { name: "ASC" }, take: 200 }
+  )
   res.status(200).json({ apps })
 }
 
 const PostApp = z.object({
   name: z.string().min(1),
+  vertical: z.enum(["mobile_game", "mobile_app", "web"]).optional(),
+  runtime: z.string().nullable().optional(),
   icon_url: z.string().nullable().optional(),
   external_ids: z.record(z.string(), z.any()).nullable().optional(),
 })
@@ -26,6 +37,6 @@ export const POST = async (
 ) => {
   const body = PostApp.parse(req.body)
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const app = await service.createApps(body)
+  const app = await service.createApps(stampTenantId(req, body))
   res.status(201).json({ app })
 }

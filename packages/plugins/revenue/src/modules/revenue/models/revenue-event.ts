@@ -6,6 +6,7 @@ export default model
     { tableName: "revenue_event", name: "RevenueEvent" },
     {
       id: model.id({ prefix: "revt" }).primaryKey(),
+      tenant_id: model.text().nullable(),
       source_id: model.text(),
       source_type: model.enum(RevenueSourceType),
       external_id: model.text(),

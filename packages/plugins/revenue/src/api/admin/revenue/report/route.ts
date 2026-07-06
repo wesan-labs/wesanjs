@@ -5,6 +5,7 @@ import {
 import { RevenueCatConnector } from "../../../../modules/revenue/connectors/revenuecat"
 import { rateTo } from "../../../../modules/revenue/lib/fx"
 import { computeMonthlyReport } from "../../../../modules/revenue/lib/report"
+import { tenantScopeFilter } from "../../../../api/lib/tenant-guard"
 import { REVENUE_MODULE } from "../../../../modules/revenue/types"
 
 // GET /admin/revenue/report?month=YYYY-MM&currency=EUR
@@ -37,7 +38,9 @@ export const GET = async (
   }
 
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const expenses = await service.listExpenses({}, { take: 1000 })
+  const expenses = await service.listExpenses(tenantScopeFilter(req), {
+    take: 1000,
+  })
 
   // FX: ilgili her para birimi → raporlama birimi
   const currencies = new Set<string>([

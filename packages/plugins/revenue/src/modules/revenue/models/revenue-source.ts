@@ -5,6 +5,7 @@ export default model.define(
   { tableName: "revenue_source", name: "RevenueSource" },
   {
     id: model.id({ prefix: "rsrc" }).primaryKey(),
+    tenant_id: model.text().nullable(),
     type: model.enum(RevenueSourceType),
     provider: model.text().nullable(),
     category: model.text().nullable(),

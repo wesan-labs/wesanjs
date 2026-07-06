@@ -7,6 +7,11 @@ import {
   decryptSecret,
   encryptSecret,
 } from "../../../../modules/revenue/lib/crypto"
+import {
+  listWithLegacyTenantScope,
+  stampTenantId,
+  tenantScopeFilter,
+} from "../../../../api/lib/tenant-guard"
 import { REVENUE_MODULE } from "../../../../modules/revenue/types"
 
 const envSet = (name: string) => {
@@ -33,7 +38,11 @@ export const GET = async (
   res: MedusaResponse
 ) => {
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  const sources = await service.listRevenueSources({}, { take: 500 })
+  const sources: any[] = await listWithLegacyTenantScope(
+    req,
+    (filter, config) => service.listRevenueSources(filter, config),
+    { take: 500 }
+  )
   const rc = sources.filter((s: any) => s.type === "revenuecat")
   const byProvider = (p: string) =>
     sources.find((s: any) => s.provider === p && !!s.secret_enc)
@@ -80,10 +89,11 @@ export const POST = async (
 ) => {
   const body = PostIntegration.parse(req.body)
   const service: any = req.scope.resolve(REVENUE_MODULE)
-  // provider başına tek kayıt: varsa güncelle, yoksa oluştur
-  const existing = (await service.listRevenueSources({}, { take: 500 })).find(
-    (s: any) => s.provider === body.provider
-  )
+  const existing: any = (
+    await listWithLegacyTenantScope(req, (filter, config) =>
+      service.listRevenueSources(filter, config)
+    )
+  ).find((s: any) => s.provider === body.provider)
 
   // MERGE — boş gönderilen alan mevcut değeri SİLMEZ; sadece yeni gireni günceller.
   let mergedSecrets: Record<string, string> = {}
@@ -110,7 +120,7 @@ export const POST = async (
   if (existing) {
     await service.updateRevenueSources({ id: existing.id, ...data })
   } else {
-    await service.createRevenueSources(data)
+    await service.createRevenueSources(stampTenantId(req, data))
   }
   res.status(201).json({ ok: true, provider: body.provider })
 }

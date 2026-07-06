@@ -6,13 +6,17 @@ import { REVENUE_MODULE } from "../types"
 // ADMOB_CLIENT_ID, ADMOB_CLIENT_SECRET, ADMOB_REFRESH_TOKEN, ADMOB_PUBLISHER_ID.
 // Rapor satırları app'e isim ya da external_ids.admob ile eşlenir.
 export async function syncAdmob(
-  container: any
+  container: any,
+  tenantId?: string
 ): Promise<{ synced: number; skipped: number }> {
   const logger = container.resolve("logger")
   const service: any = container.resolve(REVENUE_MODULE)
 
-  // Creds: önce UI'dan kaydedilen (şifreli) AdMob entegrasyonu, yoksa .env.
-  const integ = (await service.listRevenueSources({}, { take: 500 })).find(
+  const sourceFilter: Record<string, unknown> = {}
+  if (tenantId) {
+    sourceFilter.tenant_id = tenantId
+  }
+  const integ = (await service.listRevenueSources(sourceFilter, { take: 500 })).find(
     (s: any) => s.provider === "admob" && s.secret_enc
   )
   let clientId: string | undefined
@@ -48,7 +52,17 @@ export async function syncAdmob(
   // İstenen rapor para birimi (UI'dan; boşsa AdMob hesabının yerel birimi).
   const currency = integ?.config?.currency || process.env.ADMOB_CURRENCY
 
-  const apps = await service.listApps({}, { take: 500 })
+  const appFilter: Record<string, unknown> = {}
+  if (tenantId) {
+    appFilter.tenant_id = tenantId
+  }
+  const apps = await service.listApps(appFilter, { take: 500 })
+  const tenantByAppId = new Map(
+    apps.map((a: { id: string; tenant_id?: string | null }) => [
+      a.id,
+      a.tenant_id ?? tenantId ?? null,
+    ])
+  )
   const byExt = new Map<string, string>()
   const byName = new Map<string, string>()
   for (const a of apps) {
@@ -137,6 +151,7 @@ export async function syncAdmob(
       appId: v.appId,
       platform: v.platform,
       sourceType: "admob",
+      tenantId: tenantByAppId.get(v.appId) ?? tenantId ?? null,
       fields: {
         ad_revenue: Number(v.amount.toFixed(2)),
         ad_impressions: v.impressions,

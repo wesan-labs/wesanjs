@@ -21,14 +21,16 @@ export const platformFromStore = (store: string): string => {
 // toplam + (platform=ios/android) gelir snapshot'ları yazar. Secret .env'den
 // (source.credentials_ref) okunur — DB'de değil.
 export async function syncRevenuecatSources(
-  container: any
+  container: any,
+  tenantId?: string
 ): Promise<{ synced: number; skipped: number }> {
   const logger = container.resolve("logger")
   const service: any = container.resolve(REVENUE_MODULE)
-  const sources = await service.listRevenueSources(
-    { type: "revenuecat" },
-    { take: 200 }
-  )
+  const sourceFilter: Record<string, unknown> = { type: "revenuecat" }
+  if (tenantId) {
+    sourceFilter.tenant_id = tenantId
+  }
+  const sources = await service.listRevenueSources(sourceFilter, { take: 200 })
   let synced = 0
   let skipped = 0
 
@@ -52,6 +54,7 @@ export async function syncRevenuecatSources(
       })
       const metrics = await connector.fetchMetrics()
       const today = new Date()
+      const rowTenantId = src.tenant_id ?? tenantId ?? null
       const monthStart = new Date(
         Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1)
       )
@@ -66,6 +69,7 @@ export async function syncRevenuecatSources(
             appId: src.app_id,
             platform: "all",
             sourceType: "revenuecat",
+            tenantId: rowTenantId,
             fields: {
               gross_revenue: Number(d.value.toFixed(2)),
               currency: metrics.currency,
@@ -84,6 +88,7 @@ export async function syncRevenuecatSources(
         appId: src.app_id,
         platform: "all",
         sourceType: "revenuecat",
+        tenantId: rowTenantId,
         fields: {
           mrr: metrics.mrr,
           active_subscriptions: metrics.activeSubscriptions,
@@ -115,6 +120,7 @@ export async function syncRevenuecatSources(
             appId: src.app_id,
             platform: v.platform,
             sourceType: "revenuecat",
+            tenantId: rowTenantId,
             fields: {
               gross_revenue: Number(v.value.toFixed(2)),
               currency: metrics.currency,
