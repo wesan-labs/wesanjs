@@ -12,9 +12,14 @@ import {
 
 interface EditImageBody {
   image: { data: string; mime: string }
-  /** free-text edit instruction */
+  /**
+   * Birincil: pack engine'in ürettiği deterministik instruction (POST /compose).
+   * Doğrudan görsel modeline gider — LLM ara katmanı YOK (tek hop).
+   */
+  instruction?: string
+  /** free-text edit instruction (instruction ile aynı tek-hop yolu) */
   prompt?: string
-  /** OR a library image-prompt id + its variable values */
+  /** @deprecated library image-prompt id + variables — 2-hop LLM expansion. #0013'te kaldırılacak. */
   promptId?: string
   variables?: Record<string, string>
 }
@@ -34,8 +39,14 @@ export const POST = async (
     throw new MedusaError(MedusaError.Types.INVALID_DATA, "Görsel gerekli")
   }
 
-  let instruction = body.prompt?.trim()
+  // Birincil: instruction (pack compose) veya free-text prompt → doğrudan tek hop.
+  let instruction = body.instruction?.trim() || body.prompt?.trim()
   if (!instruction && body.promptId) {
+    // DEPRECATED: library prompt → LLM expansion → instruction (2-hop). Pack engine
+    // (POST /compose) deterministik instruction verir; bu dal #0013'te kaldırılacak.
+    console.warn(
+      `[content][deprecated] edit-image promptId 2-hop kullanıldı (${body.promptId}); pack compose'a geç.`
+    )
     const prompt = getPrompt(body.promptId)
     if (!prompt) {
       throw new MedusaError(
