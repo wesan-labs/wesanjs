@@ -18,26 +18,39 @@ Kullanıcının **1 (veya birkaç) ürün fotoğrafından** → **5°'lik aralı
 
 ## 2. Motor mekanizması (çekirdek — netleşti)
 
+**KESİN PIPELINE (araştırma-doğrulanmış, 2026-07 — dostunun Flux2→Seedance→SeeDVR zinciri):**
+
 ```
-GİRDİ: 1 veya birkaç ürün fotoğrafı
+GİRDİ: kullanıcı ürün fotoğrafı
   │
-  ├─(2a) MULTI-VIEW ÜRETİMİ: 5° aralıkla 72 görsel  → tam 360° orbit
-  │        [novel-view sentezi: SV3D / Zero123++ / Stable-Zero123]
+① FLUX.2  (image gen/edit · 4MP · Black Forest Labs)
+    → HERO görsel: stüdyo/arka plan, marka rengi (hex-doğru), ürün-detayı korunur
+      (multi-reference, 10 referansa kadar). Temiz, yüksek-çöz. başlangıç karesi.
   │
-  └─(2b) GLB REKONSTRÜKSİYON: 72 view → dokulu 3D mesh (.glb)
-           [InstantMesh / TripoSR / LGM — veya uçtan-uca Tripo/Meshy]
-
-ÇIKTILAR (ikisi de birinci sınıf):
-  • TURNTABLE  = 72 kare (sosyal içerik + mağaza görseli; döner ürün)
-  • GLB        = mağazada gömülü interaktif 3D (<model-viewer>)
+② SEEDANCE 2.0  (image→video · ByteDance · identity-locked)
+    → 360° ORBITAL VİDEO: ürün merkezde, kamera 360° döner (~10s); "Reference Cluster"
+      ile ürün kimliği KİLİTLİ (fidelity yapısal). Turntable hareketi burada üretilir.
+  │
+③ SeedVR  (video restorasyon/upscale)
+    → orbital videoyu 4K'ya yükselt (gürültü/artefakt temizle).
+  │
+④ SAMPLE → 5°'de bir kare → 72 kare @5° (turntable.ts spec'i)
+  │
+  ├─ ÇIKTI A · TURNTABLE (72 kare): sosyal spin / mağaza galerisi / "dönen ürün".
+  │            Hero görsel = kullanıcının seçtiği/yakaladığı kare.
+  │
+  └─⑤ RECONSTRUCT (72 kare → GLB): fotogrametri (RealityCapture/Meshroom/COLMAP)
+       VEYA 3D Gaussian Splatting + mesh export → GLB
+       → ÇIKTI B · GLB: mağaza interaktif 3D embed (<model-viewer>).
 ```
 
-**Kritik sadeleştirme (uygulama notu):** GLB elde edilince, **72-kare turntable ve İSTENEN HER AÇI, GLB'den deterministik + bedava render edilir** (headless three.js). Yani:
+**Kanıtla (araştırma):**
+- **Flux2** (BFL, Kas 2025): 4MP, multi-reference **ürün-detayı koruma**, hex marka rengi, arka plan değiştirme → hero hazırlama.
+- **Seedance 2.0** (ByteDance): tek görselden **360° orbital ürün videosu**, Identity Locking / Reference Cluster ile kimlik kilidi → turntable üretimi.
+- **SeedVR**: video restorasyon + hedef çözünürlüğe (**4K**) upscale.
+- **72 kare → GLB**: fotogrametri veya 3DGS (mesh export); AI-üretilmiş orbital karelerde 3DGS yansıma/şeffaflıkta daha sağlam.
 
-- **Önerilen yol (BUY-first):** foto → **GLB** (Tripo/Meshy API) → GLB'yi 72 kareye (ve istenen açıya) render et. Tek ML adımı; turntable kusursuz tutarlı (gerçek mesh'ten). ④ Açı/Render **bedava** olur.
-- **Alternatif (KUR):** foto → 72 view (SV3D self-host) → GLB (InstantMesh). Senin tarif ettiğin literal akış; iki ML adımı, GPU gerektirir.
-
-Master varlık = **GLB**; turntable + açı-render'lar ondan türer.
+▎ **MİMARİ DÜZELTME (önceki Tripo yaklaşımı YANLIŞTI):** "GLB-önce, kareleri GLB'den render et" (Tripo tek-görsel→mesh) bu **kontrol edilebilir zinciri baypas ediyordu** ve ürün kimliğini yeniden-uyduruyordu. DOĞRUSU: **kareler ÜRETİLİR (Flux2→Seedance→SeeDVR), GLB kareler'den RECONSTRUCT edilir.** Kareler birincil, GLB ikincil. Tripo olsa olsa ⑤'in bir alternatifi olabilir — zincirin yerini TUTAMAZ.
 
 ## 3. Mimari katmanlar (uçtan uca)
 
@@ -73,16 +86,22 @@ interface Product3DAsset {
 }
 ```
 
-## 5. Motor kararı — SATIN AL vs KUR
+## 5. Motor kararı — pipeline API'leri (SATIN AL)
 
-| | SATIN AL (API) | KUR (self-host) |
+Zincir 4 model adımı; hepsi API-erişilebilir (aggregator: **fal.ai / Replicate / WaveSpeed**). Tek key ile hepsine gidilebilir.
+
+| Adım | Model | API host (aday) |
 |--|--|--|
-| foto→GLB | Tripo · Meshy · Rodin (uçtan-uca) | SV3D (72 view) + InstantMesh/TripoSR (mesh) |
-| Efor | Düşük — REST + poll | Yüksek — GPU infra + weights + tuning |
-| Maliyet | model başına ücret / abonelik | sürekli GPU |
-| turntable | GLB'den bedava render (three.js) | novel-view çıktısı doğrudan |
+| ① hero | FLUX.2 [pro/flex] | fal · replicate · BFL |
+| ② orbital video | Seedance 2.0 | fal · replicate · Volcengine |
+| ③ 4K upscale | SeedVR | fal · wavespeed · replicate |
+| ⑤ kare→GLB | fotogrametri (RealityCapture/Meshroom) VEYA 3DGS (mesh export) | self-host / servis |
 
-▎ **Öneri: BUY-first (foto→GLB API) + turntable/açıları GLB'den render et.** En az ML karmaşası, kusursuz tutarlı turntable, ④ bedava. Hacim/gelir gelince SV3D+InstantMesh self-host'a bak. Fiyat/kalite/limit = Faz A ilk task.
+▎ **Öneri: fal.ai (veya Replicate) tek-sağlayıcı** — ①②③ tek API/key ile, `ThreeDProvider`'ı bir **pipeline** (adım-adım, her adım swap'lanabilir) olarak kur. ⑤ (kare→GLB) ilk sürümde OPSİYONEL — önce turntable (72 kare) çıktısını ship et, GLB reconstruction sonra.
+
+▎ **Maliyet gerçeği (dürüst):** bu zincir Tripo tek-çağrısından **belirgin pahalı** (Flux2 + video-gen + upscale + reconstruction). Ama kontrol + marka-kimlik kilidi + "dostunun yapısı" bunu gerektiriyor. Kredi-gated; ilk task = fal/replicate fiyat/limit doğrula.
+
+▎ **Tripo notu:** tek-görsel→mesh; bu **kontrollü zinciri baypas eder**, ürün kimliğini yeniden-uydurur → çekirdek motor DEĞİL. Olsa olsa ⑤ için bir alternatif. (Faz A'da yanlışlıkla çekirdek yapılmıştı — düzeltiliyor.)
 
 ## 6. Kullanım yüzeyleri
 
@@ -102,15 +121,17 @@ interface Product3DAsset {
 | `BrandIdentity` + compiler | ⑤ marka-tutarlı sahne/kopya. |
 | Zernio publish | ⑥ paylaş. |
 
-## 8. Fazlar (working-slice-first)
+## 8. Fazlar (working-slice-first · DÜZELTİLDİ)
 
-- **Faz A — 3D çekirdek.** Yükleme UI + foto→GLB (API) + asset store + 360° viewer + **"ekran görüntüsü" ile canlı açı yakalama** + GLB'den 72-kare turntable export.
-  **Çıkış:** foto ver → GLB → tarayıcıda döndür → istediğin açıyı yakala (PNG) + turntable export. *(GLB API kredisi; viewer/capture/turntable kredisiz.)*
-- **Faz B — mağaza GLB embed.** Ürün sayfasına `<model-viewer>` ile interaktif 3D.
-- **Faz C — açı → görsel.** GLB'den açı render → compose motoruyla marka-sahne görseli.
-- **Faz D — video.** turntable/animasyon → ürün videosu (Seedance/fal benzeri API).
-- **Faz E — dijital ürün mockup → 3D.** app/oyun → fiziksel mockup → GLB.
+- **Faz A — üretim hattı (turntable).** Yükleme UI + **Flux2→Seedance→SeeDVR pipeline** (fal/replicate) → 72-kare 4K orbital turntable + asset store + **kare-seçici viewer** (hero kareyi seç/yakala).
+  **Çıkış:** foto ver → 360° orbital turntable → istediğin kareyi seç (hero görsel). *(Pipeline kredi-gated; turntable görüntüleme/seçim kredisiz.)*
+- **Faz B — GLB + mağaza embed.** 72 kare → GLB reconstruct (fotogrametri/3DGS) → `<model-viewer>` ile mağaza interaktif 3D.
+- **Faz C — açı/kare → marka görseli.** seçili kare/açı → compose motoruyla marka-sahne görseli.
+- **Faz D — video.** orbital/sahne animasyonu → ürün videosu (zaten Seedance hattında).
+- **Faz E — dijital ürün mockup → hat.** app/oyun → fiziksel mockup → pipeline.
 - **Faz F — layout + yayın.** mevcut editör/plan/paylaş ile birleştir; uçtan uca akış.
+
+▎ **Faz A yürütme düzeltmesi (2026-07-07):** Faz A ilk turda Tripo (foto→GLB) ile yazıldı — **yanlış motor** (zinciri baypas ediyordu). Kurtarılan: `ThreeDProvider` soyutlaması (pipeline'a evrilir), `turntable.ts` (72×5° = pipeline kare spec'i), `product-3d` modül/store/route (motor-agnostik), `model-viewer` (Faz B GLB için). Değişen: `tripo.ts` → Flux2→Seedance→SeeDVR pipeline adımları.
 
 ## 9. Açık kararlar
 
