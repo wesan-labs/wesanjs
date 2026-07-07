@@ -29,6 +29,12 @@ export interface Product3DAssetDTO {
   brand_id: string | null
   source: "physical" | "digital-mockup"
   inputs: string[]
+  pipeline_step: string | null
+  step_job_id: string | null
+  step_poll_url: string | null
+  hero_url: string | null
+  video_url: string | null
+  turntable_urls: string[] | null
   mesh_url: string | null
   thumbnail_url: string | null
   provider: string
