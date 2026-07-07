@@ -1129,6 +1129,11 @@ export function getRouteMap({
               lazy: () => import("../../routes/content"),
             },
             {
+              path: "/content/scene-demo",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/content/scene-demo"),
+            },
+            {
               path: "/social-media",
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/social-media"),
