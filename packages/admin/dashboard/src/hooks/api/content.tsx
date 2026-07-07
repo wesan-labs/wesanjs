@@ -509,6 +509,49 @@ export const usePacks = (
     ...options,
   })
 
+/** Template (Canva-tarzı sahne) — backend lib/templates/types.ts aynası. */
+export interface ContentTemplate {
+  id: string
+  kind: "image"
+  format: string
+  label: string
+  domainTags?: string[]
+  scene: {
+    width: number
+    height: number
+    background?: string
+    nodes: Array<{
+      type: "Rect" | "Text" | "Image" | "Group"
+      id: string
+      slotId?: string
+      attrs: Record<string, any>
+      children?: unknown[]
+    }>
+  }
+  slots: Array<{ id: string; bind: Record<string, any> }>
+  thumbnail?: string
+}
+
+/**
+ * Kürlenmiş template kütüphanesi. `domain` verilirse markaya-önerili sıra.
+ * queryKey'e domain girer → marka değişince yeniden sıralama fetch'lenir.
+ */
+export const useTemplates = (
+  domain?: string,
+  options?: Omit<
+    UseQueryOptions<{ templates: ContentTemplate[] }, FetchError>,
+    "queryFn" | "queryKey"
+  >
+) =>
+  useQuery({
+    queryKey: ["content-templates", domain ?? ""],
+    queryFn: () =>
+      sdk.client.fetch<{ templates: ContentTemplate[] }>("/admin/content/templates", {
+        query: domain ? { domain } : undefined,
+      }),
+    ...options,
+  })
+
 /** Marka kimliği — derleyiciye giden çekirdek (backend BrandIdentity aynası). */
 export interface BrandIdentity {
   id: string
