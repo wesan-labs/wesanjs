@@ -113,11 +113,15 @@ export const TemplateEditor = ({ scene: initial, scale = 1, onSave }: TemplateEd
   const selected = scene.nodes.find((n) => n.id === selectedId) ?? null
 
   const handleExport = () => {
-    setSelectedId(null) // export'ta transformer görünmesin
-    requestAnimationFrame(() => {
-      const url = stageRef.current?.toDataURL({ pixelRatio: 2 })
-      if (url) onSave?.(url)
-    })
+    // transformer'ı senkron gizle → çiz → yakala → geri getir (rAF yarışı yok)
+    const tr = trRef.current
+    const prev = tr?.nodes() ?? []
+    tr?.nodes([])
+    tr?.getLayer()?.batchDraw()
+    const url = stageRef.current?.toDataURL({ pixelRatio: 2 })
+    tr?.nodes(prev)
+    tr?.getLayer()?.batchDraw()
+    if (url) onSave?.(url)
   }
 
   const deselectOnEmpty = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
