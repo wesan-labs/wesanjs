@@ -125,6 +125,15 @@ Zincir 4 model adımı; hepsi API-erişilebilir (aggregator: **fal.ai / Replicat
 
 - **Faz A — üretim hattı (turntable).** Yükleme UI + **Flux2→Seedance→SeeDVR pipeline** (fal/replicate) → 72-kare 4K orbital turntable + asset store + **kare-seçici viewer** (hero kareyi seç/yakala).
   **Çıkış:** foto ver → 360° orbital turntable → istediğin kareyi seç (hero görsel). *(Pipeline kredi-gated; turntable görüntüleme/seçim kredisiz.)*
+
+  **Somut dilimler (build-yeşil sırası — Tripo yolu retire edilene kadar yanında yaşar):**
+  - [x] **A1 · pipeline saf çekirdek** — `lib/three-d/pipeline.ts`: `nextStep` state-machine (hero→orbital→upscale→sample→done) + `sampleTimestamps` (④ video→kare) + `PipelineModelStep`/`StepInput`/`StepJob`/`StepResult` sözleşmeleri. Key gerektirmez, unit-test'li. *(2026-07-08)*
+  - [ ] **A2 · adaptörler** — `providers/flux.ts` · `seedance.ts` · `seedvr.ts`: her biri `PipelineModelStep` (submit+poll). Tek host-client (fal/replicate) arkasında; `HOST_API_KEY` env. `tripo.ts` → ⑤ alternatifi olarak Faz B'ye taşınır.
+  - [ ] **A3 · veri modeli** — `product-3d-asset` model: `mesh_url`-merkezli → `pipeline_step` + `step_job_id` + `hero_url` + `video_url` + `turntable_urls[]`. Yeni migration.
+  - [ ] **A4 · zincir workflow** — `create/poll` (tek-görev Tripo) → **poll-on-read state-machine**: her poll aktif adımın job'ını sorar; hazırsa bir SONRAKİ adımı submit eder + `pipeline_step` ilerletir. `sample` adımında SeeDVR mp4'ünü `sampleTimestamps`'te kare-çıkar → `turntable_urls`. Terminal: `done`.
+  - [ ] **A5 · UI** — `three-d-demo.tsx`: GLB→capture akışı (ters mimari) çıkar; foto→pipeline durum takibi + 72-kare şeridi + hero kare seçici.
+
+  ▎ **A4 kararı (async orkestrasyon):** 3 ardışık uzun-job'ı tek workflow'da bloklamak yerine, Tripo'daki **poll-on-read** deseni korunur ama artık ADIMLI: varlık hangi adımda olduğunu (`pipeline_step` + `step_job_id`) taşır; `GET /:id` aktif adımı poll eder, biterse sonrakini tetikler. Job altyapısı gerektirmez.
 - **Faz B — GLB + mağaza embed.** 72 kare → GLB reconstruct (fotogrametri/3DGS) → `<model-viewer>` ile mağaza interaktif 3D.
 - **Faz C — açı/kare → marka görseli.** seçili kare/açı → compose motoruyla marka-sahne görseli.
 - **Faz D — video.** orbital/sahne animasyonu → ürün videosu (zaten Seedance hattında).
