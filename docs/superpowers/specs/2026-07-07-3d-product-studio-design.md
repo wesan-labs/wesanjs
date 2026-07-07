@@ -88,18 +88,24 @@ interface Product3DAsset {
 
 ## 5. Motor kararı — pipeline API'leri (SATIN AL)
 
-Zincir 4 model adımı; hepsi API-erişilebilir (aggregator: **fal.ai / Replicate / WaveSpeed**). Tek key ile hepsine gidilebilir.
+Zincir 4 model adımı. **fal.ai YASAK** — aggregator kullanılmayacak. ① host'u doğrulandı (BFL doğrudan); ②③ host'u açık.
 
-| Adım | Model | API host (aday) |
+| Adım | Model | API host |
 |--|--|--|
-| ① hero | FLUX.2 [pro/flex] | fal · replicate · BFL |
-| ② orbital video | Seedance 2.0 | fal · replicate · Volcengine |
-| ③ 4K upscale | SeedVR | fal · wavespeed · replicate |
+| ① hero | FLUX.2 [pro] | **BFL doğrudan** (`api.bfl.ai`) — DOĞRULANDI |
+| ② orbital video | Seedance 2.0 | AÇIK (fal yasak → Volcengine/ByteDance/Replicate?) |
+| ③ 4K upscale | SeedVR | AÇIK (fal yasak → WaveSpeed/Replicate?) |
 | ⑤ kare→GLB | fotogrametri (RealityCapture/Meshroom) VEYA 3DGS (mesh export) | self-host / servis |
 
-▎ **Öneri: fal.ai (veya Replicate) tek-sağlayıcı** — ①②③ tek API/key ile, `ThreeDProvider`'ı bir **pipeline** (adım-adım, her adım swap'lanabilir) olarak kur. ⑤ (kare→GLB) ilk sürümde OPSİYONEL — önce turntable (72 kare) çıktısını ship et, GLB reconstruction sonra.
+▎ **HOST KARARI: BFL doğrudan API (fal.ai YASAK).** ① Flux2 birinci-taraf kaynağından çağrılır. **Doğrulanmış sözleşme (docs.bfl.ml · 2026-07-08):**
+- Base `https://api.bfl.ai` (bölgesel: `api.eu.bfl.ai` · `api.us.bfl.ai`) · auth header `x-key`.
+- `POST /v1/flux-2-pro` (default; alt: `-flex` tipografi/detay, `-max`, `-klein-4b/9b`). Gövde: `prompt` (zorunlu) · `input_image`…`input_image_8` (**8 referansa kadar**, dizi değil düz alanlar) · `seed` · `width`/`height` (≥64) · `safety_tolerance` 0–5 · `output_format` jpeg|png|webp.
+- Yanıt: `{ id, polling_url }`. GET `polling_url` (`x-key`) → `status`: Pending|Ready|Error; hazırsa `result.sample` = görsel URL.
+- ⚠️ Üretilen URL **10 dk'da expire** → indir + kendi altyapından yeniden servis et.
 
-▎ **Maliyet gerçeği (dürüst):** bu zincir Tripo tek-çağrısından **belirgin pahalı** (Flux2 + video-gen + upscale + reconstruction). Ama kontrol + marka-kimlik kilidi + "dostunun yapısı" bunu gerektiriyor. Kredi-gated; ilk task = fal/replicate fiyat/limit doğrula.
+▎ **Uydurma düzeltmeleri (iptal edilen fal taslağından):** (a) referans üst sınırı **8**, 10 değil (`capRefs(10)` yanlıştı). (b) **hex marka rengi API alanı YOK** — renk PROMPT metnine yazılır, alan değil. (c) girdi görselleri `input_image_N` düz alanları, `image_urls` dizisi değil.
+
+▎ **② Seedance / ③ SeeDVR host'u AÇIK karar.** fal yasak; BFL yalnız görsel üretir, video yapmaz. Kapsam netleşmeli: **sadece Flux2 mı** (turntable'ı başka yolla mı), yoksa video zinciri için ayrı host mu (Replicate/Volcengine/doğrudan ByteDance)? Doğrulanmadan kod yok.
 
 ▎ **Tripo notu:** tek-görsel→mesh; bu **kontrollü zinciri baypas eder**, ürün kimliğini yeniden-uydurur → çekirdek motor DEĞİL. Olsa olsa ⑤ için bir alternatif. (Faz A'da yanlışlıkla çekirdek yapılmıştı — düzeltiliyor.)
 
