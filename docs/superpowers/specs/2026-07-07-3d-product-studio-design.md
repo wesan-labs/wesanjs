@@ -45,7 +45,8 @@ Master varlık = **GLB**; turntable + açı-render'lar ondan türer.
 ① CAPTURE       ürün girdisi: fiziksel foto(lar) | dijital ürün asset'i
 ② RECONSTRUCT   foto → GLB (+ 72-kare turntable)                [§2 motoru]
 ③ ASSET+VIEWER  GLB sakla + 360° viewer (react-three-fiber) + mağaza embed (<model-viewer>)
-④ ANGLE/RENDER  GLB'den açı seç → deterministik render (bedava, three.js)
+④ CAPTURE/RENDER GLB'yi canlı döndür + "ekran görüntüsü" → o açının PNG'si (hero görsel);
+                  + 72-kare turntable export (dönen video/sosyal) — ikisi de bedava, three.js
 ⑤ GENERATE      3D-beslemeli üretim:
                   • görsel : açı-render → marka-sahne (compose motoru koşullar → görsel model)
                   • video  : turntable / sahne animasyonu → ürün videosu
@@ -103,8 +104,8 @@ interface Product3DAsset {
 
 ## 8. Fazlar (working-slice-first)
 
-- **Faz A — 3D çekirdek.** Capture UI + foto→GLB (API) + asset store + 360° viewer + GLB'den 72-kare turntable render.
-  **Çıkış:** foto ver → GLB + turntable → tarayıcıda döndür. *(GLB API kredisi; turntable/render kredisiz.)*
+- **Faz A — 3D çekirdek.** Yükleme UI + foto→GLB (API) + asset store + 360° viewer + **"ekran görüntüsü" ile canlı açı yakalama** + GLB'den 72-kare turntable export.
+  **Çıkış:** foto ver → GLB → tarayıcıda döndür → istediğin açıyı yakala (PNG) + turntable export. *(GLB API kredisi; viewer/capture/turntable kredisiz.)*
 - **Faz B — mağaza GLB embed.** Ürün sayfasına `<model-viewer>` ile interaktif 3D.
 - **Faz C — açı → görsel.** GLB'den açı render → compose motoruyla marka-sahne görseli.
 - **Faz D — video.** turntable/animasyon → ürün videosu (Seedance/fal benzeri API).
@@ -116,6 +117,7 @@ interface Product3DAsset {
 1. **foto→GLB sağlayıcı** — Tripo vs Meshy vs Rodin (fiyat/kalite/limit doğrula). *[Faz A ilk task]*
 2. **mesh depolama** — S3/R2, GLB boyut sınırı, turntable kare formatı (webp).
 3. **turntable kaynağı** — GLB'den render (önerilen) vs novel-view çıktısı.
+3b. **viewer/capture bileşeni** — `<model-viewer>` (hazır orbit + `toBlob()` capture + mağaza embed, en basit) vs react-three-fiber (özel ışık/arka plan, `preserveDrawingBuffer` + `toDataURL`). Öneri: model-viewer ile başla.
 4. **video motoru** — Seedance/fal vs Runway vs Kling. *[Faz D]*
 5. **dijital-ürün mockup** (Faz E) — compose ile mockup sahnesi mi, ayrı akış mı.
 6. **3D → görsel besleme** (Faz C) — açı render'ı img2img/ControlNet koşulu mu, referans mı.
