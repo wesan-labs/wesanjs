@@ -1,0 +1,28 @@
+{
+  "id": "ig-story-bold",
+  "kind": "image",
+  "format": "ig-story-9x16",
+  "label": "Cesur — story duyuru",
+  "domainTags": ["fashion", "fitness", "event", "promo", "genel"],
+  "scene": {
+    "width": 1080,
+    "height": 1920,
+    "background": "#101014",
+    "nodes": [
+      { "type": "Rect", "id": "backdrop", "slotId": "primary", "attrs": { "x": 0, "y": 0, "width": 1080, "height": 1920, "fill": "#1b1b24" } },
+      { "type": "Rect", "id": "accent-bar", "slotId": "accent", "attrs": { "x": 0, "y": 620, "width": 220, "height": 24, "fill": "#e0483d" } },
+      { "type": "Text", "id": "headline", "slotId": "headline", "attrs": { "x": 80, "y": 680, "width": 920, "text": "Büyük duyuru", "fill": "#ffffff", "fontSize": 150, "fontStyle": "bold", "lineHeight": 1.02, "fontFamily": "Helvetica" } },
+      { "type": "Text", "id": "body", "slotId": "body", "attrs": { "x": 80, "y": 1120, "width": 900, "text": "Alt başlık veya kısa açıklama.", "fill": "#c7c7d1", "fontSize": 52, "lineHeight": 1.35, "fontFamily": "Helvetica" } },
+      { "type": "Rect", "id": "cta-bg", "slotId": "accent2", "attrs": { "x": 80, "y": 1660, "width": 520, "height": 120, "fill": "#e0483d", "cornerRadius": 60 } },
+      { "type": "Text", "id": "cta", "slotId": "cta", "attrs": { "x": 80, "y": 1698, "width": 520, "align": "center", "text": "Şimdi kaydır", "fill": "#ffffff", "fontSize": 48, "fontStyle": "bold", "fontFamily": "Helvetica" } }
+    ]
+  },
+  "slots": [
+    { "id": "primary", "bind": { "kind": "color", "role": "primary" } },
+    { "id": "accent", "bind": { "kind": "color", "role": "accent" } },
+    { "id": "accent2", "bind": { "kind": "color", "role": "accent" } },
+    { "id": "headline", "bind": { "kind": "text", "role": "headline", "maxLen": 40 } },
+    { "id": "body", "bind": { "kind": "text", "role": "body", "maxLen": 120 } },
+    { "id": "cta", "bind": { "kind": "text", "role": "cta", "maxLen": 20 } }
+  ]
+}

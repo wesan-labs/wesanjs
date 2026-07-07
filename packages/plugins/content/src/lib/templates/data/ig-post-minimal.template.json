@@ -1,0 +1,28 @@
+{
+  "id": "ig-post-minimal",
+  "kind": "image",
+  "format": "ig-post-1x1",
+  "label": "Editoryal — sade post",
+  "domainTags": ["food-beverage", "cafe", "retail", "genel"],
+  "scene": {
+    "width": 1080,
+    "height": 1080,
+    "background": "#f6f1ea",
+    "nodes": [
+      { "type": "Rect", "id": "band", "slotId": "primary", "attrs": { "x": 0, "y": 0, "width": 1080, "height": 300, "fill": "#3b2a20" } },
+      { "type": "Text", "id": "eyebrow", "slotId": "eyebrow", "attrs": { "x": 72, "y": 130, "text": "MARKA", "fill": "#f6f1ea", "fontSize": 40, "letterSpacing": 6, "fontFamily": "Georgia" } },
+      { "type": "Text", "id": "headline", "slotId": "headline", "attrs": { "x": 72, "y": 440, "width": 936, "text": "Başlık buraya", "fill": "#2a2320", "fontSize": 104, "fontStyle": "bold", "lineHeight": 1.05, "fontFamily": "Georgia" } },
+      { "type": "Text", "id": "body", "slotId": "body", "attrs": { "x": 72, "y": 700, "width": 880, "text": "Kısa açıklama metni buraya gelir.", "fill": "#5c4a3a", "fontSize": 44, "lineHeight": 1.4, "fontFamily": "Georgia" } },
+      { "type": "Rect", "id": "cta-bg", "slotId": "accent", "attrs": { "x": 72, "y": 912, "width": 440, "height": 96, "fill": "#c2703d", "cornerRadius": 12 } },
+      { "type": "Text", "id": "cta", "slotId": "cta", "attrs": { "x": 72, "y": 942, "width": 440, "align": "center", "text": "Çağrı", "fill": "#ffffff", "fontSize": 40, "fontStyle": "bold", "fontFamily": "Georgia" } }
+    ]
+  },
+  "slots": [
+    { "id": "primary", "bind": { "kind": "color", "role": "primary" } },
+    { "id": "accent", "bind": { "kind": "color", "role": "accent" } },
+    { "id": "eyebrow", "bind": { "kind": "text", "role": "custom", "maxLen": 24 } },
+    { "id": "headline", "bind": { "kind": "text", "role": "headline", "maxLen": 60 } },
+    { "id": "body", "bind": { "kind": "text", "role": "body", "maxLen": 140 } },
+    { "id": "cta", "bind": { "kind": "text", "role": "cta", "maxLen": 24 } }
+  ]
+}

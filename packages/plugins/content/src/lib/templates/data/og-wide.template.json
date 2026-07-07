@@ -1,0 +1,26 @@
+{
+  "id": "og-wide",
+  "kind": "image",
+  "format": "og-16x9",
+  "label": "Yatay — OG / blog kapağı",
+  "domainTags": ["saas", "tech", "b2b", "blog", "genel"],
+  "scene": {
+    "width": 1200,
+    "height": 630,
+    "background": "#ffffff",
+    "nodes": [
+      { "type": "Rect", "id": "sidebar", "slotId": "primary", "attrs": { "x": 0, "y": 0, "width": 18, "height": 630, "fill": "#2563eb" } },
+      { "type": "Text", "id": "kicker", "slotId": "kicker", "attrs": { "x": 72, "y": 96, "text": "KATEGORİ", "fill": "#2563eb", "fontSize": 28, "letterSpacing": 4, "fontStyle": "bold", "fontFamily": "Arial" } },
+      { "type": "Text", "id": "headline", "slotId": "headline", "attrs": { "x": 72, "y": 176, "width": 1056, "text": "Yazı başlığı buraya", "fill": "#0f172a", "fontSize": 72, "fontStyle": "bold", "lineHeight": 1.1, "fontFamily": "Arial" } },
+      { "type": "Text", "id": "body", "slotId": "body", "attrs": { "x": 72, "y": 420, "width": 900, "text": "Tek satır özet ya da alt başlık.", "fill": "#475569", "fontSize": 34, "lineHeight": 1.35, "fontFamily": "Arial" } },
+      { "type": "Rect", "id": "footer", "slotId": "accent", "attrs": { "x": 0, "y": 606, "width": 1200, "height": 24, "fill": "#2563eb" } }
+    ]
+  },
+  "slots": [
+    { "id": "primary", "bind": { "kind": "color", "role": "primary" } },
+    { "id": "accent", "bind": { "kind": "color", "role": "accent" } },
+    { "id": "kicker", "bind": { "kind": "text", "role": "custom", "maxLen": 24 } },
+    { "id": "headline", "bind": { "kind": "text", "role": "headline", "maxLen": 70 } },
+    { "id": "body", "bind": { "kind": "text", "role": "body", "maxLen": 100 } }
+  ]
+}
