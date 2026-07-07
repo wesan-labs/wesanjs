@@ -1,104 +1,130 @@
-import { Button, Container, Heading, Input, Text, toast } from "@medusajs/ui"
+import { Badge, Button, Container, Heading, Input, Text, toast } from "@medusajs/ui"
 import { useState } from "react"
-import { ModelViewerCanvas } from "./components/model-viewer-canvas"
 import { useCreate3DAsset, use3DAsset } from "../../hooks/api/content"
 
-// model-viewer'ın herkese açık örnek GLB'si — viewer/capture/turntable'ı
-// backend/kredi olmadan test etmek için (Faz A görsel doğrulama).
-const SAMPLE_GLB = "https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+// Pipeline adımları (Flux2 → Seedance → SeeDVR). "sample" (④ kare) v1'de ertelendi.
+const STEPS = [
+  { key: "hero", label: "① Hero · Flux2" },
+  { key: "orbital", label: "② 360° · Seedance" },
+  { key: "upscale", label: "③ 4K · SeedVR" },
+  { key: "done", label: "✓ Hazır" },
+]
+
+const stepIndex = (s: string | null) => {
+  const i = STEPS.findIndex((x) => x.key === s)
+  return i === -1 ? 0 : i
+}
 
 export const Component = () => {
   const [imageUrl, setImageUrl] = useState("")
   const [assetId, setAssetId] = useState<string | null>(null)
-  const [sampleMesh, setSampleMesh] = useState<string | null>(null)
-  const [frames, setFrames] = useState<string[]>([])
 
   const create = useCreate3DAsset()
   const { data } = use3DAsset(assetId ?? undefined)
   const asset = data?.asset
 
-  const meshUrl = sampleMesh ?? (asset?.status === "ready" ? asset.mesh_url : null)
-
   const generate = () => {
-    if (!imageUrl.trim()) return
-    setSampleMesh(null)
-    setFrames([])
+    // Virgülle çoklu görsel: ilki hero kaynağı, kalanı kimlik referansı.
+    const images = imageUrl
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+    if (!images.length) return
     create.mutate(
-      { images: [imageUrl.trim()] },
+      { images },
       {
         onSuccess: (res) => setAssetId(res.asset.id),
-        onError: (e) =>
-          toast.error("Üretim başlatılamadı", { description: String(e?.message ?? e) }),
+        onError: (e) => toast.error("Üretim başlatılamadı", { description: String(e?.message ?? e) }),
       }
     )
   }
 
-  const downloadPng = (dataUrl: string, name: string) => {
-    const a = document.createElement("a")
-    a.href = dataUrl
-    a.download = name
-    a.click()
-  }
+  const active = stepIndex(asset?.pipeline_step ?? null)
+  const failed = asset?.status === "failed"
 
   return (
     <Container className="p-6">
       <div className="mb-4 flex flex-col gap-y-1">
-        <Heading level="h2">3D ürün stüdyosu (Faz A)</Heading>
+        <Heading level="h2">3D Ürün Stüdyosu · pipeline</Heading>
         <Text size="small" className="text-ui-fg-subtle">
-          Public ürün görseli URL'i → GLB üret (Tripo) → döndür → açı yakala / turntable. Ya da
-          örnek GLB ile viewer'ı hemen dene.
+          Public ürün görseli URL'i → Flux2 hero → Seedance 360° orbital → SeedVR 4K. Çoklu görsel
+          için virgülle ayır (ilki hero, kalanı kimlik referansı).
         </Text>
       </div>
 
-      <div className="mb-4 flex max-w-xl flex-col gap-y-2">
+      <div className="mb-5 flex max-w-2xl flex-col gap-y-2">
         <Input
-          placeholder="https://… ürün görseli URL'i (public)"
+          placeholder="https://… ürün görseli (public, redirect'siz)"
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
         />
-        <div className="flex gap-x-2">
+        <div>
           <Button size="small" onClick={generate} isLoading={create.isPending} disabled={!imageUrl.trim()}>
-            3D üret
-          </Button>
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => {
-              setAssetId(null)
-              setFrames([])
-              setSampleMesh(SAMPLE_GLB)
-            }}
-          >
-            Örnek GLB ile dene
+            Üret
           </Button>
         </div>
       </div>
 
-      {assetId && asset?.status === "processing" && !sampleMesh && (
-        <Text size="small" className="text-ui-fg-subtle">3D üretiliyor… (Tripo, ~10-100 sn)</Text>
-      )}
-      {asset?.status === "failed" && !sampleMesh && (
-        <Text size="small" className="text-ui-fg-error">Üretim başarısız: {asset.error}</Text>
-      )}
+      {asset && (
+        <div className="flex max-w-3xl flex-col gap-y-4">
+          {/* Pipeline stepper */}
+          <div className="flex flex-wrap items-center gap-2">
+            {STEPS.map((s, i) => {
+              const done = i < active || asset.status === "ready"
+              const isActive = i === active && asset.status === "processing"
+              return (
+                <Badge
+                  key={s.key}
+                  size="small"
+                  color={failed && i === active ? "red" : done ? "green" : isActive ? "blue" : "grey"}
+                >
+                  {isActive ? "⏳ " : ""}
+                  {s.label}
+                </Badge>
+              )
+            })}
+          </div>
 
-      {meshUrl && (
-        <div className="flex max-w-2xl flex-col gap-y-3">
-          <ModelViewerCanvas
-            meshUrl={meshUrl}
-            onCapture={(d) => {
-              downloadPng(d, "aci.png")
-              toast.success("Açı yakalandı (aci.png indirildi)")
-            }}
-            onTurntable={(f) => {
-              setFrames(f)
-              toast.success(`${f.length} kare üretildi`)
-            }}
-          />
-          {frames.length > 0 && (
-            <div className="flex gap-x-1 overflow-x-auto rounded-lg border border-ui-border-base p-2">
-              {frames.map((f, i) => (
-                <img key={i} src={f} alt={`kare ${i}`} className="h-16 w-16 flex-none rounded object-cover" />
-              ))}
+          {/* Durum / hata */}
+          {asset.status === "processing" && (
+            <Text size="small" className="text-ui-fg-subtle">
+              İşleniyor… ({asset.pipeline_step}) — 3 sn'de bir güncelleniyor.
+            </Text>
+          )}
+          {failed && (
+            <Text size="small" className="text-ui-fg-error">
+              Başarısız: {asset.error}
+            </Text>
+          )}
+
+          {/* ① Hero görseli */}
+          {asset.hero_url && (
+            <div className="flex flex-col gap-y-1">
+              <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
+                ① Hero (Flux2)
+              </Text>
+              <img
+                src={asset.hero_url}
+                alt="hero"
+                className="max-w-md rounded-lg border border-ui-border-base"
+              />
+            </div>
+          )}
+
+          {/* ②③ Orbital video (4K) */}
+          {asset.video_url && (
+            <div className="flex flex-col gap-y-1">
+              <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
+                ②③ 360° Orbital (SeedVR 4K)
+              </Text>
+              <video
+                src={asset.video_url}
+                controls
+                loop
+                autoPlay
+                muted
+                className="max-w-md rounded-lg border border-ui-border-base"
+              />
             </div>
           )}
         </div>
