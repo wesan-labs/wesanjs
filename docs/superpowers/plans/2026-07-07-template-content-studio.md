@@ -535,4 +535,20 @@ git commit -m "feat(content): react-konva SceneRenderer — SceneJSON → Stage"
 
 ---
 
-*Oluşturuldu: 2026-07-07 · Spec: content-studio-template-model.md (v3) · Faz 1 execute-ready; Faz 2-6 görev-seviyesi (adım-kodu execution'da kesinleşir)*
+## Uygulama Durumu (2026-07-07 · yürütme)
+
+| Faz | Durum | Kanıt |
+|-----|-------|-------|
+| **Faz 1** template modeli + render | ✅ **bitti** | `lib/templates/{types,schema,resolve}.ts` · 6 `bun test` · `SceneRenderer` · `/content/scene-demo` |
+| **Faz 2** marka-fill | 🟡 **kredisiz yarı bitti** | `fill.ts` `buildFillData` (color/copy deterministik) · `POST /templates/fill` (:9000 401 canlı) · 4 test. **Kalan (kredi-gated):** LLM kopya (`copy.ts`), AI görsel-slot (compose→Gemini) |
+| **Faz 3** editör | ✅ **çekirdek bitti** | `template-editor.tsx` (seç/taşı/boyutlandır + metin/renk/font + senkron PNG export) · `/content/editor-demo`. **Kalan:** görsel-değiştir (upload/AI), studio entegrasyonu (T3.6 = Faz 5) |
+| **Faz 4** kütüphane + galeri | ✅ **bitti** | 3 `*.template.json` (1:1/9:16/16:9) · `loader.ts` recommend (7 test) · `GET /templates` (401 canlı) · `TemplateGallery` · `/content/gallery-demo` |
+| **Uçtan-uca** | ✅ **kredisiz dilim çalışıyor** | `/content/flow-demo`: galeri→seç→doldur→editör→export. `useFillTemplate` |
+| **Faz 5** UI yolculuğu | ⛔ başlanmadı | studio'ya gömme (Marka⓪→…→Paylaş⑤) — Faz 2 kredi-gated kısmına da bağlı |
+| **Faz 6** video | ⛔ başlanmadı | foto kanıtlandıktan sonra + Revideo/Remotion kararı |
+
+**Doğrulama sınırı:** tüm saf mantık `bun test` yeşil; render/editör/galeri = Can gözle (`/content/*-demo` route'ları). Gerçek LLM kopya + Gemini görsel = kredi.
+
+---
+
+*Oluşturuldu: 2026-07-07 · Spec: content-studio-template-model.md (v3) · Faz 1 execute-ready; Faz 2-6 görev-seviyesi (adım-kodu execution'da kesinleşir) · Yürütme: Faz 1/3/4 + Faz 2 kredisiz yarı bitti (11 commit)*
