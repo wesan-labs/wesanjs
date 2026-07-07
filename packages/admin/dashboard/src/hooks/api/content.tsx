@@ -552,6 +552,35 @@ export const useTemplates = (
     ...options,
   })
 
+export interface FillTemplateInput {
+  templateId?: string
+  template?: ContentTemplate
+  brand: BrandIdentity
+  media?: string
+  logo?: string
+}
+
+export interface FillTemplateResponse {
+  scene: ContentTemplate["scene"]
+  fillData: Record<string, { kind: string; value: string }>
+}
+
+/**
+ * Template + marka → doldurulmuş sahne (deterministik; POST /templates/fill).
+ * scene editöre girer, fillData denetime. LLM kopya + AI görsel backend'de sonra.
+ */
+export const useFillTemplate = (
+  options?: UseMutationOptions<FillTemplateResponse, FetchError, FillTemplateInput>
+) =>
+  useMutation({
+    mutationFn: (input: FillTemplateInput) =>
+      sdk.client.fetch<FillTemplateResponse>("/admin/content/templates/fill", {
+        method: "POST",
+        body: input,
+      }),
+    ...options,
+  })
+
 /** Marka kimliği — derleyiciye giden çekirdek (backend BrandIdentity aynası). */
 export interface BrandIdentity {
   id: string
