@@ -63,7 +63,7 @@ Foto + video **aynı stratejik çatala** iniyor:
 
 **Kritik:** Polotno **react-konva üstünde** kurulu → SATIN AL ile KUR *aynı zemini* paylaşır (DIY ters-akıntı değil). Ve **react-konva@18'i az önce pinledim** (Filerobot fix'i) → KUR yolu buna hazır.
 
-▎ **Önerim: KUR (react-konva foto + video sonra).** Gerekçe (memory: hedefin *design-ahead, skill-building, gelir değil*): **pre-revenue bir projede ~$1000/ay tekrarlayan gider mantıksız**; efor = senin öğrenmen/hazırlığın; çekirdek editör **kendi IP'n** olur (hedefinle birebir); react-konva zaten pinli. SATIN AL yalnızca **fonlu + gelire koşan** bir senaryoda doğru olurdu — sen o değilsin. **Ama bu senin stratejik kararın** (§8 kilit soru).
+▎ **KARAR (2026-07-07): KUR — react-konva@18 (foto), video sonra (Revideo).** Gerekçe: pre-revenue + design-ahead + own-IP hedefi → ~$1000/ay tekrarlayan gider mantıksız; efor = öğrenme/hazırlık; çekirdek editör kendi IP'n; react-konva zaten pinli. Polotno/Remotion (SATIN AL) yalnız fonlu+gelire-koşan senaryoda doğruydu.
 
 **Filerobot?** Foto-rötuş editörüydü, template motoru değil. react-konva KUR seçilirse Filerobot ya kalkar ya "ham fotoğrafı rötuşla" için ikincil kalır. (Şu an react-konva@18 pinli, çalışıyor.)
 
@@ -99,9 +99,9 @@ Adım ⑤  PLANLA → PAYLAŞ (Zernio, mevcut)
 | Filerobot | İkincil "ham rötuş" veya kalkar |
 | Zernio publish + snapshot | Paylaş adımı (değişmez) |
 
-## 8. Açık kararlar (senin onayın)
+## 8. Açık kararlar
 
-1. ⭐ **SATIN AL vs KUR** (§3) — pre-revenue+IP için **KUR öneriyorum**, ama senin stratejik kararın. Bu her şeyi belirler.
+1. ✅ ~~**SATIN AL vs KUR**~~ → **KARAR VERİLDİ: KUR (react-konva@18)** (§3).
 2. **Fazlama:** foto template'leri ÖNCE (react-konva), video SONRA (Remotion vs Revideo o zaman)? (Öneri: evet — foto ile modeli kanıtla.)
 3. **Template kütüphanesi:** küçük kürlenmiş setle mi başlayalım (öneri) yoksa AI-layout mı?
 4. **Marka kurulumu AI-prompt:** ilk sürümde mi, sonra mı? (Öneri: capture MVP + AI-assist sonra, v2 #0012 hybrid.)
