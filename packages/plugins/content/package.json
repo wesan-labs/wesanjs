@@ -20,6 +20,8 @@
     "./.medusa/server/src/modules/content-connection": "./.medusa/server/src/modules/content-connection/index.js",
     "./modules/social-snapshot": "./.medusa/server/src/modules/social-snapshot/index.js",
     "./.medusa/server/src/modules/social-snapshot": "./.medusa/server/src/modules/social-snapshot/index.js",
+    "./modules/product-3d": "./.medusa/server/src/modules/product-3d/index.js",
+    "./.medusa/server/src/modules/product-3d": "./.medusa/server/src/modules/product-3d/index.js",
     "./.medusa/server/src/*": "./.medusa/server/src/**/*.js"
   },
   "keywords": [
