@@ -22,8 +22,9 @@ export const buildHeroPrompt = (input: StepInput): string => {
 /**
  * StepInput → flux-2 gövdesi. Girdi görselleri `input_image`…`input_image_8`
  * DÜZ alanlar (dizi değil), 8 referans sınırı (doğrulandı). Saf.
- * NOT (tek açık nokta): alanların URL mi base64 mü aldığı doküman'da net değil —
- * canlı ilk çağrıda teyit; şimdilik URL geçiliyor.
+ * CANLI-DOĞRULANDI (2026-07-08): alanlar URL alır (base64 DEĞİL); BFL görseli
+ * sunucu-taraf çeker → URL DOĞRUDAN erişilebilir olmalı (redirect/403 yasak),
+ * yoksa "Unable to extract dimensions". A4'te kullanıcı yüklemesi S3/R2'ye re-host.
  */
 export const toFluxBody = (input: StepInput): Record<string, unknown> => {
   const imgs = [input.sourceUrl, ...(input.refs ?? [])].filter(Boolean).slice(0, 8)
