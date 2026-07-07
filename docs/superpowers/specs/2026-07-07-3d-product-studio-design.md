@@ -134,8 +134,9 @@ Zincir 4 model adımı. **fal.ai YASAK** — aggregator kullanılmayacak. ① ho
 
   **Somut dilimler (build-yeşil sırası — Tripo yolu retire edilene kadar yanında yaşar):**
   - [x] **A1 · pipeline saf çekirdek** — `lib/three-d/pipeline.ts`: `nextStep` state-machine (hero→orbital→upscale→sample→done) + `sampleTimestamps` (④ video→kare) + `PipelineModelStep`/`StepInput`/`StepJob`/`StepResult` sözleşmeleri. Key gerektirmez, unit-test'li. *(2026-07-08)*
-  - [ ] **A2 · adaptörler** — `providers/flux.ts` · `seedance.ts` · `seedvr.ts`: her biri `PipelineModelStep` (submit+poll). Tek host-client (fal/replicate) arkasında; `HOST_API_KEY` env. `tripo.ts` → ⑤ alternatifi olarak Faz B'ye taşınır.
-  - [ ] **A3 · veri modeli** — `product-3d-asset` model: `mesh_url`-merkezli → `pipeline_step` + `step_job_id` + `hero_url` + `video_url` + `turntable_urls[]`. Yeni migration.
+  - [x] **A2 · ① BFL Flux2 hero adaptörü** — `providers/bfl.ts`: DOĞRULANMIŞ `/v1/flux-2-pro` sözleşmesi (submit→`polling_url`→`result.sample`, header `x-key`). `mapBflStatus`/`buildHeroPrompt`/`toFluxBody` saf/test'li (8-referans sınırı, hex→prompt, `input_image_N` düz alan). `pipeline.ts`: `StepJob.pollUrl` eklendi + `poll(job)` sözleşmesi düzeltildi (BFL polling_url zorunlu). `BFL_API_KEY` env. **Açık tek nokta:** `input_image` URL mi base64 mü — canlı ilk çağrıda teyit. *(2026-07-08)*
+  - [ ] **A2b · ②③ video adaptörleri** — Seedance orbital + SeeDVR upscale. **Host kararı bekliyor** (fal yasak; BFL video yapmaz). Önce kapsam: sadece Flux2 mı, tam video zinciri mi?
+  - [ ] **A3 · veri modeli** — `product-3d-asset` model: `mesh_url`-merkezli → `pipeline_step` + `step_job_id` + `step_poll_url` (BFL polling_url kalıcılığı) + `hero_url` + `video_url` + `turntable_urls[]`. Yeni migration.
   - [ ] **A4 · zincir workflow** — `create/poll` (tek-görev Tripo) → **poll-on-read state-machine**: her poll aktif adımın job'ını sorar; hazırsa bir SONRAKİ adımı submit eder + `pipeline_step` ilerletir. `sample` adımında SeeDVR mp4'ünü `sampleTimestamps`'te kare-çıkar → `turntable_urls`. Terminal: `done`.
   - [ ] **A5 · UI** — `three-d-demo.tsx`: GLB→capture akışı (ters mimari) çıkar; foto→pipeline durum takibi + 72-kare şeridi + hero kare seçici.
 

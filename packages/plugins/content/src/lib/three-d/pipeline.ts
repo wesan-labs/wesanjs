@@ -30,6 +30,8 @@ export const sampleTimestamps = (durationSec: number, count = 72): number[] => {
 /** Adım job'ı — submit sonucu (poll ile takip). */
 export interface StepJob {
   jobId: string
+  /** Opak poll adresi (BFL `polling_url` gibi). Varsa poll bunu kullanır — jobId'den kurma (cluster routing bozulur). */
+  pollUrl?: string
   status: TaskStatus
   error?: string
 }
@@ -50,7 +52,7 @@ export interface PipelineModelStep {
   readonly name: string
   readonly step: ModelStepId
   submit(input: StepInput): Promise<StepJob>
-  poll(jobId: string): Promise<StepResult>
+  poll(job: Pick<StepJob, "jobId" | "pollUrl">): Promise<StepResult>
 }
 
 /** Adım girdisi — kaynak + koşullar. */
