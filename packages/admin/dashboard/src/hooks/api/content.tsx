@@ -581,6 +581,65 @@ export const useFillTemplate = (
     ...options,
   })
 
+/** 3D ürün varlığı — backend Product3DAssetDTO aynası. */
+export interface Product3DAsset {
+  id: string
+  tenant_id: string | null
+  brand_id: string | null
+  source: "physical" | "digital-mockup"
+  inputs: string[]
+  mesh_url: string | null
+  thumbnail_url: string | null
+  provider: string
+  provider_task_id: string | null
+  status: "processing" | "ready" | "failed"
+  error: string | null
+}
+
+export interface Create3DInput {
+  images: string[]
+  source?: "physical" | "digital-mockup"
+  brand_id?: string
+}
+
+/** Foto(lar)dan 3D varlık üretimi başlat (POST /3d → `processing`). */
+export const useCreate3DAsset = (
+  options?: UseMutationOptions<{ asset: Product3DAsset }, FetchError, Create3DInput>
+) =>
+  useMutation({
+    mutationFn: (input: Create3DInput) =>
+      sdk.client.fetch<{ asset: Product3DAsset }>("/admin/content/3d", {
+        method: "POST",
+        body: input,
+      }),
+    ...options,
+  })
+
+/** Tek varlığı getir; `processing` iken 3 sn'de bir poll (backend poll-on-read). */
+export const use3DAsset = (id?: string) =>
+  useQuery({
+    queryKey: ["content-3d-asset", id],
+    queryFn: () =>
+      sdk.client.fetch<{ asset: Product3DAsset }>(`/admin/content/3d/${id}`),
+    enabled: !!id,
+    refetchInterval: (query) =>
+      query.state.data?.asset?.status === "processing" ? 3000 : false,
+  })
+
+/** Tenant-kapsamlı 3D varlık listesi. */
+export const use3DAssets = (
+  options?: Omit<
+    UseQueryOptions<{ assets: Product3DAsset[]; count: number }, FetchError>,
+    "queryFn" | "queryKey"
+  >
+) =>
+  useQuery({
+    queryKey: ["content-3d-assets"],
+    queryFn: () =>
+      sdk.client.fetch<{ assets: Product3DAsset[]; count: number }>("/admin/content/3d"),
+    ...options,
+  })
+
 /** Marka kimliği — derleyiciye giden çekirdek (backend BrandIdentity aynası). */
 export interface BrandIdentity {
   id: string
