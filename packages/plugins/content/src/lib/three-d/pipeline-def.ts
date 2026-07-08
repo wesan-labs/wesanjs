@@ -45,11 +45,12 @@ export interface PipelineStepDescriptor {
 export const DEFAULT_PIPELINE: PipelineStepDescriptor[] = [
   { op: "hero", provider: "bfl", params: { model: "flux-2-pro", output_format: "png" } },
   {
+    // Seedance 2.0 Fast — WaveSpeed üzerinden (BytePlus paket duvarı baypas, 2026-07-09).
+    // 720p seçimi bilinçli: 720p($1) + SeedVR-4K($0.25) = $1.25, direkt 4K($5)'ten 4× ucuz.
+    // Alternatif (bedava test): provider "byteplus" + model seedance-1-5-pro-251215.
     op: "orbital",
-    provider: "byteplus",
-    // CANLI-DOĞRULANDI (2026-07-08): seedance-1-5-pro-251215 çalışıyor (2M bedava kota).
-    // Kalite yükseltme: Ark'ta Dreamina-Seedance-2.0 aktive et → "dreamina-seedance-2-0-260128".
-    params: { model: "seedance-1-5-pro-251215", ratio: "1:1", resolution: "720p", duration: 5 },
+    provider: "wavespeed-seedance",
+    params: { resolution: "720p", aspect_ratio: "1:1", duration: 5 },
   },
   { op: "upscale", provider: "wavespeed", params: { target_resolution: "4k" } },
 ]

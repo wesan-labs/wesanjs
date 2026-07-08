@@ -2,12 +2,13 @@ import type { PipelineModelStep, StepInput } from "./pipeline"
 import { OPERATIONS, type PipelineStepDescriptor, type StepConfig } from "./pipeline-def"
 import { createBflHeroStep } from "./providers/bfl"
 import { createSeedanceOrbitalStep } from "./providers/byteplus"
-import { createSeedvrUpscaleStep } from "./providers/wavespeed"
+import { createSeedanceWsOrbitalStep, createSeedvrUpscaleStep } from "./providers/wavespeed"
 
 /** Provider → (env key + adaptör fabrikası). fal YOK. */
 const PROVIDERS: Record<string, { envKey: string; make: (key: string, cfg: StepConfig) => PipelineModelStep }> = {
   bfl: { envKey: "BFL_API_KEY", make: createBflHeroStep },
   byteplus: { envKey: "ARK_API_KEY", make: createSeedanceOrbitalStep },
+  "wavespeed-seedance": { envKey: "WAVESPEED_API_KEY", make: createSeedanceWsOrbitalStep },
   wavespeed: { envKey: "WAVESPEED_API_KEY", make: createSeedvrUpscaleStep },
 }
 
