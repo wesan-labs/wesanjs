@@ -608,6 +608,26 @@ export interface Create3DInput {
   brand_id?: string
 }
 
+/** Pipeline adım tanımı (§5b) — UI operasyon kartları bundan render olur. */
+export interface PipelineStepInfo {
+  op: string
+  label: string
+  op_spec: string | null
+  provider: string
+  params: Record<string, string | number>
+  env_key: string | null
+  key_configured: boolean
+}
+
+/** Pipeline TANIMINI getir (op kartları: op-spec + provider + params + key durumu). */
+export const use3DPipeline = () =>
+  useQuery({
+    queryKey: ["content-3d-pipeline"],
+    queryFn: () =>
+      sdk.client.fetch<{ steps: PipelineStepInfo[] }>("/admin/content/3d/pipeline"),
+    staleTime: 60_000,
+  })
+
 /** Foto(lar)dan 3D varlık üretimi başlat (POST /3d → `processing`). */
 export const useCreate3DAsset = (
   options?: UseMutationOptions<{ asset: Product3DAsset }, FetchError, Create3DInput>

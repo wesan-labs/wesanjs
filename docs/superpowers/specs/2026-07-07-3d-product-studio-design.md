@@ -159,10 +159,10 @@ Zincir hardcode değil, **DATA**. Üç katman ayrık:
   - [x] **B1 · operasyon-kayıt + descriptor** — `pipeline-def.ts`: `Operation` (id, opSpec) kaydı + `PipelineStepDescriptor` (op, provider, params) + default pipeline `[hero, orbital, upscale]`. Adaptörler params-driven olur (RATIO/RES/DURATION/TARGET/format/model adaptörden → descriptor params'a).
   - [x] **B2 · brandHex temizliği** — `bfl.ts`'ten `brandHex→prompt` SÖKÜLÜR; hero op-spec sabit-nötr. Marka → Faz C.
   - [x] **B3 · generic runner** — `nextStep` hardcode → descriptor listesi üzerinde ilerle (`step-registry`+workflow descriptor tüketir; params adaptöre geçer).
-  - [ ] **B4 · descriptor API** — asset yanıtı pipeline descriptor'ı (op+provider+params+durum) döndürür → UI ondan render.
-  - [ ] **F1 · 3D panel** — `Panel` tipine `"3d"`; `ThreeDPanel` operasyon kartları (op-spec salt-okunur · provider · params · durum) descriptor'dan.
-  - [ ] **F2 · kılıf entegrasyonu** — girdi = mevcut version; çıktı → version/viewer/galeri (shell reuse), marka profili bağlı.
-  - [ ] **F3 · ada kaldır** — `/content/3d-demo` route + sayfa katlanır/silinir.
+  - [x] **B4 · descriptor API** — asset yanıtı pipeline descriptor'ı (op+provider+params+durum) döndürür → UI ondan render.
+  - [x] **F1 · 3D panel** — `Panel` tipine `"3d"`; `ThreeDPanel` operasyon kartları (op-spec salt-okunur · provider · params · durum) descriptor'dan.
+  - [x] **F2 · kılıf entegrasyonu** — girdi = mevcut version; çıktı → version/viewer/galeri (shell reuse), marka profili bağlı.
+  - [x] **F3 · ada kaldır** — `/content/3d-demo` route + sayfa katlanır/silinir.
 
   ▎ **A4 kararı (async orkestrasyon):** 3 ardışık uzun-job'ı tek workflow'da bloklamak yerine, Tripo'daki **poll-on-read** deseni korunur ama artık ADIMLI: varlık hangi adımda olduğunu (`pipeline_step` + `step_job_id`) taşır; `GET /:id` aktif adımı poll eder, biterse sonrakini tetikler. Job altyapısı gerektirmez.
 - **Faz B — GLB + mağaza embed.** 72 kare → GLB reconstruct (fotogrametri/3DGS) → `<model-viewer>` ile mağaza interaktif 3D.

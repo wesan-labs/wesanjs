@@ -3,6 +3,7 @@ import {
   Buildings,
   CheckMini,
   ChevronRightMini,
+  CubeSolid,
   DocumentText,
   GlobeEurope,
   Language,
@@ -58,6 +59,7 @@ import { ImageEditor } from "./components/image-editor"
 import { ImageMethod, ImageTab } from "./components/image-tab"
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./components/languages"
 import { PackPicker } from "./components/pack-picker"
+import { ThreeDTab } from "./components/three-d-tab"
 import { PromptLibrarySection } from "./components/prompt-library-section"
 import { TextMethod, TextTab } from "./components/text-tab"
 import { VariantCard } from "./components/variant-card"
@@ -107,7 +109,7 @@ export interface BriefResult {
 }
 
 const IMAGE_FORMATS = ["image/jpeg", "image/png", "image/webp"]
-type Panel = "image" | "text" | "publish"
+type Panel = "image" | "text" | "3d" | "publish"
 
 /**
  * Unified content studio. ALL working data (image versions + generated texts)
@@ -133,6 +135,8 @@ export const Component = () => {
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null)
   const [composerOpen, setComposerOpen] = useState(false)
   const [pubTextIdx, setPubTextIdx] = useState(0)
+  // 3D zinciri tamamlandı mı — stepper durumu (asıl state ThreeDTab'da).
+  const [threeDDone, setThreeDDone] = useState(false)
   const analyzeMut = useAnalyzeImage()
 
   const toggleAutoAnalyze = (on: boolean) => {
@@ -250,6 +254,7 @@ export const Component = () => {
     // Görsel yüklendiyse adım tamam — düzenleme opsiyonel (ürün niyeti §9).
     image: source ? "completed" : "not-started",
     text: briefs.length || texts.length ? "completed" : "not-started",
+    "3d": threeDDone ? "completed" : "not-started",
     publish: "not-started",
   }
 
@@ -587,6 +592,13 @@ export const Component = () => {
               />
             )}
           </div>
+          <div className={clx(panel !== "3d" && "hidden")}>
+            <ThreeDTab
+              source={source}
+              onVersion={applyImageResult}
+              onDone={() => setThreeDDone(true)}
+            />
+          </div>
           <div
             className={clx(
               "flex flex-col gap-y-4",
@@ -698,6 +710,7 @@ const Header = ({
           {[
             { value: "image" as Panel, label: "Görsel / Video", Icon: Photo },
             { value: "text" as Panel, label: "Metin", Icon: DocumentText },
+            { value: "3d" as Panel, label: "3D / 360°", Icon: CubeSolid },
             { value: "publish" as Panel, label: "Yayın", Icon: PaperPlane },
           ].map((s, i) => {
             const active = panel === s.value
