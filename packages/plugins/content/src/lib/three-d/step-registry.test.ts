@@ -5,10 +5,9 @@ describe("stepInputFor", () => {
   test("hero: foto[0]=source, kalanı ref (op-spec/params YOK)", () => {
     expect(stepInputFor("hero", { inputs: ["a", "b", "c"] })).toEqual({ sourceUrl: "a", refs: ["b", "c"] })
   })
-  test("orbital: hero=source, ürün foto'ları=kimlik ref", () => {
+  test("orbital: hero=source, ref YOK (1.5: first_frame+ref karıştırılamaz)", () => {
     expect(stepInputFor("orbital", { inputs: ["a", "b"], hero_url: "h.png" })).toEqual({
       sourceUrl: "h.png",
-      refs: ["a", "b"],
     })
   })
   test("upscale: orbital video=source", () => {

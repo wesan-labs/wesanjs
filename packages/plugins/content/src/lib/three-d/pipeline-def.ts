@@ -47,7 +47,9 @@ export const DEFAULT_PIPELINE: PipelineStepDescriptor[] = [
   {
     op: "orbital",
     provider: "byteplus",
-    params: { model: "dreamina-seedance-2-0-260128", ratio: "1:1", resolution: "720p", duration: 5 },
+    // CANLI-DOĞRULANDI (2026-07-08): seedance-1-5-pro-251215 çalışıyor (2M bedava kota).
+    // Kalite yükseltme: Ark'ta Dreamina-Seedance-2.0 aktive et → "dreamina-seedance-2-0-260128".
+    params: { model: "seedance-1-5-pro-251215", ratio: "1:1", resolution: "720p", duration: 5 },
   },
   { op: "upscale", provider: "wavespeed", params: { target_resolution: "4k" } },
 ]

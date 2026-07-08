@@ -44,7 +44,10 @@ export const stepInputFor = (op: string, a: AssetInputView): StepInput => {
     case "hero":
       return { sourceUrl: a.inputs[0], refs: a.inputs.slice(1) }
     case "orbital":
-      return { sourceUrl: a.hero_url ?? "", refs: a.inputs }
+      // CANLI-KANIT (2026-07-08, seedance-1.5): first_frame + reference_image
+      // KARIŞTIRILAMAZ ("cannot be mixed") → ref gönderme; kimliği hero taşır
+      // (ürün fotoğrafından türedi). Seedance 2.0 Reference Cluster'da yeniden ele al.
+      return { sourceUrl: a.hero_url ?? "" }
     case "upscale":
       return { sourceUrl: a.video_url ?? "" }
     default:
