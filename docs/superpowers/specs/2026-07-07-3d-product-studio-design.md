@@ -153,7 +153,8 @@ Zincir hardcode değil, **DATA**. Üç katman ayrık:
   - [ ] **A4b · ④ kare-örnekleme (ERTELENDİ)** — SeeDVR mp4'ünü `sampleTimestamps`'te ffmpeg ile 72 kareye böl → re-host → `turntable_urls`. ffmpeg VAR; gerçek orbital video + storage (S3/R2) lazım.
   - [ ] **Re-host (S3/R2)** — kullanıcı görseli + her adım çıktısı (BFL 10dk, Seedance 24s expire; ayrıca çapraz-host doğrudan-fetch kısıtı) kendi altyapımıza indir+servis.
 
-  ▎ **v1 çıktı:** foto URL → hero → 360° 4K video (turntable frame'siz). **Blokaj (Can'da):** BFL kredi + `ARK_API_KEY` + `WAVESPEED_API_KEY` + helm reload. ②③ canlı-doğrulama: `scripts/smoke-step.ts <hero|orbital|upscale> <url>` (helm dizininden). Gerçek run görülmeden A4b/re-host = doğrulanmamış sözleşmeye kod yığma riski.
+  ▎ **v1 çıktı:** foto URL → hero → 360° 4K video (turntable frame'siz).
+  ▎ **CANLI-DOĞRULAMA DURUMU (2026-07-08, smoke-step.ts):** ① BFL: sözleşme canlı-doğru, blokaj=KREDİ ("Insufficient credits"). ② BytePlus: auth+endpoint+model id CANLI-DOĞRU (hesap tanındı, model tanındı), blokaj=konsolda Dreamina-Seedance-2.0 "Activate" tıkı. ③ WaveSpeed: **TAM DOĞRULANDI** — gerçek 4K çıktı üretildi (submit→poll→ready ~90sn, CloudFront mp4). Üç adaptörde de uydurma sözleşme YOK. Kalan: BFL kredi + Seedance activate + helm reload → uçtan uca run.
 
 - **Faz A2 — pipeline=veri + stüdyo entegrasyonu (§5b).** Data-driven zincir + `/content` stüdyoya 3D panel.
   - [x] **B1 · operasyon-kayıt + descriptor** — `pipeline-def.ts`: `Operation` (id, opSpec) kaydı + `PipelineStepDescriptor` (op, provider, params) + default pipeline `[hero, orbital, upscale]`. Adaptörler params-driven olur (RATIO/RES/DURATION/TARGET/format/model adaptörden → descriptor params'a).
