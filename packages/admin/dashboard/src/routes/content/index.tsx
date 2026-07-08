@@ -709,8 +709,8 @@ const Header = ({
         <div className="flex items-center gap-x-0.5">
           {[
             { value: "image" as Panel, label: "Görsel / Video", Icon: Photo },
-            { value: "text" as Panel, label: "Metin", Icon: DocumentText },
             { value: "3d" as Panel, label: "3D / 360°", Icon: CubeSolid },
+            { value: "text" as Panel, label: "Metin", Icon: DocumentText },
             { value: "publish" as Panel, label: "Yayın", Icon: PaperPlane },
           ].map((s, i) => {
             const active = panel === s.value
