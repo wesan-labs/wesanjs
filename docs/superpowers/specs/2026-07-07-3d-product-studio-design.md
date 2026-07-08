@@ -2,6 +2,7 @@
 
 > **Durum:** Tasarım · 2026-07-07 (v2 — motor mekanizması netleşti)
 > **Bağlam:** İçerik stüdyosu **eksen değişikliği** — "layout template" / "tek-adım transform" değil, **3D-merkezli üretim**. Referans: Burhan Kocabıyık'ın Claude Code build'i (fiziksel ürün → 3D → 360° döndür; Flux2→Seedance→SeeDVR üretim hattı).
+> **Fiyatlandırma:** [2026-07-08-3d-studio-pricing.md](./2026-07-08-3d-studio-pricing.md) (COGS→fiyat; ölçülmüş COGS'la kilitlenecek)
 > **Genişletir/düzeltir:** [content-studio-template-model.md](../../architecture/content-studio-template-model.md) (v3 — layout katmanı ⑥'ya iner) · [content-studio.md ürün niyeti](../../../../helm/docs/content-studio.md) (§4 "görselini kullan + sadık kal")
 
 ---
