@@ -10,7 +10,7 @@
 |--|--|--|
 | Arka plan temizleme (stüdyo remove-bg) | $0 | client-side, API yok ✅ |
 | ① Hero (BFL Flux2, temiz stüdyo sahne) | ~$0.04–0.06 | BFL fiyat sayfası, kredi bazlı (1 kredi=$0.01) — *yaklaşık* |
-| ② 360° orbital 5sn 720p (Seedance/BytePlus) | ~$0.43–0.83 | HESAP: token formülü 1280×720×24fps×5sn/1024 ≈ 108K token × $0.0040–0.0077/K (konsol fiyat listesinden) — *ilk run'da kesinleşir* |
+| ② 360° orbital 5sn 720p (Seedance 2.0 Fast / WaveSpeed) | **$1.00** | fiyat listesi DOĞRULANDI 2026-07-09: $0.50 baz(480p·5s) ×2(720p); 1080p=×5($2.50), direkt 4K=×10($5) → optimal 720p+SeedVR-4K=$1.25 |
 | ③ 4K upscale 5sn (SeedVR/WaveSpeed) | $0.25 | fiyat listesi + canlı çalıştırıldı (2026-07-08) ✅ |
 | ④ 72 kare çıkarma (ffmpeg) | $0 | lokal ✅ |
 | Konsept/marka-sahne (Faz C, ~5 varyant) | ~$0.20–0.65 | görsel başı $0.04–0.13 (Flux2/Gemini) — *yaklaşık* |

@@ -94,8 +94,8 @@ Zincir 4 model adımı. **fal.ai YASAK** — aggregator kullanılmayacak. ① ho
 | Adım | Model | API host |
 |--|--|--|
 | ① hero | FLUX.2 [pro] | **BFL doğrudan** (`api.bfl.ai`) — DOĞRULANDI |
-| ② orbital video | Seedance 2.0 | AÇIK (fal yasak → Volcengine/ByteDance/Replicate?) |
-| ③ 4K upscale | SeedVR | AÇIK (fal yasak → WaveSpeed/Replicate?) |
+| ② orbital video | Seedance 2.0 Fast | **WaveSpeed** (`bytedance/seedance-2.0-fast/image-to-video`) — DOĞRULANDI 2026-07-09; BytePlus paket duvarı baypas. Alternatif: byteplus 1.5-pro (bedava test) |
+| ③ 4K upscale | SeedVR | **WaveSpeed** — CANLI DOĞRULANDI (4K çıktı üretildi) |
 | ⑤ kare→GLB | fotogrametri (RealityCapture/Meshroom) VEYA 3DGS (mesh export) | self-host / servis |
 
 ▎ **HOST KARARI: BFL doğrudan API (fal.ai YASAK).** ① Flux2 birinci-taraf kaynağından çağrılır. **Doğrulanmış sözleşme (docs.bfl.ml · 2026-07-08):**
