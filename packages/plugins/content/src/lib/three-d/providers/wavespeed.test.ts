@@ -12,8 +12,8 @@ describe("mapWaveSpeedStatus", () => {
 })
 
 describe("toUpscaleBody", () => {
-  test("video = kaynak mp4, target_resolution = 4k", () => {
-    expect(toUpscaleBody({ sourceUrl: "orbital.mp4" })).toEqual({
+  test("video = kaynak mp4, target_resolution = params", () => {
+    expect(toUpscaleBody({ sourceUrl: "orbital.mp4" }, { target_resolution: "4k" })).toEqual({
       video: "orbital.mp4",
       target_resolution: "4k",
     })

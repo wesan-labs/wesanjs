@@ -5,7 +5,7 @@ import {
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
 import { PRODUCT_3D_MODULE } from "../../modules/product-3d"
-import { nextStep, type PipelineStep } from "../../lib/three-d/pipeline"
+import { DEFAULT_PIPELINE, descriptorFor, nextOp } from "../../lib/three-d/pipeline-def"
 import { envKeyFor, outputColumnFor, resolveStep, stepInputFor } from "../../lib/three-d/step-registry"
 
 export interface Poll3DAssetInput {
@@ -13,12 +13,10 @@ export interface Poll3DAssetInput {
 }
 
 /**
- * Poll-on-read state-machine (Flux2→Seedance→SeeDVR). Her çağrı TEK iş yapar:
- * aktif adımın job'ı yoksa submit eder, varsa poll eder; adım biterse çıktıyı
- * saklar + bir sonraki adıma ilerletir (job'ı temizler → sonraki poll submit eder).
- * Key eksikse `processing` kalır, bilgilendirici error yazar → key gelince devam.
- * v1: `sample` (④ kare-örnekleme, ffmpeg) ertelendi — `upscale` sonrası `done`.
- * Job altyapısı yok — GET /:id tetikler. Mutasyon → workflow (route değil).
+ * Poll-on-read state-machine — pipeline DESCRIPTOR listesini gezer (§5b, data-driven).
+ * Her çağrı TEK iş: aktif adımın job'ı yoksa submit, varsa poll; adım biterse çıktıyı
+ * saklar + `nextOp` ile ilerletir (job'ı temizler → sonraki poll submit eder). Key
+ * eksikse `processing` kalır. Op-spec/params descriptor'dan gelir; StepInput sade.
  */
 const poll3DAssetStep = createStep(
   "poll-3d-asset",
@@ -29,18 +27,22 @@ const poll3DAssetStep = createStep(
     if (asset.status !== "processing") {
       return new StepResponse(asset)
     }
-    const step: string = asset.pipeline_step ?? "hero"
-    const adapter = resolveStep(step)
+    const pipeline = DEFAULT_PIPELINE
+    const op: string = asset.pipeline_step ?? pipeline[0].op
+    const desc = descriptorFor(pipeline, op)
+    if (!desc) {
+      return new StepResponse(asset) // bilinmeyen/terminal op
+    }
+    const adapter = resolveStep(desc)
     if (!adapter) {
-      // Bu adımın key'i eksik → bekle, bilgilendir (idempotent).
-      const note = `${envKeyFor(step) ?? "API key"} tanımlı değil (${step}) — bekliyor`
+      const note = `${envKeyFor(desc.provider) ?? "API key"} tanımlı değil (${op}) — bekliyor`
       const updated = asset.error === note ? asset : await service.updateProduct3DAssets({ id: asset.id, error: note })
       return new StepResponse(updated)
     }
 
     // Aktif adımın job'ı yoksa: submit et.
     if (!asset.step_job_id) {
-      const job = await adapter.submit(stepInputFor(step, asset))
+      const job = await adapter.submit(stepInputFor(op, asset))
       const updated = await service.updateProduct3DAssets({
         id: asset.id,
         step_job_id: job.jobId || null,
@@ -60,28 +62,24 @@ const poll3DAssetStep = createStep(
       const updated = await service.updateProduct3DAssets({
         id: asset.id,
         status: "failed",
-        error: result.error ?? `${step} adımı başarısız`,
+        error: result.error ?? `${op} adımı başarısız`,
       })
       return new StepResponse(updated)
     }
 
     // ready → çıktıyı sakla + ilerlet.
-    const patch: Record<string, unknown> = { id: asset.id, error: null }
-    const col = outputColumnFor(step)
+    const patch: Record<string, unknown> = { id: asset.id, error: null, step_job_id: null, step_poll_url: null }
+    const col = outputColumnFor(op)
     if (col) patch[col] = result.outputUrl ?? null
 
-    const next = nextStep(step as PipelineStep)
-    if (next === "sample" || next === "done") {
-      // v1: kare-örnekleme ertelendi → video_url final, tamam.
+    const next = nextOp(pipeline, op)
+    if (!next) {
+      // v1: son adım (upscale) → done. ④ kare-örnekleme A4b'de eklenecek.
       patch.pipeline_step = "done"
       patch.status = "ready"
-      patch.step_job_id = null
-      patch.step_poll_url = null
     } else {
-      // Sonraki adıma ilerlet; job'ı temizle → sonraki poll submit eder.
-      patch.pipeline_step = next
-      patch.step_job_id = null
-      patch.step_poll_url = null
+      // Sonraki op'a ilerlet; job temiz → sonraki poll submit eder.
+      patch.pipeline_step = next.op
     }
     const updated = await service.updateProduct3DAssets(patch)
     return new StepResponse(updated)

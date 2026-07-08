@@ -55,14 +55,13 @@ export interface PipelineModelStep {
   poll(job: Pick<StepJob, "jobId" | "pollUrl">): Promise<StepResult>
 }
 
-/** Adım girdisi — kaynak + koşullar. */
+/**
+ * Adım girdisi — SADECE kaynak + referanslar (§5b: op-spec ve params burada DEĞİL,
+ * descriptor/config'ten gelir; per-run düğme yok).
+ */
 export interface StepInput {
   /** hero: ürün foto · orbital: hero png · upscale: orbital mp4 */
   sourceUrl: string
-  /** ①②: kimlik referans kümesi (10 referansa kadar) */
+  /** ①②: kimlik referans kümesi (BFL ≤8) */
   refs?: string[]
-  /** ①: hex-doğru marka rengi */
-  brandHex?: string
-  /** ①: hero sahne yönergesi (stüdyo/arka plan) */
-  prompt?: string
 }

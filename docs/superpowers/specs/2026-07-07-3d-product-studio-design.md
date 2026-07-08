@@ -109,6 +109,17 @@ Zincir 4 model adımı. **fal.ai YASAK** — aggregator kullanılmayacak. ① ho
 
 ▎ **Tripo notu:** tek-görsel→mesh; bu **kontrollü zinciri baypas eder**, ürün kimliğini yeniden-uydurur → çekirdek motor DEĞİL. Olsa olsa ⑤ için bir alternatif. (Faz A'da yanlışlıkla çekirdek yapılmıştı — düzeltiliyor.)
 
+## 5b. Pipeline = VERİ (operasyon-kayıt · descriptor · runner) — kilitlendi 2026-07-08
+
+Zincir hardcode değil, **DATA**. Üç katman ayrık:
+- **Operasyon kaydı** (sabit tanım): her op NE yapar + **op-spec** = operasyonu adlandıran sabit, gizli metin. "Prompt" BURADA yaşar, düğme DEĞİL. hero="temiz stüdyo hero" · orbital="orbit, kamera sabit" (kimlik = referans görseller) · upscale = metin YOK.
+- **Pipeline descriptor** (data): sıralı `[{ op, provider, params }]`. **params** = AYARLANABİLİR düğmeler (çözünürlük, süre, format, target). **provider** = swap'lanabilir uygulama.
+- **Runner**: descriptor listesini gezen generic state-machine (mevcut poll-motoru; `nextStep` hardcode → liste üzerinde "sıradaki").
+
+**İlke:** op-spec ASLA params'ta değil (sabit, salt-okunur). Güvenilirlik **yapıdan** (referans görseller, ayrı kontrollü adım), esneklik **params**'tan. Marka rengi hero prompt'una GİRMEZ → Faz C (compose/marka-sahne), orada da yapısal. Aşırı-mühendislik yasak: zincir lineer → düz liste yeter, DAG/branching gerçek 2. pipeline gelene kadar YOK.
+
+**UI (stüdyo entegrasyonu):** `/content` birleşik stüdyoya **"3D" paneli** (mevcut `panel-chrome` + panel-anahtarına `"3d"`). Girdi = tuvaldeki mevcut version (ayrı upload YOK). Çıktı tuvale döner (hero→version, video→viewer, 72 kare→galeri). Stepper + operasyon kartları **descriptor'dan** render. Her kart: op-spec (salt-okunur) · provider (swap) · params (ayar) · durum. `/content/3d-demo` adası katlanır.
+
 ## 6. Kullanım yüzeyleri
 
 - **Sosyal içerik:** 72-kare turntable → döner ürün reel/post; veya seçili açı → marka-sahne görseli.
@@ -143,6 +154,15 @@ Zincir 4 model adımı. **fal.ai YASAK** — aggregator kullanılmayacak. ① ho
   - [ ] **Re-host (S3/R2)** — kullanıcı görseli + her adım çıktısı (BFL 10dk, Seedance 24s expire; ayrıca çapraz-host doğrudan-fetch kısıtı) kendi altyapımıza indir+servis.
 
   ▎ **v1 çıktı:** foto URL → hero → 360° 4K video (turntable frame'siz). **Blokaj (Can'da):** BFL kredi + `ARK_API_KEY` + `WAVESPEED_API_KEY` + helm reload. ②③ canlı-doğrulama: `scripts/smoke-step.ts <hero|orbital|upscale> <url>` (helm dizininden). Gerçek run görülmeden A4b/re-host = doğrulanmamış sözleşmeye kod yığma riski.
+
+- **Faz A2 — pipeline=veri + stüdyo entegrasyonu (§5b).** Data-driven zincir + `/content` stüdyoya 3D panel.
+  - [x] **B1 · operasyon-kayıt + descriptor** — `pipeline-def.ts`: `Operation` (id, opSpec) kaydı + `PipelineStepDescriptor` (op, provider, params) + default pipeline `[hero, orbital, upscale]`. Adaptörler params-driven olur (RATIO/RES/DURATION/TARGET/format/model adaptörden → descriptor params'a).
+  - [x] **B2 · brandHex temizliği** — `bfl.ts`'ten `brandHex→prompt` SÖKÜLÜR; hero op-spec sabit-nötr. Marka → Faz C.
+  - [x] **B3 · generic runner** — `nextStep` hardcode → descriptor listesi üzerinde ilerle (`step-registry`+workflow descriptor tüketir; params adaptöre geçer).
+  - [ ] **B4 · descriptor API** — asset yanıtı pipeline descriptor'ı (op+provider+params+durum) döndürür → UI ondan render.
+  - [ ] **F1 · 3D panel** — `Panel` tipine `"3d"`; `ThreeDPanel` operasyon kartları (op-spec salt-okunur · provider · params · durum) descriptor'dan.
+  - [ ] **F2 · kılıf entegrasyonu** — girdi = mevcut version; çıktı → version/viewer/galeri (shell reuse), marka profili bağlı.
+  - [ ] **F3 · ada kaldır** — `/content/3d-demo` route + sayfa katlanır/silinir.
 
   ▎ **A4 kararı (async orkestrasyon):** 3 ardışık uzun-job'ı tek workflow'da bloklamak yerine, Tripo'daki **poll-on-read** deseni korunur ama artık ADIMLI: varlık hangi adımda olduğunu (`pipeline_step` + `step_job_id`) taşır; `GET /:id` aktif adımı poll eder, biterse sonrakini tetikler. Job altyapısı gerektirmez.
 - **Faz B — GLB + mağaza embed.** 72 kare → GLB reconstruct (fotogrametri/3DGS) → `<model-viewer>` ile mağaza interaktif 3D.

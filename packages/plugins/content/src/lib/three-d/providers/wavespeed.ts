@@ -1,20 +1,20 @@
 import type { PipelineModelStep, StepInput, StepJob, StepResult } from "../pipeline"
+import type { StepConfig, StepParams } from "../pipeline-def"
 import type { TaskStatus } from "../types"
 
 // ③ SeedVR2 (video upscale/restorasyon) — WaveSpeed üzerinden (fal DEĞİL).
 // Sözleşme doğrulandı: api.wavespeed.ai · 2026-07-08 (spec §5).
 const BASE = "https://api.wavespeed.ai/api/v3"
 const SUBMIT_URL = `${BASE}/wavespeed-ai/video-upscaler`
-const TARGET = "4k" // 720p|1080p|2k|4k
 
 /** WaveSpeed durum → iç TaskStatus. Saf. */
 export const mapWaveSpeedStatus = (s: string): TaskStatus =>
   s === "completed" ? "ready" : s === "created" || s === "processing" ? "processing" : "failed"
 
-/** StepInput → video-upscaler gövdesi. sourceUrl = orbital mp4. Saf. */
-export const toUpscaleBody = (input: StepInput): Record<string, unknown> => ({
+/** StepInput + params → video-upscaler gövdesi. sourceUrl = orbital mp4; op-spec YOK. Saf. */
+export const toUpscaleBody = (input: StepInput, params: StepParams): Record<string, unknown> => ({
   video: input.sourceUrl,
-  target_resolution: TARGET,
+  target_resolution: String(params.target_resolution ?? "4k"),
 })
 
 const headers = (apiKey: string) => ({
@@ -22,15 +22,15 @@ const headers = (apiKey: string) => ({
   "Content-Type": "application/json",
 })
 
-/** ③ WaveSpeed SeedVR upscale adımı. submit→data.id, poll→data.outputs[0]. Canlı fetch — key-gated. */
-export const createSeedvrUpscaleStep = (apiKey: string): PipelineModelStep => ({
+/** ③ WaveSpeed SeedVR upscale adımı. submit→data.id, poll→data.outputs[0]. key-gated. */
+export const createSeedvrUpscaleStep = (apiKey: string, cfg: StepConfig): PipelineModelStep => ({
   name: "seedvr2",
   step: "upscale",
   async submit(input: StepInput): Promise<StepJob> {
     const res = await fetch(SUBMIT_URL, {
       method: "POST",
       headers: headers(apiKey),
-      body: JSON.stringify(toUpscaleBody(input)),
+      body: JSON.stringify(toUpscaleBody(input, cfg.params)),
     })
     const json: any = await res.json()
     const id = json?.data?.id

@@ -9,6 +9,7 @@
  *
  * Gerekli env: hero=BFL_API_KEY · orbital=ARK_API_KEY · upscale=WAVESPEED_API_KEY
  */
+import { DEFAULT_PIPELINE, descriptorFor } from "../src/lib/three-d/pipeline-def"
 import { envKeyFor, resolveStep, stepInputFor, type AssetInputView } from "../src/lib/three-d/step-registry"
 
 const [step, sourceUrl, refsArg] = process.argv.slice(2)
@@ -18,9 +19,14 @@ if (!step || !sourceUrl) {
 }
 const refs = (refsArg ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 
-const adapter = resolveStep(step)
+const desc = descriptorFor(DEFAULT_PIPELINE, step)
+if (!desc) {
+  console.error(`bilinmeyen op: ${step}`)
+  process.exit(1)
+}
+const adapter = resolveStep(desc)
 if (!adapter) {
-  console.error(`${step}: ${envKeyFor(step) ?? "env key"} tanımlı değil`)
+  console.error(`${step}: ${envKeyFor(desc.provider) ?? "env key"} tanımlı değil`)
   process.exit(1)
 }
 

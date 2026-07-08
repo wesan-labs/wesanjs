@@ -1,24 +1,30 @@
 import type { PipelineModelStep, StepInput } from "./pipeline"
+import { OPERATIONS, type PipelineStepDescriptor, type StepConfig } from "./pipeline-def"
 import { createBflHeroStep } from "./providers/bfl"
 import { createSeedanceOrbitalStep } from "./providers/byteplus"
 import { createSeedvrUpscaleStep } from "./providers/wavespeed"
 
-/** Model adımı → (env key adı + adaptör fabrikası). fal YOK. */
-const REGISTRY: Record<string, { envKey: string; make: (key: string) => PipelineModelStep }> = {
-  hero: { envKey: "BFL_API_KEY", make: createBflHeroStep },
-  orbital: { envKey: "ARK_API_KEY", make: createSeedanceOrbitalStep },
-  upscale: { envKey: "WAVESPEED_API_KEY", make: createSeedvrUpscaleStep },
+/** Provider → (env key + adaptör fabrikası). fal YOK. */
+const PROVIDERS: Record<string, { envKey: string; make: (key: string, cfg: StepConfig) => PipelineModelStep }> = {
+  bfl: { envKey: "BFL_API_KEY", make: createBflHeroStep },
+  byteplus: { envKey: "ARK_API_KEY", make: createSeedanceOrbitalStep },
+  wavespeed: { envKey: "WAVESPEED_API_KEY", make: createSeedvrUpscaleStep },
 }
 
-/** Adım için gereken env key adı (UI'da "hangi key eksik" göstermek için). Saf. */
-export const envKeyFor = (step: string): string | null => REGISTRY[step]?.envKey ?? null
+/** Provider için gereken env key adı (UI "hangi key eksik" için). Saf. */
+export const envKeyFor = (provider: string): string | null => PROVIDERS[provider]?.envKey ?? null
 
-/** Adımın adaptörünü env key ile kur; key yoksa null (pipeline bekler). */
-export const resolveStep = (step: string, env: NodeJS.ProcessEnv = process.env): PipelineModelStep | null => {
-  const entry = REGISTRY[step]
+/** Descriptor'dan adaptörü kur: opSpec op-kaydından, params descriptor'dan. Key yoksa null. */
+export const resolveStep = (
+  d: PipelineStepDescriptor,
+  env: NodeJS.ProcessEnv = process.env
+): PipelineModelStep | null => {
+  const entry = PROVIDERS[d.provider]
   if (!entry) return null
   const key = env[entry.envKey]
-  return key ? entry.make(key) : null
+  if (!key) return null
+  const opSpec = OPERATIONS[d.op]?.opSpec ?? null
+  return entry.make(key, { opSpec, params: d.params })
 }
 
 /** Varlık için kaynak alt küme (stepInputFor girdisi). */
@@ -26,17 +32,17 @@ export interface AssetInputView {
   inputs: string[]
   hero_url?: string | null
   video_url?: string | null
-  brand_hex?: string | null
 }
 
 /**
- * Adım için `StepInput` üret. hero: ürün foto[0]=source, kalanı ref. orbital:
- * hero=source, ürün foto'ları=kimlik ref. upscale: orbital video=source. Saf.
+ * Op için `StepInput` üret (SADECE kaynak+refs; op-spec/params descriptor'da).
+ * hero: foto[0]=source, kalanı ref. orbital: hero=source, foto'lar=kimlik ref.
+ * upscale: orbital video=source. Saf.
  */
-export const stepInputFor = (step: string, a: AssetInputView): StepInput => {
-  switch (step) {
+export const stepInputFor = (op: string, a: AssetInputView): StepInput => {
+  switch (op) {
     case "hero":
-      return { sourceUrl: a.inputs[0], refs: a.inputs.slice(1), brandHex: a.brand_hex ?? undefined }
+      return { sourceUrl: a.inputs[0], refs: a.inputs.slice(1) }
     case "orbital":
       return { sourceUrl: a.hero_url ?? "", refs: a.inputs }
     case "upscale":
@@ -46,6 +52,6 @@ export const stepInputFor = (step: string, a: AssetInputView): StepInput => {
   }
 }
 
-/** Adım çıktısının yazılacağı kolon. hero→hero_url, orbital/upscale→video_url. Saf. */
-export const outputColumnFor = (step: string): "hero_url" | "video_url" | null =>
-  step === "hero" ? "hero_url" : step === "orbital" || step === "upscale" ? "video_url" : null
+/** Op çıktısının yazılacağı kolon. hero→hero_url, orbital/upscale→video_url. Saf. */
+export const outputColumnFor = (op: string): "hero_url" | "video_url" | null =>
+  op === "hero" ? "hero_url" : op === "orbital" || op === "upscale" ? "video_url" : null
