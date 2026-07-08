@@ -27,5 +27,12 @@ export default defineMiddlewares({
       method: "POST",
       bodyParser: { sizeLimit: "25mb" },
     },
+    {
+      // 3D zinciri: tuval görseli data-URL (base64) olarak gelir (BFL kabul
+      // ediyor, canlı-kanıt 2026-07-08) — default limit 413 verir.
+      matcher: "/admin/content/3d",
+      method: "POST",
+      bodyParser: { sizeLimit: "25mb" },
+    },
   ],
 })
