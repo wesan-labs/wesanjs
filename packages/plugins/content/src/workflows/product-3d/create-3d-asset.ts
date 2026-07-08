@@ -14,6 +14,7 @@ export interface Create3DAssetInput {
   source?: "physical" | "digital-mockup"
   tenant_id?: string | null
   brand_id?: string | null
+  product_ref?: string | null
 }
 
 /**
@@ -34,6 +35,7 @@ const create3DAssetStep = createStep(
       tenant_id: input.tenant_id ?? null,
       brand_id: input.brand_id ?? null,
       source: input.source ?? "physical",
+      product_ref: input.product_ref ?? null,
       inputs: input.images,
       pipeline_step: heroDesc.op,
       step_job_id: job.jobId || null,

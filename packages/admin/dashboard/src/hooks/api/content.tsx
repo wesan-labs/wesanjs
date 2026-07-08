@@ -587,6 +587,7 @@ export interface Product3DAsset {
   tenant_id: string | null
   brand_id: string | null
   source: "physical" | "digital-mockup"
+  product_ref: string | null
   inputs: string[]
   pipeline_step: string | null
   step_job_id: string | null
@@ -606,6 +607,7 @@ export interface Create3DInput {
   images: string[]
   source?: "physical" | "digital-mockup"
   brand_id?: string
+  product_ref?: string
 }
 
 /** Pipeline adım tanımı (§5b) — UI operasyon kartları bundan render olur. */

@@ -1,5 +1,5 @@
 import { ArrowDownTray, CubeSolid, Spinner } from "@medusajs/icons"
-import { Badge, Button, Text, toast } from "@medusajs/ui"
+import { Badge, Button, Input, Text, toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
 import {
   use3DAsset,
@@ -97,6 +97,7 @@ export const ThreeDTab = ({
   onDone?: () => void
 }) => {
   const [assetId, setAssetId] = useState<string | null>(null)
+  const [productRef, setProductRef] = useState("")
   const create = useCreate3DAsset()
   const { data: pipelineData } = use3DPipeline()
   const { data: assetData } = use3DAsset(assetId ?? undefined)
@@ -113,7 +114,7 @@ export const ThreeDTab = ({
   const run = () => {
     if (!source) return
     create.mutate(
-      { images: [source.url] },
+      { images: [source.url], product_ref: productRef.trim() || undefined },
       {
         onSuccess: (res) => setAssetId(res.asset.id),
         onError: (e) =>
@@ -165,6 +166,14 @@ export const ThreeDTab = ({
         </Text>
       )}
 
+      {/* Ürün adı/kodu — kütüphane klasörleme anahtarı (çıktılar bununla kaydolur) */}
+      <Input
+        placeholder="Ürün adı / kodu (kütüphane gruplama — örn. KLT-102 Koltuk)"
+        value={productRef}
+        onChange={(e) => setProductRef(e.target.value)}
+        disabled={running}
+      />
+
       {/* Operasyon kartları — pipeline tanımından (§5b: UI descriptor'dan render) */}
       <div className="flex flex-col gap-y-2">
         {steps.map((s) => (
@@ -206,10 +215,15 @@ export const ThreeDTab = ({
       )}
       {asset?.video_url && (
         <div className="flex flex-col gap-y-1.5">
+          {/* Dürüst etiket: upscale bitmeden "4K" DEME (720p ara çıktı gösteriliyor). */}
           <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
-            ②③ 360° Orbital (4K)
+            {asset.status === "ready"
+              ? "360° Turntable · 4K"
+              : "② 360° Orbital (720p) — ③ 4K işleniyor…"}
           </Text>
+          {/* key: URL değişince oynatıcı temiz remount olur (bozuk oynatma fix'i). */}
           <video
+            key={asset.video_url}
             src={asset.video_url}
             controls
             loop

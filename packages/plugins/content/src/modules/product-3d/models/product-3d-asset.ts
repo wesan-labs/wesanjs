@@ -11,6 +11,7 @@ const Product3DAsset = model.define("product_3d_asset", {
   tenant_id: model.text().nullable(),
   brand_id: model.text().nullable(),
   source: model.text(), // "physical" | "digital-mockup"
+  product_ref: model.text().nullable(), // ürün adı/kodu — kütüphane klasörleme anahtarı
   inputs: model.json(), // string[] — girdi görselleri (URL)
   // Pipeline durumu (Flux2→Seedance→SeeDVR state-machine).
   pipeline_step: model.text().nullable(), // "hero"|"orbital"|"upscale"|"sample"|"done"

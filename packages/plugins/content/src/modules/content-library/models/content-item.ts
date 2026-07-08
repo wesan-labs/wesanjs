@@ -10,7 +10,8 @@ const ContentItem = model.define("content_item", {
   // Multi-tenant key (ADR-0001). Nullable during rollout; backfilled to the
   // default tenant, then RLS-scoped + app-layer filtered.
   tenant_id: model.text().nullable(),
-  kind: model.text(), // "image" | "text"
+  kind: model.text(), // "image" | "text" | "video"
+  product_ref: model.text().nullable(), // ürün adı/kodu — ürün-bazlı gruplama
   title: model.text().nullable(),
   value: model.text(), // image → data URL; text → the body
   language: model.text().nullable(),

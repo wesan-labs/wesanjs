@@ -5,8 +5,10 @@ import {
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
 import { PRODUCT_3D_MODULE } from "../../modules/product-3d"
-import { DEFAULT_PIPELINE, descriptorFor, nextOp } from "../../lib/three-d/pipeline-def"
+import { CONTENT_LIBRARY_MODULE } from "../../modules/content-library"
+import { DEFAULT_PIPELINE, descriptorFor, nextOp, OPERATIONS } from "../../lib/three-d/pipeline-def"
 import { envKeyFor, outputColumnFor, resolveStep, stepInputFor } from "../../lib/three-d/step-registry"
+import { rehostOutput } from "../../lib/three-d/rehost"
 
 export interface Poll3DAssetInput {
   id: string
@@ -67,21 +69,49 @@ const poll3DAssetStep = createStep(
       return new StepResponse(updated)
     }
 
-    // ready → çıktıyı sakla + ilerlet.
+    // ready → RE-HOST (kalıcı depo) + kütüphaneye kaydet + SONRAKİ adımı
+    // REMOTE URL ile HEMEN submit et (BFL ~10dk / Ark 24s expire penceresi kapanır).
+    const remoteUrl = result.outputUrl ?? ""
+    const hostedUrl = remoteUrl ? await rehostOutput(container, remoteUrl, `${asset.id}-${op}`) : null
     const patch: Record<string, unknown> = { id: asset.id, error: null, step_job_id: null, step_poll_url: null }
     const col = outputColumnFor(op)
-    if (col) patch[col] = result.outputUrl ?? null
+    if (col) patch[col] = hostedUrl ?? remoteUrl // kalıcı URL; rehost düşerse remote'a düş
 
     const next = nextOp(pipeline, op)
     if (!next) {
-      // v1: son adım (upscale) → done. ④ kare-örnekleme A4b'de eklenecek.
-      patch.pipeline_step = "done"
+      patch.pipeline_step = "done" // v1: ④ kare-örnekleme A4b'de
       patch.status = "ready"
     } else {
-      // Sonraki op'a ilerlet; job temiz → sonraki poll submit eder.
       patch.pipeline_step = next.op
+      const nextAdapter = resolveStep(next)
+      if (nextAdapter && col) {
+        // Zincir girdisi REMOTE URL (sağlayıcı-erişilebilir); lokal /static olmaz.
+        const job = await nextAdapter.submit(stepInputFor(next.op, { ...asset, [col]: remoteUrl }))
+        patch.step_job_id = job.jobId || null
+        patch.step_poll_url = job.pollUrl ?? null
+        if (job.status === "failed") {
+          patch.status = "failed"
+          patch.error = job.error ?? `${next.op} submit başarısız`
+        }
+      } // adapter yoksa (key eksik) job boş kalır → sonraki poll bilgilendirir
     }
     const updated = await service.updateProduct3DAssets(patch)
+
+    // Kütüphane: ürün-bazlı klasörleme (product_ref) — hero=image, video=video.
+    // done'da video'yu kaydet; hero adımı bitince hero'yu. Rehost başarısızsa remote yazılır.
+    if (col && (hostedUrl ?? remoteUrl)) {
+      const kind = op === "hero" ? "image" : next ? null : "video" // ara-orbital kaydetme; final video done'da
+      if (kind) {
+        const library: any = container.resolve(CONTENT_LIBRARY_MODULE)
+        await library.createContentItems({
+          tenant_id: asset.tenant_id ?? null,
+          kind,
+          title: `${asset.product_ref ?? asset.id} · ${OPERATIONS[op as keyof typeof OPERATIONS]?.label ?? op}`,
+          value: hostedUrl ?? remoteUrl,
+          product_ref: asset.product_ref ?? null,
+        })
+      }
+    }
     return new StepResponse(updated)
   }
 )

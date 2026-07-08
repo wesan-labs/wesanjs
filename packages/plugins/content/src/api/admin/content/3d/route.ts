@@ -11,6 +11,7 @@ interface Create3DBody {
   images: string[]
   source?: "physical" | "digital-mockup"
   brand_id?: string
+  product_ref?: string
 }
 
 /**
@@ -31,6 +32,7 @@ export const POST = async (
     input: {
       images: body.images,
       source: body.source,
+      product_ref: body.product_ref ?? null,
       brand_id: body.brand_id ?? null,
       tenant_id: tenantId ?? null,
     },

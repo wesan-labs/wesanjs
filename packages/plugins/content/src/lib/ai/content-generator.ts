@@ -648,19 +648,40 @@ const openRouterImage = async (
   return url
 }
 
+/**
+ * Shared quality + subject-preservation directive prepended to EVERY edit. The
+ * image models (Gemini 2.5 Flash Image / OpenRouter) follow explicit English
+ * instructions well; without this, terse one-line presets drift — the subject
+ * gets redrawn, text mangled, or artifacts introduced. One source so all edit
+ * paths (presets, pack compose, free prompt) share the same baseline.
+ */
+const EDIT_DIRECTIVE = [
+  "You are a professional product-photo retoucher.",
+  "Apply ONLY the edit described below to the PROVIDED image — nothing else.",
+  "Preserve the main subject exactly: its identity, shape, proportions, colors, materials, and any legible text or logos. Do not redraw, warp, add, or remove the subject.",
+  "Deliver a photorealistic, high-resolution result: sharp focus, clean edges, natural lighting and shadows, no banding or compression artifacts.",
+  "Do not add any watermark, signature, caption, border, or extra text unless the edit explicitly asks for it.",
+  "Edit to apply:",
+].join(" ")
+
+/** Wrap a raw edit instruction with the shared preservation/quality directive. */
+const withEditDirective = (prompt: string): string =>
+  `${EDIT_DIRECTIVE}\n\n${prompt}`
+
 /** Image editing: input image + instruction → new image. Gemini-direct first. */
 export const editImage = async (
   image: GenerateImage,
   prompt: string
 ): Promise<string> => {
+  const full = withEditDirective(prompt)
   if (process.env.GEMINI_API_KEY) {
     try {
-      return await callGeminiImage(prompt, image)
+      return await callGeminiImage(full, image)
     } catch (e) {
       if (!process.env.OPENROUTER_API_KEY) throw e
     }
   }
-  return openRouterImage(prompt, image)
+  return openRouterImage(full, image)
 }
 
 /** Text-to-image (no reference) → data URL. Gemini-direct first. */
