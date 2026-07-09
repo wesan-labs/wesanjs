@@ -121,6 +121,42 @@ Zincir hardcode değil, **DATA**. Üç katman ayrık:
 
 **UI (stüdyo entegrasyonu):** `/content` birleşik stüdyoya **"3D" paneli** (mevcut `panel-chrome` + panel-anahtarına `"3d"`). Girdi = tuvaldeki mevcut version (ayrı upload YOK). Çıktı tuvale döner (hero→version, video→viewer, 72 kare→galeri). Stepper + operasyon kartları **descriptor'dan** render. Her kart: op-spec (salt-okunur) · provider (swap) · params (ayar) · durum. `/content/3d-demo` adası katlanır.
 
+## 5c. Kullanıcı yolculuğu — 4 adımlı stüdyo kurgusu (v3 · 2026-07-09, Can'ın akışı)
+
+> Stüdyo "içerik üretim aracı" değil, **uçtan uca iş akışı**: içerik SADECE sosyal için değil — kullanıcı bunları **ürün olarak da** ekler. Her şey KULLANICI SEÇİMİ (3D dahil); UI seçime göre temiz adapte olur.
+
+### ADIM 1 · YÜKLE (çoklu görsel + kalite göstergesi)
+- **1+n görsel** yüklenir (bugünkü tek-görsel kısıtı kalkar). Farklı açılar → daha kaliteli 3D.
+- **Nudge:** "birkaç farklı açı yüklersen daha iyi olur" + **oran göstergesi**: yüklenen açı sayısı/çeşitliliğine göre "3D dönüştürülebilirlik" skoru (örn. tek foto=düşük, 3+ açı=yüksek). Tek fotoyla da DENERİZ (kredi kullanıcının) — ama beklentiyi göstergeyle yönetiriz.
+
+### ADIM 2 · ÜRET (3D opsiyonel — buton, zorunlu değil)
+- Kullanıcı yalnız sosyal içerik istiyorsa 3D'ye hiç girmez (mevcut 2D düzenleme akışı).
+- **"3D'ye çevir" butonu** → zincir: çoklu foto → hero → 4K orbital video → **GLB** (video karelerinden reconstruction — §2 sırası korunur).
+- **GLB TUVALE GELİR** (resmi gördüğümüz/düzenlediğimiz alana): kullanıcı döndürür; kenarda **kamera butonu** — beğendiği kadrajda BASAR → **anlık PNG sol versiyon rayına düşer** (tak diye). İstediği kadar açı çeker; hero'yu makine değil KULLANICI seçer. (= §3 katman ④'ün UI'daki hali; `model-viewer-canvas` bileşeni geri merkeze gelir — capture zaten yazılmıştı.)
+- GLB'nin kendisi de çıktı: isterse mağaza embed'inde kullanır (Faz B viewer).
+
+### ADIM 3 · MAĞAZA (koşullu — tenant'ın e-ticaret sitesi varsa görünür)
+- **Ürünle eşleştir** (mevcut Medusa ürünü ara/seç) VEYA **ürün oluştur**.
+- Görsel seçimi: çekilen kadrajlar + hero + konsept görselleri arasından ürün galerisi kurulur; **kapak görseli** seçilir.
+- **Çekim taksonomisi** (derinleşen yer — Faz C'nin omurgası): yakın çekim · uzak/geniş çekim · detay · **konsept oda/sahne giydirme** (AI compose) · beyaz-zemin (marketplace standardı). Her tip, compose motoruyla seçili kadrajdan türetilir.
+- GLB → ürün sayfasında interaktif 3D embed (opsiyon).
+
+### ADIM 4 · SOSYAL (mevcut yayın altyapısı)
+- Mağaza versiyonundan bağımsız **sosyal versiyonlama**: platform format/varyantları + turntable video/reel → Zernio publish.
+
+### Kurgu kuralları
+- **Depo klasörleme:** her çekim/çıktı ANINDA sol raya + kütüphaneye `product_ref` ile düşer (yapıldı); ürün eşleşince `product_id`'ye bağlanır.
+- **Kredi:** her AI adımı kredi düşer; gösterge kullanıcıyı gereksiz harcamadan korur.
+- **Koşullu adımlar:** mağaza adımı yalnız e-ticaret varsa; 3D yalnız istenirse. Stepper duruma göre daralır/genişler.
+
+### Açık kararlar (v3)
+1. **Video→GLB reconstruction motoru** (Faz B artık ÇEKİRDEK — kullanıcının kadraj çekme deneyimi buna bağlı): Hyper3D-Gen2/Hitem3D (Ark'ta bedava kota, çoklu-görsel destekli) vs self-host 3DGS. Kalite/AI-kare toleransı test ister.
+2. **Çoklu-foto zincir beslemesi:** hero'ya kaçı gider (BFL ≤8 ✓), reconstruction'a hepsi mi.
+3. **"3D dönüştürülebilirlik" göstergesi formülü:** foto sayısı + açı çeşitliliği (vision analiziyle mi?).
+4. **Ürün eşleştirme UX'i:** arama/otomatik öneri (vision→ürün adı benzerliği?) vs elle.
+5. **Çekim taksonomisi seti:** hangi tipler v1'de (yakın/uzak/konsept-oda/beyaz-zemin?), sektöre göre değişir mi (mobilya vs kozmetik).
+6. **GLB tuval performansı:** model-viewer yeterli mi (mevcut bileşen), r3f'e ne zaman geçilir.
+
 ## 6. Kullanım yüzeyleri
 
 - **Sosyal içerik:** 72-kare turntable → döner ürün reel/post; veya seçili açı → marka-sahne görseli.
