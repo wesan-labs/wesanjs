@@ -433,6 +433,27 @@ export const Component = () => {
                   </Button>
                 </div>
               </div>
+
+              {/* Opsiyonel 3D kapısı — kullanıcıya sorulur (§5c adım 2). İstemezse
+                  hiç oluşturulmaz; her hâlükârda içerik üretimine devam edilir. */}
+              <div className="border-ui-border-base bg-ui-bg-subtle flex flex-col gap-y-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-x-2">
+                  <CubeSolid className="text-ui-fg-interactive shrink-0" />
+                  <Text size="small" className="text-ui-fg-subtle">
+                    İstersen ürününü{" "}
+                    <span className="text-ui-fg-base font-medium">3D'ye çevir</span> — opsiyonel.
+                    Sonra bu varlıklarla içerik üretmeye devam edersin.
+                  </Text>
+                </div>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  onClick={() => setPanel("3d")}
+                  className="shrink-0"
+                >
+                  3D'ye çevir
+                </Button>
+              </div>
             </>
           ) : (
             <div className="border-ui-border-base bg-ui-bg-subtle relative flex min-h-[300px] flex-1 items-center justify-center overflow-hidden rounded-xl border p-6">
