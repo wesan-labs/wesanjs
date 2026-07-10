@@ -1,6 +1,7 @@
-import { ArrowDownTray, CubeSolid, Spinner } from "@medusajs/icons"
+import { CubeSolid, Spinner } from "@medusajs/icons"
 import { Badge, Button, Input, Text, toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
+import { ModelViewerCanvas } from "./model-viewer-canvas"
 import {
   use3DAsset,
   use3DPipeline,
@@ -123,28 +124,11 @@ export const ThreeDTab = ({
     )
   }
 
-  /** Hero çıktısını (uzak URL, 10 dk expire) indir → data URL → tuvale versiyon. */
-  const heroToCanvas = async (url: string) => {
-    try {
-      const blob = await (await fetch(url)).blob()
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader()
-        r.onload = () => resolve(String(r.result))
-        r.onerror = reject
-        r.readAsDataURL(blob)
-      })
-      onVersion(dataUrl, "360° Hero")
-      toast.success("Hero tuvale versiyon olarak eklendi")
-    } catch {
-      toast.error("Hero indirilemedi (CORS/expire) — re-host dilimi bunu çözecek")
-    }
-  }
-
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex items-center gap-x-2">
         <CubeSolid className="text-ui-fg-interactive" />
-        <Text weight="plus">3D / 360° Turntable</Text>
+        <Text weight="plus">3D Model (GLB)</Text>
       </div>
 
       {/* Kaynak = tuvaldeki seçili versiyon */}
@@ -188,48 +172,25 @@ export const ThreeDTab = ({
       )}
 
       <Button onClick={run} isLoading={running} disabled={!source || running} className="w-fit">
-        Zinciri Çalıştır
+        {running ? "3D üretiliyor…" : "3D Model Oluştur"}
       </Button>
 
-      {/* Çıktılar */}
-      {asset?.hero_url && (
+      {/* Çıktı: GLB — döndür, KADRAJ ÇEK (§5c adım 2). Video/turntable buradan ÜCRETSİZ render. */}
+      {asset?.mesh_url && (
         <div className="flex flex-col gap-y-1.5">
           <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
-            ① Hero
+            3D Model — döndür, kamera tuşuyla açı yakala (tuvale düşer)
           </Text>
-          <img
-            src={asset.hero_url}
-            alt="hero"
-            className="border-ui-border-base w-full rounded-lg border"
-          />
-          <Button
-            variant="secondary"
-            size="small"
-            className="w-fit"
-            onClick={() => heroToCanvas(asset.hero_url!)}
-          >
-            <ArrowDownTray />
-            Tuvale versiyon olarak ekle
-          </Button>
-        </div>
-      )}
-      {asset?.video_url && (
-        <div className="flex flex-col gap-y-1.5">
-          {/* Dürüst etiket: upscale bitmeden "4K" DEME (720p ara çıktı gösteriliyor). */}
-          <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
-            {asset.status === "ready"
-              ? "360° Turntable · 4K"
-              : "② 360° Orbital (720p) — ③ 4K işleniyor…"}
-          </Text>
-          {/* key: URL değişince oynatıcı temiz remount olur (bozuk oynatma fix'i). */}
-          <video
-            key={asset.video_url}
-            src={asset.video_url}
-            controls
-            loop
-            autoPlay
-            muted
-            className="border-ui-border-base w-full rounded-lg border"
+          <ModelViewerCanvas
+            meshUrl={asset.mesh_url}
+            onCapture={(dataUrl) => {
+              onVersion(dataUrl, "3D açı")
+              toast.success("Açı yakalandı — tuvale versiyon olarak eklendi")
+            }}
+            onTurntable={(frames) => {
+              frames.forEach((f, i) => onVersion(f, `3D kare ${i + 1}`))
+              toast.success(`${frames.length} kare tuvale eklendi`)
+            }}
           />
         </div>
       )}

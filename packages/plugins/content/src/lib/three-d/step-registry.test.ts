@@ -15,8 +15,15 @@ describe("stepInputFor", () => {
   })
 })
 
+describe("stepInputFor · reconstruct", () => {
+  test("ürün foto(ları) → GLB girdisi", () => {
+    expect(stepInputFor("reconstruct", { inputs: ["a", "b"] })).toEqual({ sourceUrl: "a", refs: ["b"] })
+  })
+})
+
 describe("outputColumnFor", () => {
-  test("hero→hero_url, orbital/upscale→video_url, done→null", () => {
+  test("reconstruct→mesh_url, hero→hero_url, orbital/upscale→video_url, done→null", () => {
+    expect(outputColumnFor("reconstruct")).toBe("mesh_url")
     expect(outputColumnFor("hero")).toBe("hero_url")
     expect(outputColumnFor("orbital")).toBe("video_url")
     expect(outputColumnFor("upscale")).toBe("video_url")
@@ -26,6 +33,7 @@ describe("outputColumnFor", () => {
 
 describe("envKeyFor", () => {
   test("provider → env key adı", () => {
+    expect(envKeyFor("runware")).toBe("RUNWARE_API_KEY")
     expect(envKeyFor("bfl")).toBe("BFL_API_KEY")
     expect(envKeyFor("byteplus")).toBe("ARK_API_KEY")
     expect(envKeyFor("wavespeed")).toBe("WAVESPEED_API_KEY")

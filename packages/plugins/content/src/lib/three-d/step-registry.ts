@@ -2,10 +2,12 @@ import type { PipelineModelStep, StepInput } from "./pipeline"
 import { OPERATIONS, type PipelineStepDescriptor, type StepConfig } from "./pipeline-def"
 import { createBflHeroStep } from "./providers/bfl"
 import { createSeedanceOrbitalStep } from "./providers/byteplus"
+import { createRunwareReconstructStep } from "./providers/runware"
 import { createSeedanceWsOrbitalStep, createSeedvrUpscaleStep } from "./providers/wavespeed"
 
-/** Provider → (env key + adaptör fabrikası). fal YOK. */
+/** Provider → (env key + adaptör fabrikası). fal YOK. Aktif default: runware (GLB-direct). */
 const PROVIDERS: Record<string, { envKey: string; make: (key: string, cfg: StepConfig) => PipelineModelStep }> = {
+  runware: { envKey: "RUNWARE_API_KEY", make: createRunwareReconstructStep },
   bfl: { envKey: "BFL_API_KEY", make: createBflHeroStep },
   byteplus: { envKey: "ARK_API_KEY", make: createSeedanceOrbitalStep },
   "wavespeed-seedance": { envKey: "WAVESPEED_API_KEY", make: createSeedanceWsOrbitalStep },
@@ -42,6 +44,9 @@ export interface AssetInputView {
  */
 export const stepInputFor = (op: string, a: AssetInputView): StepInput => {
   switch (op) {
+    case "reconstruct":
+      // Doğrudan ürün foto(ları) → GLB (Tripo 1–4 görsel; çok-açı = daha kusursuz).
+      return { sourceUrl: a.inputs[0], refs: a.inputs.slice(1) }
     case "hero":
       return { sourceUrl: a.inputs[0], refs: a.inputs.slice(1) }
     case "orbital":
@@ -56,6 +61,12 @@ export const stepInputFor = (op: string, a: AssetInputView): StepInput => {
   }
 }
 
-/** Op çıktısının yazılacağı kolon. hero→hero_url, orbital/upscale→video_url. Saf. */
-export const outputColumnFor = (op: string): "hero_url" | "video_url" | null =>
-  op === "hero" ? "hero_url" : op === "orbital" || op === "upscale" ? "video_url" : null
+/** Op çıktısının yazılacağı kolon. reconstruct→mesh_url, hero→hero_url, orbital/upscale→video_url. Saf. */
+export const outputColumnFor = (op: string): "mesh_url" | "hero_url" | "video_url" | null =>
+  op === "reconstruct"
+    ? "mesh_url"
+    : op === "hero"
+      ? "hero_url"
+      : op === "orbital" || op === "upscale"
+        ? "video_url"
+        : null

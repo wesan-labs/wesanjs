@@ -7,7 +7,7 @@ import {
 import { MedusaError } from "@medusajs/framework/utils"
 import { PRODUCT_3D_MODULE } from "../../modules/product-3d"
 import { DEFAULT_PIPELINE } from "../../lib/three-d/pipeline-def"
-import { resolveStep, stepInputFor } from "../../lib/three-d/step-registry"
+import { envKeyFor, resolveStep, stepInputFor } from "../../lib/three-d/step-registry"
 
 export interface Create3DAssetInput {
   images: string[]
@@ -25,19 +25,20 @@ const create3DAssetStep = createStep(
   "create-3d-asset",
   async (input: Create3DAssetInput, { container }) => {
     const service: any = container.resolve(PRODUCT_3D_MODULE)
-    const heroDesc = DEFAULT_PIPELINE[0]
-    const hero = resolveStep(heroDesc)
-    if (!hero) {
-      throw new MedusaError(MedusaError.Types.INVALID_DATA, "BFL_API_KEY tanımlı değil")
+    const firstDesc = DEFAULT_PIPELINE[0]
+    const first = resolveStep(firstDesc)
+    if (!first) {
+      const key = envKeyFor(firstDesc.provider) ?? "API key"
+      throw new MedusaError(MedusaError.Types.INVALID_DATA, `${key} tanımlı değil (${firstDesc.provider})`)
     }
-    const job = await hero.submit(stepInputFor(heroDesc.op, { inputs: input.images }))
+    const job = await first.submit(stepInputFor(firstDesc.op, { inputs: input.images }))
     const asset = await service.createProduct3DAssets({
       tenant_id: input.tenant_id ?? null,
       brand_id: input.brand_id ?? null,
       source: input.source ?? "physical",
       product_ref: input.product_ref ?? null,
       inputs: input.images,
-      pipeline_step: heroDesc.op,
+      pipeline_step: firstDesc.op,
       step_job_id: job.jobId || null,
       step_poll_url: job.pollUrl ?? null,
       hero_url: null,
@@ -45,7 +46,7 @@ const create3DAssetStep = createStep(
       turntable_urls: null,
       mesh_url: null,
       thumbnail_url: null,
-      provider: "bfl-flux2-pipeline",
+      provider: firstDesc.provider,
       provider_task_id: null,
       status: job.status,
       error: job.error ?? null,

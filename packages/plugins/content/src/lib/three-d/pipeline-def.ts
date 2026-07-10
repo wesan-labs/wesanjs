@@ -12,6 +12,8 @@ export interface Operation {
 }
 
 export const OPERATIONS: Record<ModelStepId, Operation> = {
+  // ⑤ Doğrudan görsel(ler) → GLB (video dolambazı YOK). Prompt yok — geometri işi.
+  reconstruct: { id: "reconstruct", label: "3D Model (GLB)", opSpec: null },
   hero: {
     id: "hero",
     label: "Hero",
@@ -41,18 +43,14 @@ export interface PipelineStepDescriptor {
   params: StepParams
 }
 
-/** Varsayılan pipeline — lineer zincir. UI + runner bunu okur. */
+/**
+ * Varsayılan pipeline — **GLB-direct** (2026-07-10). Video dolambacı (hero→orbital→
+ * upscale) KALDIRILDI: amaç GLB'yse görsel(ler)→3D tek çağrı yeterli, gerisi (turntable,
+ * açı görselleri) GLB'den ÜCRETSİZ render. Tek dış-bağımlılık = Runware (tek key).
+ * Video adaptörleri (bfl/byteplus/wavespeed) registry'de duruyor — gerekirse tek satır swap.
+ */
 export const DEFAULT_PIPELINE: PipelineStepDescriptor[] = [
-  { op: "hero", provider: "bfl", params: { model: "flux-2-pro", output_format: "png" } },
-  {
-    // Seedance 2.0 Fast — WaveSpeed üzerinden (BytePlus paket duvarı baypas, 2026-07-09).
-    // 720p seçimi bilinçli: 720p($1) + SeedVR-4K($0.25) = $1.25, direkt 4K($5)'ten 4× ucuz.
-    // Alternatif (bedava test): provider "byteplus" + model seedance-1-5-pro-251215.
-    op: "orbital",
-    provider: "wavespeed-seedance",
-    params: { resolution: "720p", aspect_ratio: "1:1", duration: 5 },
-  },
-  { op: "upscale", provider: "wavespeed", params: { target_resolution: "4k" } },
+  { op: "reconstruct", provider: "runware", params: { model: "tripo:v3.1@0", outputFormat: "GLB" } },
 ]
 
 /** Pipeline'da bir op'tan sonraki op; son ise null (→ done). Saf. */

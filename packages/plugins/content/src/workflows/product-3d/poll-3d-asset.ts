@@ -100,7 +100,8 @@ const poll3DAssetStep = createStep(
     // Kütüphane: ürün-bazlı klasörleme (product_ref) — hero=image, video=video.
     // done'da video'yu kaydet; hero adımı bitince hero'yu. Rehost başarısızsa remote yazılır.
     if (col && (hostedUrl ?? remoteUrl)) {
-      const kind = op === "hero" ? "image" : next ? null : "video" // ara-orbital kaydetme; final video done'da
+      // reconstruct→3d, hero→image, final video→video; ara adımları kaydetme.
+      const kind = op === "reconstruct" ? "3d" : op === "hero" ? "image" : next ? null : "video"
       if (kind) {
         const library: any = container.resolve(CONTENT_LIBRARY_MODULE)
         await library.createContentItems({

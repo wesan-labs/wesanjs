@@ -44,7 +44,15 @@ export const rehostOutput = async (
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())
     const mime = res.headers.get("content-type")?.split(";")[0] ?? "application/octet-stream"
-    const ext = mime.includes("png") ? "png" : mime.includes("jpeg") ? "jpg" : mime.includes("mp4") ? "mp4" : "bin"
+    const ext = mime.includes("png")
+      ? "png"
+      : mime.includes("jpeg")
+        ? "jpg"
+        : mime.includes("mp4")
+          ? "mp4"
+          : mime.includes("gltf-binary") || remoteUrl.toLowerCase().includes(".glb")
+            ? "glb"
+            : "bin"
     const fileService: any = container.resolve(Modules.FILE)
     const [file] = await fileService.createFiles([
       { filename: `${name}.${ext}`, mimeType: mime, content: buf.toString("binary") },

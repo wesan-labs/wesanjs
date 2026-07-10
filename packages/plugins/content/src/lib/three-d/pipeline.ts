@@ -5,9 +5,9 @@ import type { TaskStatus } from "./types"
  * SIRAYLA ilerler; her adım uzun-süren bir uzak-API job'ı. "done" = 72-kare
  * turntable hazır (Faz A çıkışı). GLB (⑤) Faz B, bu state-machine dışında.
  */
-export type PipelineStep = "hero" | "orbital" | "upscale" | "sample" | "done"
+export type PipelineStep = "reconstruct" | "hero" | "orbital" | "upscale" | "sample" | "done"
 
-const ORDER: readonly PipelineStep[] = ["hero", "orbital", "upscale", "sample", "done"]
+const ORDER: readonly PipelineStep[] = ["reconstruct", "hero", "orbital", "upscale", "sample", "done"]
 
 /** Bir sonraki adım. Saf, O(1). "done" terminal (kendine döner). */
 export const nextStep = (s: PipelineStep): PipelineStep =>
