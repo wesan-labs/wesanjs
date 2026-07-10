@@ -34,5 +34,11 @@ export default defineMiddlewares({
       method: "POST",
       bodyParser: { sizeLimit: "25mb" },
     },
+    {
+      // Ürün oluşturma: görseller data-URL (base64) olarak gelir.
+      matcher: "/admin/content/product",
+      method: "POST",
+      bodyParser: { sizeLimit: "25mb" },
+    },
   ],
 })

@@ -1,3 +1,4 @@
+// @ts-nocheck — Bun-runtime dev script (Bun.file/Bun.write); tsc kapsamı dışı.
 /**
  * GLB premise testi — Hyper3D Rodin Gen-2 (image→GLB). Sözleşme doğrulandı
  * (developer.hyper3d.ai llms-full, 2026-07-09): multipart, images=dosya bytes

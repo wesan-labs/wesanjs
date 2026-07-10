@@ -621,6 +621,27 @@ export interface PipelineStepInfo {
   key_configured: boolean
 }
 
+export interface CreateContentProductInput {
+  title: string
+  images: string[]
+  product_ref?: string
+  description?: string
+  status?: "draft" | "published"
+}
+
+/** Stüdyo varlıklarını (görseller) bir Medusa ÜRÜNÜNE çevir (§5c adım 3, native). */
+export const useCreateContentProduct = (
+  options?: UseMutationOptions<{ product: { id: string; title: string } }, FetchError, CreateContentProductInput>
+) =>
+  useMutation({
+    mutationFn: (input: CreateContentProductInput) =>
+      sdk.client.fetch<{ product: { id: string; title: string } }>("/admin/content/product", {
+        method: "POST",
+        body: input,
+      }),
+    ...options,
+  })
+
 /** Pipeline TANIMINI getir (op kartları: op-spec + provider + params + key durumu). */
 export const use3DPipeline = () =>
   useQuery({

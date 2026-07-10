@@ -42,6 +42,7 @@ import {
   downscaleImage,
   EditImageInput,
   useAnalyzeImage,
+  useCreateContentProduct,
   useEditImage,
   useSaveContentItem,
 } from "../../hooks/api/content"
@@ -221,6 +222,26 @@ export const Component = () => {
   const updateBrandProfile = (p: BrandProfile) => {
     setBrandProfile(p)
     saveBrandProfile(p)
+  }
+
+  // İçerik üretiminin iş çıktısı: varlıkları Medusa ürününe çevir (§5c adım 3).
+  const createProductMut = useCreateContentProduct()
+  const handleCreateProduct = () => {
+    if (!versions.length) {
+      return
+    }
+    const title = analysis?.summary?.slice(0, 60)?.trim() || "Yeni ürün"
+    createProductMut.mutate(
+      { title, images: versions.map((v) => v.url) },
+      {
+        onSuccess: (r) =>
+          toast.success("Ürün oluşturuldu (taslak)", {
+            description: `${r.product?.title ?? title} — mağazada düzenleyebilirsin`,
+          }),
+        onError: (e) =>
+          toast.error("Ürün oluşturulamadı", { description: String(e?.message ?? e) }),
+      }
+    )
   }
 
   const saveImage = () => {
@@ -421,6 +442,15 @@ export const Component = () => {
                   >
                     <SquaresPlus />
                     Kaydet
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={handleCreateProduct}
+                    isLoading={createProductMut.isPending}
+                  >
+                    <Buildings />
+                    Ürün olarak ekle
                   </Button>
                   <a href={source.url} download={`${source.label}.png`}>
                     <Button variant="secondary" size="small">
