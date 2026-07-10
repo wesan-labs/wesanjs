@@ -31,6 +31,16 @@ export const POST = async (
   if (!body.images?.length) {
     throw new MedusaError(MedusaError.Types.INVALID_DATA, "en az bir görsel gerekli")
   }
+  if (body.images.length > 20) {
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, "en fazla 20 görsel")
+  }
+
+  // Girdi temizliği: title/description → uzunluk + açı-parantez (stored-XSS hijyeni).
+  const clean = (s: string, max: number) => s.replace(/[<>]/g, "").trim().slice(0, max)
+  const title = clean(body.title, 200)
+  const description = body.description ? clean(body.description, 2000) : null
+  // Dosya-adı bileşeni: yalnız güvenli karakterler (path-traversal engeli).
+  const refSlug = String(body.product_ref ?? "urun").replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 40) || "urun"
 
   const fileService: any = req.scope.resolve(Modules.FILE)
 
@@ -53,7 +63,7 @@ export const POST = async (
     }
     const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg"
     const [file] = await fileService.createFiles([
-      { filename: `${body.product_ref ?? "urun"}-${i}.${ext}`, mimeType: mime, content: buf.toString("binary") },
+      { filename: `${refSlug}-${i}.${ext}`, mimeType: mime, content: buf.toString("binary") },
     ])
     return file.url
   }
@@ -64,8 +74,8 @@ export const POST = async (
     input: {
       products: [
         {
-          title: body.title.trim(),
-          description: body.description ?? null,
+          title,
+          description,
           status: body.status ?? "draft",
           thumbnail: urls[0],
           images: urls.map((url) => ({ url })),
