@@ -41,8 +41,18 @@ export default defineMiddlewares({
       bodyParser: { sizeLimit: "25mb" },
     },
     {
-      // Outcome-akış taslağı: çoklu ürün fotoğrafı data-URL.
+      // Outcome-akış (taslak + parça-yeniden-üret): çoklu ürün fotoğrafı data-URL.
       matcher: "/admin/content/studio/draft",
+      method: "POST",
+      bodyParser: { sizeLimit: "25mb" },
+    },
+    {
+      matcher: "/admin/content/studio/hero",
+      method: "POST",
+      bodyParser: { sizeLimit: "25mb" },
+    },
+    {
+      matcher: "/admin/content/studio/copy",
       method: "POST",
       bodyParser: { sizeLimit: "25mb" },
     },

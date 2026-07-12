@@ -646,6 +646,33 @@ export const useStudioDraft = (
     ...options,
   })
 
+/** Sadece temiz görseli yeniden üret (review "yeniden"). */
+export const useStudioHero = (
+  options?: UseMutationOptions<{ image: string }, FetchError, { images: string[] }>
+) =>
+  useMutation({
+    mutationFn: (input: { images: string[] }) =>
+      sdk.client.fetch<{ image: string }>("/admin/content/studio/hero", { method: "POST", body: input }),
+    ...options,
+  })
+
+/** Sadece metni yeniden yaz. */
+export const useStudioCopy = (
+  options?: UseMutationOptions<
+    { description: string; caption: string },
+    FetchError,
+    { images: string[]; product_name?: string }
+  >
+) =>
+  useMutation({
+    mutationFn: (input: { images: string[]; product_name?: string }) =>
+      sdk.client.fetch<{ description: string; caption: string }>("/admin/content/studio/copy", {
+        method: "POST",
+        body: input,
+      }),
+    ...options,
+  })
+
 export interface CreateContentProductInput {
   title: string
   images: string[]

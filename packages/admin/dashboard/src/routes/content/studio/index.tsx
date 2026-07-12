@@ -1,10 +1,12 @@
-import { ArrowDownTray, Buildings, CheckCircleSolid, PaperPlane, Sparkles } from "@medusajs/icons"
+import { ArrowDownTray, ArrowPath, Buildings, CheckCircleSolid, PaperPlane, Sparkles } from "@medusajs/icons"
 import { Button, Container, Heading, Input, Text, Textarea, toast } from "@medusajs/ui"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import {
   useCreateContentProduct,
+  useStudioCopy,
   useStudioDraft,
+  useStudioHero,
   type StudioDraft,
 } from "../../../hooks/api/content"
 import { PhotoSet } from "../components/photo-set"
@@ -24,7 +26,29 @@ export const Component = () => {
   const [composerOpen, setComposerOpen] = useState(false)
 
   const draftMut = useStudioDraft()
+  const heroMut = useStudioHero()
+  const copyMut = useStudioCopy()
   const productMut = useCreateContentProduct()
+
+  const regenHero = () =>
+    heroMut.mutate(
+      { images: photos },
+      {
+        onSuccess: ({ image }) => setDraft((d) => (d ? { ...d, heroImage: image } : d)),
+        onError: (e) => toast.error("Görsel üretilemedi", { description: String(e?.message ?? e) }),
+      }
+    )
+  const regenCopy = () =>
+    copyMut.mutate(
+      { images: photos, product_name: productName.trim() || undefined },
+      {
+        onSuccess: ({ description, caption }) => {
+          setDescription(description)
+          setCaption(caption)
+        },
+        onError: (e) => toast.error("Metin üretilemedi", { description: String(e?.message ?? e) }),
+      }
+    )
 
   const generate = () => {
     if (!photos.length) return
@@ -124,6 +148,16 @@ export const Component = () => {
               alt="ürün"
               className="border-ui-border-base w-full max-w-md rounded-lg border"
             />
+            <Button
+              variant="secondary"
+              size="small"
+              className="w-fit"
+              onClick={regenHero}
+              isLoading={heroMut.isPending}
+            >
+              <ArrowPath />
+              Görseli yeniden üret
+            </Button>
           </div>
 
           {/* Açıklama */}
@@ -140,6 +174,16 @@ export const Component = () => {
               Sosyal medya metni
             </Text>
             <Textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={3} />
+            <Button
+              variant="secondary"
+              size="small"
+              className="w-fit"
+              onClick={regenCopy}
+              isLoading={copyMut.isPending}
+            >
+              <ArrowPath />
+              Metni yeniden yaz
+            </Button>
           </div>
 
           {/* Gönder */}
