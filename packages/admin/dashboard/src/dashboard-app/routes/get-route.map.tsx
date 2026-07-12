@@ -1149,6 +1149,12 @@ export function getRouteMap({
               lazy: () => import("../../routes/content/flow-demo"),
             },
             {
+              // Outcome-akış stüdyosu (yeni varsayılan aday) — gir→taslak→gönder.
+              path: "/content/studio",
+              errorElement: <ErrorBoundary />,
+              lazy: () => import("../../routes/content/studio"),
+            },
+            {
               path: "/social-media",
               errorElement: <ErrorBoundary />,
               lazy: () => import("../../routes/social-media"),

@@ -621,6 +621,31 @@ export interface PipelineStepInfo {
   key_configured: boolean
 }
 
+/** Outcome-akış tek-geçiş taslağı (§3.1 ③) — hero görsel + açıklama + caption. */
+export interface StudioDraft {
+  heroImage: string
+  description: string
+  caption: string
+}
+
+export interface StudioDraftInput {
+  images: string[]
+  product_name?: string
+}
+
+/** Ürün fotoğraflarından satışa-hazır taslak üret (tek çağrı). */
+export const useStudioDraft = (
+  options?: UseMutationOptions<{ draft: StudioDraft }, FetchError, StudioDraftInput>
+) =>
+  useMutation({
+    mutationFn: (input: StudioDraftInput) =>
+      sdk.client.fetch<{ draft: StudioDraft }>("/admin/content/studio/draft", {
+        method: "POST",
+        body: input,
+      }),
+    ...options,
+  })
+
 export interface CreateContentProductInput {
   title: string
   images: string[]
