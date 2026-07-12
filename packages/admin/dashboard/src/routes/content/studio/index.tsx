@@ -1,4 +1,4 @@
-import { ArrowDownTray, ArrowPath, Buildings, CheckCircleSolid, PaperPlane, Sparkles } from "@medusajs/icons"
+import { ArrowDownTray, ArrowPath, Buildings, CheckCircleSolid, CubeSolid, PaperPlane, Sparkles } from "@medusajs/icons"
 import { Button, Container, Heading, Input, Text, Textarea, toast } from "@medusajs/ui"
 import { useState } from "react"
 import { Link } from "react-router-dom"
@@ -189,6 +189,20 @@ export const Component = () => {
               <ArrowPath />
               Metni yeniden yaz
             </Button>
+          </div>
+
+          {/* 3D teklifi — opsiyonel; çoklu-açı foto gerektirir → Gelişmiş 3D */}
+          <div className="border-ui-border-base bg-ui-bg-subtle flex flex-col gap-y-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-x-2">
+              <CubeSolid className="text-ui-fg-interactive shrink-0" />
+              <Text size="small" className="text-ui-fg-subtle">
+                Ürününü <span className="text-ui-fg-base font-medium">360° / 3D</span> yapmak ister
+                misin? Farklı açılardan 6+ fotoğraf gerekir.
+              </Text>
+            </div>
+            <Link to="/content" className="text-ui-fg-interactive shrink-0 text-xs font-medium">
+              3D oluştur →
+            </Link>
           </div>
 
           {/* Gönder */}
