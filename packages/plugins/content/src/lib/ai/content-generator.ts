@@ -81,7 +81,7 @@ const MAX_IMAGES = 4
 
 // Google AI Studio (Gemini) — separate, per-account free quota (not the shared
 // OpenRouter pool), so it stays reliable. Used first when GEMINI_API_KEY is set.
-const GEMINI_DEFAULT_MODEL = "gemini-2.0-flash"
+const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash" // 2.0-flash deprecated (404, 2026-07)
 const USER_INSTRUCTION = "Bu görsel(ler) için içeriği üret. Yalnızca JSON döndür."
 
 const TONE_LABEL: Record<ContentTone, string> = {
