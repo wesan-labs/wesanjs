@@ -1,7 +1,9 @@
-import { ArrowDownTray, CubeSolid, Spinner } from "@medusajs/icons"
+import { ArrowDownTray, CubeSolid, Spinner, Trash, XMarkMini } from "@medusajs/icons"
 import { Badge, Button, Input, Text, toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
+import { FileType, FileUpload } from "../../../components/common/file-upload/file-upload"
 import {
+  downscaleImage,
   use3DAsset,
   use3DPipeline,
   useCreate3DAsset,
@@ -85,19 +87,34 @@ const OperationCard = ({
  * seçili versiyon (ayrı upload YOK), operasyon kartları pipeline TANIMINDAN
  * render, çıktılar tuvale/panele döner (hero → versiyon, video → oynatıcı).
  */
+/** Kapsama eşiği — reconstruction için (141° boşluk çöp verdi; kanıt-temelli). */
+const MIN_PHOTOS = 4
+const GOOD_PHOTOS = 6
+
+/** Foto sayısına göre 3D-hazırlık: kaç açı var, yeterli mi. Saf. */
+const coverage = (n: number): { pct: number; color: "red" | "orange" | "green"; label: string } => {
+  if (n === 0) return { pct: 0, color: "red", label: "En az 4 açı gerekli" }
+  if (n < MIN_PHOTOS) return { pct: (n / GOOD_PHOTOS) * 100, color: "red", label: `${n} açı — çok az, daha fazla ekle` }
+  if (n < GOOD_PHOTOS) return { pct: (n / GOOD_PHOTOS) * 100, color: "orange", label: `${n} açı — olur, ama 6+ daha iyi` }
+  return { pct: 100, color: "green", label: `${n} açı — 3D'ye hazır ✓` }
+}
+
+const BAR: Record<"red" | "orange" | "green", string> = {
+  red: "bg-ui-tag-red-icon",
+  orange: "bg-ui-tag-orange-icon",
+  green: "bg-ui-tag-green-icon",
+}
+
 export const ThreeDTab = ({
   source,
-  onVersion,
   onDone,
 }: {
   source?: Version
-  /** hero çıktısını tuvale yeni versiyon olarak ekle */
-  onVersion: (dataUrl: string, label: string) => void
-  /** zincir bitti — parent stepper durumu için */
   onDone?: () => void
 }) => {
   const [assetId, setAssetId] = useState<string | null>(null)
   const [productRef, setProductRef] = useState("")
+  const [photos, setPhotos] = useState<string[]>([]) // ürünün çoklu-açı foto'ları (data-URL)
   const create = useCreate3DAsset()
   const { data: pipelineData } = use3DPipeline()
   const { data: assetData } = use3DAsset(assetId ?? undefined)
@@ -106,19 +123,30 @@ export const ThreeDTab = ({
   const order = steps.map((s) => s.op)
   const asset = assetData?.asset
   const running = create.isPending || asset?.status === "processing"
+  const cov = coverage(photos.length)
 
   useEffect(() => {
     if (asset?.status === "ready") onDone?.()
   }, [asset?.status, onDone])
 
+  const addFiles = async (files: FileType[]) => {
+    const added = await Promise.all(
+      files.map(async (f) => {
+        const img = await downscaleImage(f.file, 1600) // 3D için biraz büyük tut
+        return `data:${img.mime};base64,${img.data}`
+      })
+    )
+    setPhotos((prev) => [...prev, ...added])
+  }
+
   const run = () => {
-    if (!source) return
+    if (photos.length < MIN_PHOTOS) return
     create.mutate(
-      { images: [source.url], product_ref: productRef.trim() || undefined },
+      { images: photos, product_ref: productRef.trim() || undefined },
       {
         onSuccess: (res) => setAssetId(res.asset.id),
         onError: (e) =>
-          toast.error("Zincir başlatılamadı", { description: String(e?.message ?? e) }),
+          toast.error("3D üretimi başlatılamadı", { description: String(e?.message ?? e) }),
       }
     )
   }
@@ -130,24 +158,73 @@ export const ThreeDTab = ({
         <Text weight="plus">3D Model (GLB)</Text>
       </div>
 
-      {/* Kaynak = tuvaldeki seçili versiyon */}
-      {source ? (
-        <div className="border-ui-border-base flex items-center gap-x-3 rounded-lg border p-2.5">
-          <img src={source.url} alt={source.label} className="size-12 rounded-md object-cover" />
-          <div className="min-w-0">
-            <Text size="xsmall" className="text-ui-fg-muted uppercase tracking-wide">
-              Kaynak
-            </Text>
-            <Text size="small" className="truncate">
-              {source.label} (tuvaldeki görsel)
-            </Text>
-          </div>
-        </div>
-      ) : (
-        <Text size="small" className="text-ui-fg-muted">
-          Önce tuvale bir ürün görseli yükle — zincir onu kaynak alır.
+      {/* Çekim rehberi — kapsama = kalite (kanıt: 141° boşluk çöp verir) */}
+      <div className="border-ui-border-base bg-ui-bg-subtle rounded-lg border p-3">
+        <Text size="xsmall" weight="plus" className="text-ui-fg-base">
+          Ürünün etrafında dön, farklı açılardan çek
         </Text>
+        <ul className="text-ui-fg-subtle mt-1 list-disc pl-4 text-xs leading-5">
+          <li>6–8+ açı — ön, yan, arka, üst. Tüm yüzeyler görünsün.</li>
+          <li>Sabit mesafe, aynı ışık, düz/sade zemin.</li>
+          <li>Eksik açı = o taraf 3D'de bozuk çıkar.</li>
+        </ul>
+      </div>
+
+      {/* Çoklu-açı yükleyici */}
+      <FileUpload
+        label="Ürün fotoğraflarını sürükle ya da seç"
+        hint="JPEG, PNG, WebP · birden fazla"
+        multiple
+        formats={["image/jpeg", "image/png", "image/webp"]}
+        maxFileSize={Infinity}
+        onUploaded={addFiles}
+      />
+      {source && !photos.some((p) => p === source.url) && (
+        <Button
+          variant="transparent"
+          size="small"
+          className="w-fit"
+          onClick={() => setPhotos((prev) => [...prev, source.url])}
+        >
+          + Tuvaldeki görseli de ekle
+        </Button>
       )}
+
+      {/* Yüklenen açılar + kaldır */}
+      {photos.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {photos.map((p, i) => (
+            <div key={i} className="relative">
+              <img src={p} alt={`açı ${i + 1}`} className="border-ui-border-base size-16 rounded-md border object-cover" />
+              <button
+                type="button"
+                onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                className="bg-ui-bg-base border-ui-border-base absolute -right-1.5 -top-1.5 rounded-full border p-0.5 shadow-sm"
+              >
+                <XMarkMini />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPhotos([])}
+            className="text-ui-fg-muted hover:text-ui-fg-base flex size-16 flex-col items-center justify-center gap-y-0.5 rounded-md border border-dashed"
+          >
+            <Trash />
+            <span className="text-[10px]">Temizle</span>
+          </button>
+        </div>
+      )}
+
+      {/* Kapsama göstergesi */}
+      <div className="flex flex-col gap-y-1">
+        <div className="bg-ui-bg-base h-1.5 w-full overflow-hidden rounded-full">
+          <div className={`h-full rounded-full transition-all ${BAR[cov.color]}`} style={{ width: `${cov.pct}%` }} />
+        </div>
+        <Text size="xsmall" className="text-ui-fg-subtle">
+          {cov.label}
+        </Text>
+      </div>
 
       {/* Ürün adı/kodu — kütüphane klasörleme anahtarı (çıktılar bununla kaydolur) */}
       <Input
@@ -170,7 +247,12 @@ export const ThreeDTab = ({
         </Text>
       )}
 
-      <Button onClick={run} isLoading={running} disabled={!source || running} className="w-fit">
+      <Button
+        onClick={run}
+        isLoading={running}
+        disabled={photos.length < MIN_PHOTOS || running}
+        className="w-fit"
+      >
         {running ? "3D üretiliyor…" : "3D Model Oluştur"}
       </Button>
 

@@ -644,11 +644,7 @@ export const Component = () => {
             )}
           </div>
           <div className={clx(panel !== "3d" && "hidden")}>
-            <ThreeDTab
-              source={source}
-              onVersion={applyImageResult}
-              onDone={() => setThreeDDone(true)}
-            />
+            <ThreeDTab source={source} onDone={() => setThreeDDone(true)} />
           </div>
           <div
             className={clx(
