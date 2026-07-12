@@ -1,7 +1,6 @@
-import { CubeSolid, Spinner } from "@medusajs/icons"
+import { ArrowDownTray, CubeSolid, Spinner } from "@medusajs/icons"
 import { Badge, Button, Input, Text, toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
-import { ModelViewerCanvas } from "./model-viewer-canvas"
 import {
   use3DAsset,
   use3DPipeline,
@@ -175,23 +174,36 @@ export const ThreeDTab = ({
         {running ? "3D üretiliyor…" : "3D Model Oluştur"}
       </Button>
 
-      {/* Çıktı: GLB — döndür, KADRAJ ÇEK (§5c adım 2). Video/turntable buradan ÜCRETSİZ render. */}
+      {/* Çıktı — 360° video (Veo). */}
+      {asset?.video_url && (
+        <div className="flex flex-col gap-y-1.5">
+          <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
+            360° Ürün Videosu
+          </Text>
+          <video
+            key={asset.video_url}
+            src={asset.video_url}
+            controls
+            loop
+            autoPlay
+            muted
+            className="border-ui-border-base w-full rounded-lg border"
+          />
+        </div>
+      )}
+
+      {/* Çıktı — GLB (opsiyonel; viewer three peer-dep istiyor, ileride ayrı yüklenecek). */}
       {asset?.mesh_url && (
         <div className="flex flex-col gap-y-1.5">
           <Text size="xsmall" weight="plus" className="text-ui-fg-subtle">
-            3D Model — döndür, kamera tuşuyla açı yakala (tuvale düşer)
+            3D Model (GLB) hazır
           </Text>
-          <ModelViewerCanvas
-            meshUrl={asset.mesh_url}
-            onCapture={(dataUrl) => {
-              onVersion(dataUrl, "3D açı")
-              toast.success("Açı yakalandı — tuvale versiyon olarak eklendi")
-            }}
-            onTurntable={(frames) => {
-              frames.forEach((f, i) => onVersion(f, `3D kare ${i + 1}`))
-              toast.success(`${frames.length} kare tuvale eklendi`)
-            }}
-          />
+          <a href={asset.mesh_url} download="model.glb">
+            <Button variant="secondary" size="small" className="w-fit">
+              <ArrowDownTray />
+              GLB indir
+            </Button>
+          </a>
         </div>
       )}
     </div>
