@@ -40,5 +40,11 @@ export default defineMiddlewares({
       method: "POST",
       bodyParser: { sizeLimit: "25mb" },
     },
+    {
+      // Outcome-akış taslağı: çoklu ürün fotoğrafı data-URL.
+      matcher: "/admin/content/studio/draft",
+      method: "POST",
+      bodyParser: { sizeLimit: "25mb" },
+    },
   ],
 })
