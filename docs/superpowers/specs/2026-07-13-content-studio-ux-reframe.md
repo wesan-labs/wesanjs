@@ -131,6 +131,26 @@ infra/reconstruction/         # HEDEF: entegre worker (GPU'lu SaaS servisi)
 4. **Batch** (dropshipper ②/pazarlamacı ③): studio'da mı, sadece advanced'te mi.
 5. **Reorg zamanlaması:** U0 taşımayı şimdi mi yapalım (temiz taban) yoksa studio'yu bugünkü yapının üstüne mi kuralım (daha az risk, daha kirli).
 
+## 8. İLERLEME (2026-07-13 gece) — additive, çalışan zincir bozulmadı
+
+**Yapıldı (test-yeşil, commit'li):**
+- ✅ **Reusable Gemini medya katmanı** `lib/media/gemini-client.ts` (plugin-agnostik: geminiGenerate/geminiImage/veoSubmit/veoPoll — başka modül de kullanır) + `studio-draft.ts` (produceDraft = hero+açıklama+caption, parça-parça reusable).
+- ✅ **Tek-geçiş taslak API** `POST /admin/content/studio/draft`.
+- ✅ **Outcome studio** `/content/studio` (gir→taslak→gözden geçir→gönder) — yeni varsayılan ADAY. Bugünkü panelli stüdyo `/content`'te (Gelişmiş) DOKUNULMADAN duruyor.
+- ✅ **Reusable `PhotoSet`** bileşeni (upload+thumbnail+kapsama, controlled); `three-d-tab` DRY edildi (kopya mantık silindi).
+- ✅ **Reconstruction worker repo'da** `infra/reconstruction/pipeline.py` (foto→GLB, CPU, kanıtlı; `--method dense` genişleme noktası) + reusable TS sözleşme `lib/three-d/reconstruction/contract.ts` + README.
+- ✅ studio ↔ gelişmiş navigasyon linkleri.
+
+**Kalan (sıradaki):**
+- [ ] studio review'da **"360°/3D ekle"** teklifi (PhotoSet showCoverage → reconstruction job).
+- [ ] Reconstruction'ı worker'a bağla (job queue + subprocess pipeline.py + GLB re-host). Şu an contract+script var, wiring yok.
+- [ ] `content-generator.ts` → `lib/media` migrasyonu (additive katman hazır; eski dosya hâlâ kendi client'ını kullanıyor).
+- [ ] Draft'ta parça-yeniden-üret (produceHero/produceCopy zaten ayrı — endpoint eklenir).
+- [ ] Varsayılan route flip (`/content` = studio) — ürün kararı + regresyon testi sonrası.
+- [ ] U4 craft/polish (kontrast, hiyerarşi, motion, boş-durum, responsive).
+
+**Not:** U0 "advanced'e taşıma" YAPILMADI (regresyon riski) — bunun yerine studio **additive** (`/content/studio`) kondu, gelişmiş `/content`'te sağlam kaldı. Route flip'i en sona bıraktık.
+
 ---
 
 *Kaynak akıl yürütme: bu oturum (jobs-to-be-done, mental model, pipeline≠yolculuk teşhisi). Envanter: [[content-studio-3d-pivot]] memory. Fiyat: [[3d-studio-pricing]].*
