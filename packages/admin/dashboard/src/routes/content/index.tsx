@@ -155,17 +155,24 @@ export const Component = () => {
   const original = versions[0]
 
   const handleUpload = async (files: FileType[]) => {
-    const f = files[0]
-    if (!f) {
+    if (!files.length) {
       return
     }
-    const img = await downscaleImage(f.file, 1280)
-    const url = `data:${img.mime};base64,${img.data}`
-    setVersions([{ url, data: img.data, mime: img.mime, label: "Orijinal" }])
+    // Çoklu: her foto ayrı bir kaynak versiyonu (rayda thumbnail). İlki analiz + current.
+    const imgs = await Promise.all(files.map((f) => downscaleImage(f.file, 1280)))
+    const multi = imgs.length > 1
+    setVersions(
+      imgs.map((img, i) => ({
+        url: `data:${img.mime};base64,${img.data}`,
+        data: img.data,
+        mime: img.mime,
+        label: multi ? `Foto ${i + 1}` : "Orijinal",
+      }))
+    )
     setCurrent(0)
     setAnalysis(null)
     if (autoAnalyze) {
-      runAnalyze({ data: img.data, mime: img.mime })
+      runAnalyze({ data: imgs[0].data, mime: imgs[0].mime })
     }
   }
 
@@ -501,8 +508,8 @@ export const Component = () => {
                 <div className="w-full">
                   <FileUpload
                     label="Sürükle ya da seç"
-                    hint="JPEG, PNG, WebP"
-                    multiple={false}
+                    hint="JPEG, PNG, WebP · birden fazla (farklı açılar)"
+                    multiple
                     formats={IMAGE_FORMATS}
                     maxFileSize={Infinity}
                     onUploaded={handleUpload}
