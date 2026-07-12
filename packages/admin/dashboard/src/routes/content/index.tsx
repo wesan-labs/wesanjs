@@ -31,6 +31,7 @@ import {
 } from "@medusajs/ui"
 import type { ProgressStatus } from "@medusajs/ui"
 import { Fragment, useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import {
   FileType,
   FileUpload,
@@ -809,6 +810,12 @@ const Header = ({
 
       {/* Sağ: kütüphane + çoklu çıktı dili */}
       <div className="flex flex-wrap items-center gap-1.5">
+        <Link
+          to="/content/studio"
+          className="text-ui-fg-subtle hover:text-ui-fg-base mr-1 text-xs font-medium"
+        >
+          ← Basit akış
+        </Link>
         <Button
           variant={brandSet ? "secondary" : "primary"}
           size="small"

@@ -1,6 +1,7 @@
 import { ArrowDownTray, Buildings, CheckCircleSolid, PaperPlane, Sparkles } from "@medusajs/icons"
 import { Button, Container, Heading, Input, Text, Textarea, toast } from "@medusajs/ui"
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import {
   useCreateContentProduct,
   useStudioDraft,
@@ -63,9 +64,14 @@ export const Component = () => {
 
   return (
     <Container className="max-w-3xl p-6">
-      <div className="mb-5 flex items-center gap-x-2">
-        <Sparkles className="text-ui-fg-interactive" />
-        <Heading level="h2">Ürününü satışa hazırla</Heading>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-x-2">
+          <Sparkles className="text-ui-fg-interactive" />
+          <Heading level="h2">Ürününü satışa hazırla</Heading>
+        </div>
+        <Link to="/content" className="text-ui-fg-subtle hover:text-ui-fg-base text-xs font-medium">
+          Gelişmiş mod →
+        </Link>
       </div>
 
       {/* ── GİRDİ ── */}
