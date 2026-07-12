@@ -102,9 +102,14 @@ export const Component = () => {
       {!draft && (
         <div className="flex flex-col gap-y-5">
           <Text size="small" className="text-ui-fg-subtle">
-            Ürününün fotoğraflarını yükle; temiz görsel, açıklama ve paylaşım metnini senin için
-            hazırlayalım. Farklı açılardan çekersen daha iyi.
+            Ürününün fotoğraflarını yükle; gerisini biz hazırlayalım. Farklı açılardan çekersen
+            daha iyi.
           </Text>
+          <div className="text-ui-fg-muted flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <span>✓ Temiz ürün görseli</span>
+            <span>✓ Mağaza açıklaması</span>
+            <span>✓ Sosyal medya metni</span>
+          </div>
           <PhotoSet photos={photos} onChange={setPhotos} disabled={draftMut.isPending} />
           <Input
             placeholder="Ürün adı (opsiyonel — örn. KLT-102 Koltuk)"
