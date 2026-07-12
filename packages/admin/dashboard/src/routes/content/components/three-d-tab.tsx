@@ -3,7 +3,6 @@ import { Badge, Button, Input, Text, toast } from "@medusajs/ui"
 import { useEffect, useState } from "react"
 import { FileType, FileUpload } from "../../../components/common/file-upload/file-upload"
 import {
-  downscaleImage,
   use3DAsset,
   use3DPipeline,
   useCreate3DAsset,
@@ -129,14 +128,54 @@ export const ThreeDTab = ({
     if (asset?.status === "ready") onDone?.()
   }, [asset?.status, onDone])
 
+  // Dosya → downscale'li data-URL (canvas; başarısızsa ham FileReader'a düş). Bulletproof.
+  const fileToDataUrl = (file: File, maxDim = 2000): Promise<string> =>
+    new Promise((resolve) => {
+      const raw = () => {
+        const r = new FileReader()
+        r.onload = () => resolve(String(r.result))
+        r.onerror = () => resolve("")
+        r.readAsDataURL(file)
+      }
+      const url = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height || 1))
+          const c = document.createElement("canvas")
+          c.width = Math.max(1, Math.round(img.width * scale))
+          c.height = Math.max(1, Math.round(img.height * scale))
+          const ctx = c.getContext("2d")
+          URL.revokeObjectURL(url)
+          if (!ctx) return raw()
+          ctx.drawImage(img, 0, 0, c.width, c.height)
+          resolve(c.toDataURL("image/jpeg", 0.85))
+        } catch {
+          raw()
+        }
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        raw()
+      }
+      img.src = url
+    })
+
   const addFiles = async (files: FileType[]) => {
-    const added = await Promise.all(
-      files.map(async (f) => {
-        const img = await downscaleImage(f.file, 1600) // 3D için biraz büyük tut
-        return `data:${img.mime};base64,${img.data}`
-      })
-    )
-    setPhotos((prev) => [...prev, ...added])
+    if (!files?.length) {
+      return
+    }
+    try {
+      const added = (await Promise.all(files.map((f) => fileToDataUrl(f.file)))).filter(Boolean)
+      if (!added.length) {
+        toast.error("Foto okunamadı")
+        return
+      }
+      setPhotos((prev) => [...prev, ...added])
+      toast.success(`${added.length} foto eklendi`)
+    } catch (e) {
+      toast.error("Foto eklenemedi", { description: String((e as Error)?.message ?? e) })
+    }
   }
 
   const run = () => {
