@@ -30,7 +30,7 @@ Yatay katman — feature plugin'lerin ve commerce modüllerinin **üstünde** sc
 | 🟡 | `rbac` | Per-tenant rol/policy (model ✅, enforcement 🔴) | [rbac.md](architecture/modules/custom/rbac.md) |
 | 🔮 | `entitlement` | Plan + feature gate + modül mağazası runtime | [entitlement.md](architecture/planned/entitlement.md) |
 
-**Karar:** [ADR-0001 — Multi-tenancy](adr/0001-multi-tenancy.md) · [ADR-0002 — Analytics engine + observability shell](adr/0002-analytics-engine-observability-shell.md) (BYOK kısmı superseded) · **[ADR-0003 — Hosted vertical analytics](adr/0003-hosted-vertical-analytics.md)** · **Platform mimarisi:** [levios-platform-architecture.md](architecture/levios-platform-architecture.md) · **Analytics:** [observability.md](architecture/plugins/observability.md) · **Engine:** [analytics.md](architecture/modules/custom/analytics.md)
+**Karar:** [ADR-0001 — Multi-tenancy](adr/0001-multi-tenancy.md) · [ADR-0002 — Analytics engine + observability shell](adr/0002-analytics-engine-observability-shell.md) (BYOK kısmı superseded) · **[ADR-0003 — Hosted vertical analytics](adr/0003-hosted-vertical-analytics.md)** · **[ADR-0004 — Ürün sırası A→B + kompoze panel](adr/0004-product-sequence-composable-panel.md)** · **Platform mimarisi:** [levios-platform-architecture.md](architecture/levios-platform-architecture.md) · **Kimlik/Tenancy:** [identity-and-tenancy.md](architecture/identity-and-tenancy.md) · **Analytics:** [observability.md](architecture/plugins/observability.md) · **Engine:** [analytics.md](architecture/modules/custom/analytics.md)
 
 ```
 tenant_id + RLS ──► cms · revenue · content · loyalty · … · commerce core

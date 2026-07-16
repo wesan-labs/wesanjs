@@ -6,11 +6,16 @@
 | **Öncelik** | Orta-Yüksek (vizyonun kalbi) |
 | **Etiketler** | multi-tenant · entitlements · panel |
 | **Bağımlı** | #0004, #0005 |
-| **Karar** | ADR-0001 |
+| **Karar** | ADR-0001 · ADR-0004 (A2) |
 
 ## Amaç
 "Müşteriler mağazadan modül seçip kendi panelini kurar" — **always-on modüller +
 per-tenant entitlement**, per-tenant modül yükleme DEĞİL (boot-duvarı).
+
+**Tüketiciler:** (1) sidebar filtresi = RBAC ∩ entitlement, iki-zone modeliyle
+(main=dikey, Extensions=yetenek — [SECTOR-SETS-SPEC](../specs/SECTOR-SETS-SPEC.md));
+(2) **AI composer** (ADR-0004 A4) mağazanın konuşan yüzü: intent → buradaki "kur"
+akışını çağırır, yeni mekanizma icat etmez.
 
 ## Kapsam
 - [ ] **Entitlement modülü:** `tenant_id, module_key, enabled, plan, limits, config`
