@@ -70,11 +70,42 @@ async function tenantContext(
   return next()
 }
 
+// #0014: tenant yönetim mutasyonları RBAC policy'li (rbac flag'i açıkken enforce).
+// Okuma uçları (GET) bilinçli policy'siz — handler'daki üyelik kontrolü zaten
+// scope'luyor ve tenant switcher her üye için çalışmalı. In-handler admin-rol
+// kontrolleri primary katman olarak kalır; bu deklarasyonlar defense-in-depth.
+// NOT: self-serve signup (ADR-0004 A4) geldiğinde `tenant:create` politikası
+// signup akışının service-level çağrısıyla yeniden değerlendirilecek.
 export default defineMiddlewares({
   routes: [
     {
       matcher: "/admin/*",
       middlewares: [tenantContext],
+    },
+    {
+      matcher: "/admin/tenants",
+      method: ["POST"],
+      policies: [{ resource: "tenant", operation: "create" }],
+    },
+    {
+      matcher: "/admin/tenants/:id",
+      method: ["POST"],
+      policies: [{ resource: "tenant", operation: "update" }],
+    },
+    {
+      matcher: "/admin/tenants/:id/members",
+      method: ["POST"],
+      policies: [{ resource: "tenant_member", operation: "create" }],
+    },
+    {
+      matcher: "/admin/tenants/:id/members/:membershipId",
+      method: ["PATCH"],
+      policies: [{ resource: "tenant_member", operation: "update" }],
+    },
+    {
+      matcher: "/admin/tenants/:id/members/:membershipId",
+      method: ["DELETE"],
+      policies: [{ resource: "tenant_member", operation: "delete" }],
     },
   ],
 })
