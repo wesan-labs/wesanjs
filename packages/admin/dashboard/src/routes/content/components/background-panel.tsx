@@ -1,21 +1,14 @@
 import { Photo, Sparkles, Spinner } from "@medusajs/icons"
 import { Button, Text, toast } from "@medusajs/ui"
 import { useState } from "react"
+import { removeImageBackground } from "./remove-bg"
 
 type Source = { data: string; mime: string }
 
-const blobToDataUrl = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
-
 /**
- * Client-side background removal (@imgly, runs in the browser, free). The heavy
- * WASM model is dynamic-imported on first use so it doesn't bloat the bundle.
- * Result is a transparent PNG added as a new version.
+ * Client-side background removal (@imgly, runs in the browser, free) via the
+ * shared helper (single source with QuickActions). Result is a transparent PNG
+ * added as a new version.
  */
 export const BackgroundPanel = ({
   source,
@@ -34,11 +27,7 @@ export const BackgroundPanel = ({
     }
     setBusy(true)
     try {
-      const { removeBackground } = await import("@imgly/background-removal")
-      const blob = await removeBackground(
-        `data:${source.mime};base64,${source.data}`
-      )
-      const dataUrl = await blobToDataUrl(blob)
+      const dataUrl = await removeImageBackground(source)
       onResult(dataUrl, "Arka plan temizlendi")
       toast.success("Arka plan temizlendi")
     } catch (e) {

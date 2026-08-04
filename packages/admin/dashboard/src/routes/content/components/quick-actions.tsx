@@ -9,9 +9,21 @@ import {
 } from "@medusajs/icons"
 import { Text, clx, toast } from "@medusajs/ui"
 import { useState } from "react"
+import { BgQuality, removeImageBackground } from "./remove-bg"
 
 type Source = { data: string; mime: string }
 type Glyph = React.ComponentType<{ className?: string }>
+
+/**
+ * Background-removal quality tiers — each has a different cost so the user picks
+ * the trade-off per image. Higher tier = cleaner edges (hair/fabric) but a
+ * bigger first-use model download; the model caches after the first run.
+ */
+const BG_TIERS: Array<{ q: BgQuality; label: string; hint: string }> = [
+  { q: "small", label: "Hızlı", hint: "küçük indirme" },
+  { q: "medium", label: "Dengeli", hint: "önerilen" },
+  { q: "large", label: "En iyi", hint: "en temiz · büyük indirme" },
+]
 
 /**
  * One-tap edit presets that fill the rail with real, useful actions (instead of
@@ -56,14 +68,6 @@ const PRESETS: Array<{ id: string; label: string; Icon: Glyph; prompt: string }>
   },
 ]
 
-const blobToDataUrl = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
-
 export const QuickActions = ({
   source,
   onApply,
@@ -77,8 +81,9 @@ export const QuickActions = ({
   hasImage: boolean
   busy: boolean
 }) => {
-  const [bgBusy, setBgBusy] = useState(false)
-  const disabled = !hasImage || busy || bgBusy
+  // Which tier is currently removing (also the busy flag) — null when idle.
+  const [bgRunning, setBgRunning] = useState<BgQuality | null>(null)
+  const disabled = !hasImage || busy || bgRunning !== null
 
   const apply = async (prompt: string) => {
     if (disabled) {
@@ -91,21 +96,19 @@ export const QuickActions = ({
     }
   }
 
-  // Background removal runs client-side (@imgly, free); dynamic-imported on use.
-  const removeBg = async () => {
+  // Background removal runs client-side (@imgly, free) via the shared helper.
+  const removeBg = async (quality: BgQuality) => {
     if (!source || disabled) {
       return
     }
-    setBgBusy(true)
+    setBgRunning(quality)
     try {
-      const { removeBackground } = await import("@imgly/background-removal")
-      const blob = await removeBackground(`data:${source.mime};base64,${source.data}`)
-      onResult(await blobToDataUrl(blob), "Arka plan temizlendi")
+      onResult(await removeImageBackground(source, quality), "Arka plan temizlendi")
       toast.success("Arka plan temizlendi")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Arka plan temizlenemedi")
     } finally {
-      setBgBusy(false)
+      setBgRunning(null)
     }
   }
 
@@ -145,15 +148,52 @@ export const QuickActions = ({
         </Text>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <Chip icon={Photo} label="Arka planı kaldır" onClick={removeBg} />
         {PRESETS.map((p) => (
           <Chip key={p.id} icon={p.Icon} label={p.label} onClick={() => apply(p.prompt)} />
         ))}
       </div>
-      {bgBusy && (
+
+      {/* Arka planı kaldır — kalite/bedel seçimi (her kademe farklı indirme + kenar) */}
+      <div className="border-ui-border-base flex flex-col gap-y-1.5 rounded-lg border p-2.5">
+        <div className="flex items-center gap-x-1.5">
+          <Photo className="text-ui-fg-interactive shrink-0" />
+          <Text size="xsmall" weight="plus">Arka planı kaldır</Text>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {BG_TIERS.map((t) => (
+            <button
+              key={t.q}
+              type="button"
+              onClick={() => removeBg(t.q)}
+              disabled={disabled}
+              title={`${t.label} — ${t.hint}`}
+              className={clx(
+                "flex flex-col items-start rounded-lg border px-2.5 py-1.5 text-left transition-colors duration-100",
+                disabled
+                  ? "border-ui-border-base text-ui-fg-disabled cursor-not-allowed"
+                  : bgRunning === t.q
+                    ? "border-ui-border-interactive bg-ui-bg-base"
+                    : "border-ui-border-base bg-ui-bg-subtle hover:bg-ui-bg-base"
+              )}
+            >
+              <span className="flex items-center gap-x-1 text-xs font-medium">
+                {bgRunning === t.q && <Spinner className="animate-spin" />}
+                {t.label}
+              </span>
+              <span className="text-ui-fg-muted text-[10px] leading-tight">{t.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {bgRunning !== null && (
         <div className="text-ui-fg-subtle flex items-center gap-x-2">
           <Spinner className="animate-spin" />
-          <Text size="xsmall">Arka plan kaldırılıyor (ilk seferde biraz sürebilir)…</Text>
+          <Text size="xsmall">
+            {bgRunning === "large"
+              ? "En iyi model indiriliyor (ilk seferde uzun sürebilir)…"
+              : "Arka plan kaldırılıyor (ilk seferde biraz sürebilir)…"}
+          </Text>
         </div>
       )}
       {!hasImage && (
