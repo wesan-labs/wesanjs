@@ -115,12 +115,6 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
       html.removeAttribute("data-theme")
     }
 
-    if (style === "cyberpunk") {
-      html.setAttribute("data-theme-intensity", "operator")
-    } else {
-      html.removeAttribute("data-theme-intensity")
-    }
-
     clearThemeTokens(html, appliedTokenKeysRef.current)
     appliedTokenKeysRef.current = []
 

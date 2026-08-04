@@ -28,10 +28,10 @@ const SCALAR_FIELD_KINDS = new Set([
   "ref",
 ])
 
-const isRowObjectList = (
-  of: FieldDef
-): of is FieldDef & { kind: "object"; fields: FieldDef[] } =>
-  of.kind === "object" &&
+// Duz boolean — tip koruyucu DEGIL. Kosullarin cogu (alan sayisi, skaler
+// tipler) tipte ifade edilemedigi icin `of is ...` yazmak TS'e "row degilse
+// nesne de degil" yalanini soyler ve negatif dalda `never` uretir.
+const isRowObjectList = (of: FieldDef & { kind: "object" }): boolean =>
   of.fields.length >= 1 &&
   of.fields.length <= 8 &&
   of.fields.every((f) => SCALAR_FIELD_KINDS.has(f.kind))
@@ -206,9 +206,12 @@ const FieldInput = ({
 
     case "list": {
       const items = Array.isArray(value) ? value : []
-      const objectItems = field.of.kind === "object"
-      const rowLayout = objectItems && isRowObjectList(field.of)
-      const objectFields = rowLayout ? field.of.fields : []
+      // Sabit referans: tip daraltmasi `field.of` ozellik erisiminden
+      // boolean takma adlara tasinmaz, `of` uzerinden tasinir.
+      const of = field.of
+      const objectOf = of.kind === "object" ? of : null
+      const rowLayout = objectOf !== null && isRowObjectList(objectOf)
+      const objectFields = rowLayout ? (objectOf?.fields ?? []) : []
 
       if (rowLayout) {
         const colTemplate = `repeat(${objectFields.length}, minmax(0, 1fr)) 2.25rem`
@@ -283,7 +286,7 @@ const FieldInput = ({
                 variant="secondary"
                 size="small"
                 onClick={() =>
-                  onChange([...items, defaultForField(field.of)])
+                  onChange([...items, defaultForField(of)])
                 }
               >
                 {t("cms.form.addItem")}
@@ -300,8 +303,8 @@ const FieldInput = ({
               key={idx}
               className="border-ui-border-base flex flex-wrap items-end gap-2 rounded-md border px-2 py-1.5"
             >
-              {objectItems ? (
-                field.of.fields.map((f) => (
+              {objectOf ? (
+                objectOf.fields.map((f) => (
                   <div key={f.name} className="min-w-[120px] flex-1">
                     <FieldInput
                       id={`${id}-${idx}-${f.name}`}
@@ -339,7 +342,7 @@ const FieldInput = ({
               ) : (
                 <FieldInput
                   id={`${id}-${idx}`}
-                  field={field.of}
+                  field={of}
                   value={item}
                   onChange={(next) => {
                     const arr = [...items]
@@ -366,7 +369,7 @@ const FieldInput = ({
             variant="secondary"
             size="small"
             className="self-start"
-            onClick={() => onChange([...items, defaultForField(field.of)])}
+            onClick={() => onChange([...items, defaultForField(of)])}
           >
             {t("cms.form.addItem")}
           </Button>

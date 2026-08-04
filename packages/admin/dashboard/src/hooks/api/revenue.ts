@@ -132,7 +132,6 @@ export const useRevenueOverview = () => {
 
   return {
     overview: data,
-    dataUpdatedAt: rest.dataUpdatedAt,
     ...rest,
     isLoading: rest.isLoading || (isRbacEnabled && permissionsLoading),
   }
