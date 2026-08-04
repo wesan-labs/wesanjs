@@ -45,7 +45,7 @@ export const Shell = ({ children }: PropsWithChildren) => {
             <MobileSidebarContainer>{children}</MobileSidebarContainer>
             <DesktopSidebarContainer>{children}</DesktopSidebarContainer>
           </div>
-          <div className="flex h-screen w-full flex-col overflow-auto bg-ui-bg-subtle">
+          <div className="flex h-screen w-full flex-col overflow-auto bg-ui-bg-base">
             <Topbar />
             <main
               className={clx(
