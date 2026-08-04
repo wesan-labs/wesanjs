@@ -28,6 +28,7 @@ import { AreaChartPanel, EmptyState, StatCard } from "../dashboards/kit"
 
 const formatPct = (value: number | null) =>
   value === null ? "—" : `${Math.round(value * 1000) / 10}%`
+const formatNumber = (value: number) => value.toLocaleString()
 
 const verticalOptions: AnalyticsVertical[] = [
   "mobile_game",
@@ -52,6 +53,15 @@ await fetch("${ingestUrl}", {
     properties: { screen: "home" },
   }),
 })`
+
+const curlSnippet = (ingestUrl: string) => `curl -X POST "${ingestUrl}" \\
+  -H "Authorization: Bearer <BOOTSTRAP_TOKEN>" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "event": "funnel_step_open",
+    "distinct_id": "user-123",
+    "properties": { "screen": "home" }
+  }'`
 
 export const Component = () => {
   const { products, isLoading, isError } = useAnalyticsProducts()
@@ -107,7 +117,7 @@ export const Component = () => {
   }
 
   const onSync = async () => {
-    const res = await syncAnalytics.mutateAsync()
+    const res = await syncAnalytics.mutateAsync(undefined)
     toast.success(
       `Sync tamamlandı · ${res.sync.metrics_written} metrik (${res.sync.mode})`
     )
@@ -128,6 +138,13 @@ export const Component = () => {
     setShowAddProduct(false)
     toast.success("Ürün oluşturuldu")
   }
+
+  const hasOverviewData =
+    !!overview &&
+    (overview.event_count > 0 ||
+      overview.dau > 0 ||
+      overview.dau_trend.length > 0 ||
+      overview.crash_trend.length > 0)
 
   const addProductForm = (
     <Container className="flex flex-col gap-y-4 p-5">
@@ -168,11 +185,7 @@ export const Component = () => {
             </Select.Content>
           </Select>
         </div>
-        <Button
-          size="small"
-          onClick={onCreateProduct}
-          isLoading={createProduct.isPending}
-        >
+        <Button size="small" onClick={onCreateProduct} isLoading={createProduct.isPending}>
           <Plus className="mr-xsmall" />
           Ekle
         </Button>
@@ -182,13 +195,13 @@ export const Component = () => {
 
   return (
     <div className="flex flex-col gap-y-4">
-      <Container className="flex flex-col gap-y-1 p-6">
+      <Container className="flex flex-col gap-y-2 p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-y-1">
             <Heading level="h1">Analytics</Heading>
             <Text size="small" className="text-ui-fg-subtle max-w-2xl">
-              Levios analytics — event&apos;ler bizim DB&apos;de, panel snapshot
-              üzerinden. SDK bootstrap token ile bağlanır; harici env yok.
+              Product analytics altyapısı Levios tarafından yönetilir. Event&apos;ler
+              platforma ingest edilir, panel günlük snapshot&apos;lar üzerinden çalışır.
             </Text>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -202,9 +215,14 @@ export const Component = () => {
               Snapshot sync
             </Button>
             <Button variant="secondary" size="small" asChild>
-              <Link to="/settings/connections">Ürün / entegrasyonlar</Link>
+              <Link to="/settings/connections">Ayarlar / Entegrasyonlar</Link>
             </Button>
           </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge color="grey">No tenant env required</Badge>
+          <Badge color="grey">Bootstrap token auth</Badge>
+          <Badge color="grey">Builtin mode</Badge>
         </div>
       </Container>
 
@@ -214,6 +232,15 @@ export const Component = () => {
         <EmptyState label="Ürün listesi alınamadı" />
       ) : products.length === 0 ? (
         <>
+          <Container className="flex flex-col gap-y-3 p-5">
+            <Text size="small" weight="plus">
+              Hızlı başlangıç
+            </Text>
+            <Text size="small" className="text-ui-fg-subtle">
+              1) Ürün ekleyin → 2) Bootstrap token üretin → 3) SDK/curl ile event
+              gönderin → 4) Snapshot sync çalıştırın.
+            </Text>
+          </Container>
           {addProductForm}
           <Container className="flex flex-col items-center gap-y-2 px-6 py-8">
             <Text size="small" className="text-ui-fg-muted text-center">
@@ -224,6 +251,42 @@ export const Component = () => {
         </>
       ) : (
         <>
+          <Container className="grid grid-cols-1 gap-4 p-5 lg:grid-cols-3">
+            <div className="flex flex-col gap-y-2 lg:col-span-2">
+              <Text size="small" weight="plus">
+                Entegrasyon adımları
+              </Text>
+              <Text size="small" className="text-ui-fg-subtle">
+                1) Ürün seçin ve vertical doğrulayın. 2) Bootstrap token üretin.
+                3) SDK veya API ile event ingest edin. 4) Snapshot sync ile paneli
+                güncelleyin.
+              </Text>
+              <div className="bg-ui-bg-subtle text-ui-fg-subtle rounded-md p-3 text-xs">
+                Config endpoint: <code>{configUrl}</code>
+                <br />
+                Ingest endpoint: <code>{ingestUrl}</code>
+              </div>
+            </div>
+            <div className="flex flex-col gap-y-2">
+              <Text size="small" weight="plus">
+                Durum
+              </Text>
+              <Text size="small" className="text-ui-fg-subtle">
+                Ürün: <span className="text-ui-fg-base">{products.length}</span>
+              </Text>
+              <Text size="small" className="text-ui-fg-subtle">
+                Seçili:{" "}
+                <span className="text-ui-fg-base">{selected?.name ?? "—"}</span>
+              </Text>
+              <Text size="small" className="text-ui-fg-subtle">
+                Data:{" "}
+                <span className="text-ui-fg-base">
+                  {hasOverviewData ? "Akıyor" : "Henüz event yok"}
+                </span>
+              </Text>
+            </div>
+          </Container>
+
           {showAddProduct ? (
             addProductForm
           ) : (
@@ -238,6 +301,7 @@ export const Component = () => {
               </Button>
             </Container>
           )}
+
           <Container className="flex flex-wrap items-end gap-4 p-5">
             <div className="flex min-w-[220px] flex-col gap-y-2">
               <Text size="small" weight="plus">
@@ -299,14 +363,14 @@ export const Component = () => {
           ) : overview ? (
             <>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <StatCard label="DAU" value={String(overview.dau)} />
+                <StatCard label="DAU" value={formatNumber(overview.dau)} />
                 <StatCard
                   label="Event (gün)"
-                  value={String(overview.event_count)}
+                  value={formatNumber(overview.event_count)}
                 />
                 <StatCard
                   label="Crash"
-                  value={String(overview.crash_count)}
+                  value={formatNumber(overview.crash_count)}
                 />
                 <StatCard
                   label="Crash-free"
@@ -443,9 +507,30 @@ export const Component = () => {
               </div>
             ) : null}
 
-            <pre className="bg-ui-bg-subtle text-ui-fg-subtle overflow-x-auto rounded-lg p-4 text-xs">
-              {sdkSnippet(ingestUrl, configUrl)}
-            </pre>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="flex flex-col gap-y-2">
+                <Text size="small" weight="plus">
+                  SDK örneği
+                </Text>
+                <pre className="bg-ui-bg-subtle text-ui-fg-subtle overflow-x-auto rounded-lg p-4 text-xs">
+                  {sdkSnippet(ingestUrl, configUrl)}
+                </pre>
+              </div>
+              <div className="flex flex-col gap-y-2">
+                <Text size="small" weight="plus">
+                  API smoke test (curl)
+                </Text>
+                <pre className="bg-ui-bg-subtle text-ui-fg-subtle overflow-x-auto rounded-lg p-4 text-xs">
+                  {curlSnippet(ingestUrl)}
+                </pre>
+              </div>
+            </div>
+
+            <Text size="small" className="text-ui-fg-subtle">
+              Not: Eğer bağlantı/ürün yönetimini Ayarlar ekranından yapmak
+              isterseniz <Link to="/settings/connections">Ayarlar / Entegrasyonlar</Link>{" "}
+              sayfasını kullanın.
+            </Text>
           </Container>
         </>
       )}
