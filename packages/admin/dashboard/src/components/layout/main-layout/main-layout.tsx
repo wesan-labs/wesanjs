@@ -406,6 +406,9 @@ const SidebarRoutes = () => {
           disableWidgets
           customizeId={CUSTOMIZE_IDS.MAIN_SIDEBAR}
           controlSize="small"
+          layoutProps={{
+            className: "gap-y-1",
+          }}
           sections={{
             main: (
               <>
@@ -419,11 +422,6 @@ const SidebarRoutes = () => {
                     <NavItem key={route.to} {...route} />
                   </LayoutComposer.Entry>
                 ))}
-                {visibleExtensionItems.length > 0 && (
-                  <LayoutComposer.Entry id="Divider">
-                    <Divider variant="dashed" />
-                  </LayoutComposer.Entry>
-                )}
                 {visibleExtensionItems.map((item) => (
                   <LayoutComposer.Entry id={`nav:${item.to}`} key={item.to}>
                     <NavItem

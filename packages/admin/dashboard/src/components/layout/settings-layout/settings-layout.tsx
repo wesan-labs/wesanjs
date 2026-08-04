@@ -55,6 +55,7 @@ const useOrganizationRoutes = (): INavItem[] => {
 
 const useSettingRoutes = (): INavItem[] => {
   const isTranslationsEnabled = useFeatureFlag("translation")
+  const isViewConfigEnabled = useFeatureFlag("view_configurations")
   const { hasAnyPermission, policy } = usePermissions()
   const enforceNav = policy !== null
   const { t } = useTranslation()
@@ -109,6 +110,14 @@ const useSettingRoutes = (): INavItem[] => {
         label: t("stockLocations.domain"),
         to: "/settings/locations",
       },
+      ...(isViewConfigEnabled
+        ? [
+            {
+              label: t("propertyLabels.domain", "Property Labels"),
+              to: "/settings/property-labels",
+            },
+          ]
+        : []),
       ...(isTranslationsEnabled
         ? [
             {
@@ -120,7 +129,13 @@ const useSettingRoutes = (): INavItem[] => {
     ]
 
     return filterSettingsNavRoutes(routes, enforceNav, hasAnyPermission)
-  }, [t, isTranslationsEnabled, enforceNav, hasAnyPermission])
+  }, [
+    t,
+    isTranslationsEnabled,
+    isViewConfigEnabled,
+    enforceNav,
+    hasAnyPermission,
+  ])
 }
 
 const useDeveloperRoutes = (): INavItem[] => {

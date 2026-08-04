@@ -60,13 +60,21 @@ const ACTIVE_NAV_LINK_CLASSES =
 const NESTED_NAV_LINK_CLASSES = "pl-[34px] pr-2 py-1 w-full text-ui-fg-muted"
 const SETTING_NAV_LINK_CLASSES = "pl-2 py-1"
 
+// Prefix match that respects path-segment boundaries, so that a route like
+// "/inventory-sources" is not considered a match for "/inventory". This keeps
+// nested-route highlighting (e.g. "/inventory/123") while avoiding false
+// positives for sibling routes that merely share a string prefix.
+const isPathActive = (pathname: string, to: string) => {
+  return pathname === to || pathname.startsWith(to + "/")
+}
+
 const getIsOpen = (
   to: string,
   items: NestedItemProps[] | undefined,
   pathname: string
 ) => {
   return [to, ...(items?.map((i) => i.to) ?? [])].some((p) =>
-    pathname.startsWith(p)
+    isPathActive(pathname, p)
   )
 }
 
@@ -340,11 +348,7 @@ export const NavItem = ({
       asGroup?: boolean
     }) => {
       if (["core", "setting"].includes(type)) {
-        if (exactActive) {
-          isActive = pathname === to
-        } else {
-          isActive = pathname === to || pathname.startsWith(`${to}/`)
-        }
+        isActive = exactActive ? pathname === to : isPathActive(pathname, to)
       }
 
       // Grup başlığı kendi sayfası olmadığı için active kutu almaz.
@@ -354,11 +358,11 @@ export const NavItem = ({
 
       return clx(BASE_NAV_LINK_CLASSES, {
         [NESTED_NAV_LINK_CLASSES]: isNested,
-        [ACTIVE_NAV_LINK_CLASSES]: isActive,
+        [ACTIVE_NAV_LINK_CLASSES]: isActive && !editMode,
         [SETTING_NAV_LINK_CLASSES]: isSetting,
       })
     },
-    [type, pathname, exactActive]
+    [type, pathname, exactActive, editMode]
   )
 
   const getLinkTarget = useCallback(

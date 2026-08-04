@@ -34,6 +34,9 @@ export interface LayoutSectionRegistry {
   [CORE_LAYOUT_IDS.TWO_COLUMN]: "main" | "side"
   [CORE_LAYOUT_IDS.DASHBOARD_GRID]: "main"
   [CORE_LAYOUT_IDS.SETTINGS_SIDEBAR]:
+    // "organization" fork eklentisi: core-layouts.tsx bu bolumu runtime'da
+    // kaydediyor (rbac rolleri/politikalari), tip de onunla eslesmeli.
+    | "organization"
     | "general"
     | "developer"
     | "myAccount"

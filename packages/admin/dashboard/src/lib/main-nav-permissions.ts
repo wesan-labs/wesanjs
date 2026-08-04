@@ -59,6 +59,9 @@ export const SETTINGS_NAV_PERMISSIONS: Partial<Record<string, Permission[]>> = {
   "/settings/product-types": ["product_type:read"],
   "/settings/product-tags": ["product_tag:read"],
   "/settings/locations": ["stock_location:read"],
+  // Upstream 2.18.0 (#14661/#16255). Kendi RBAC matrisi yok; view_configurations
+  // bayragi zaten gizliyor, bu yuzden platform operatorlerine acik birakiliyor.
+  "/settings/property-labels": [],
   "/settings/translations": ["translation:read"],
   "/settings/publishable-api-keys": ["api_key:read"],
   "/settings/secret-api-keys": ["api_key:read"],
@@ -136,7 +139,7 @@ export const filterMainNavRoutes = (
         ? { ...route, items }
         : null
     })
-    .filter((route): route is Omit<INavItem, "pathname"> => route !== null)
+    .filter((route) => route !== null)
 }
 
 export const filterSettingsNavRoutes = (
@@ -172,7 +175,7 @@ export const hasAnyMainNavAccess = (
 
   return Object.entries(MAIN_NAV_PERMISSIONS).some(
     ([to, permissions]) =>
-      permissions.length > 0 &&
+      (permissions?.length ?? 0) > 0 &&
       canSeeRoute(to, MAIN_NAV_PERMISSIONS, enforcePermissions, hasAnyPermission)
   )
 }
