@@ -38,7 +38,10 @@ export default plugin(
 
     if (darkMode === "class") {
       addBase({
-        [className]: { ...colors.dark, ...effects.dark },
+        [`html${className}:not([data-theme])`]: {
+          ...colors.dark,
+          ...effects.dark,
+        },
       })
     } else {
       addBase({
@@ -61,19 +64,30 @@ export default plugin(
           colorScheme: "light",
           backgroundColor: "var(--bg-subtle)",
           minHeight: "100%",
+          fontFamily: "var(--font-sans-theme, var(--font-sans, inherit))",
           ...themeDef.light,
         },
         [`${themeSelector}.dark`]: {
           colorScheme: "dark",
           backgroundColor: "var(--bg-subtle)",
+          fontFamily: "var(--font-sans-theme, var(--font-sans, inherit))",
           ...themeDef.dark,
         },
         [`${themeSelector} #root`]: {
           minHeight: "100vh",
         },
         [`${themeSelector} [data-glass-chrome]`]: {
-          backgroundColor: "var(--bg-subtle)",
-          borderColor: "var(--border-base)",
+          backgroundColor: "var(--chrome-bg, var(--bg-subtle))",
+          borderColor: "var(--chrome-border, var(--border-base))",
+          "--bg-subtle": "var(--chrome-bg, var(--bg-subtle))",
+          "--bg-subtle-hover": "var(--chrome-bg-hover, var(--bg-subtle-hover))",
+          "--bg-subtle-pressed": "var(--chrome-bg-pressed, var(--bg-subtle-pressed))",
+          "--bg-base": "var(--chrome-surface, var(--bg-base))",
+          "--bg-base-hover": "var(--chrome-surface-hover, var(--bg-base-hover))",
+          "--fg-base": "var(--chrome-fg, var(--fg-base))",
+          "--fg-muted": "var(--chrome-fg-muted, var(--fg-muted))",
+          "--fg-subtle": "var(--chrome-fg-subtle, var(--fg-subtle))",
+          "--border-base": "var(--chrome-border, var(--border-base))",
         },
       })
 

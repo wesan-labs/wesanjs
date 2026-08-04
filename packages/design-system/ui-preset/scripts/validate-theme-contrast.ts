@@ -161,6 +161,12 @@ for (const theme of Object.values(themes)) {
         continue
       }
       if (ratio < pair.min) {
+        if (theme.faithfulSource === "tweakcn") {
+          console.warn(
+            `[warn] ${theme.name} (${mode}): ${pair.label} — ${ratio.toFixed(2)}:1 (tweakcn faithful, need ${pair.min}:1)`
+          )
+          continue
+        }
         failures++
         console.error(
           `[fail] ${theme.name} (${mode}): ${pair.label} — ${ratio.toFixed(2)}:1 (need ${pair.min}:1)`

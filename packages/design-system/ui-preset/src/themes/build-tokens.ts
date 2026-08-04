@@ -377,6 +377,7 @@ type DefineThemeOpts = {
   glassScope?: GlassScope
   intensity?: ThemeIntensity
   hardSurface?: boolean
+  faithfulSource?: "tweakcn"
   light: { palette: ThemePalette; extra?: ThemeTokens }
   dark: { palette: ThemePalette; extra?: ThemeTokens }
 }
@@ -391,6 +392,7 @@ export const defineTheme = (opts: DefineThemeOpts): ThemeDefinition => ({
   glassScope: opts.glassScope,
   intensity: opts.intensity,
   hardSurface: opts.hardSurface,
+  faithfulSource: opts.faithfulSource,
   light: {
     ...buildMedusaTokens(opts.light.palette, "light"),
     ...opts.light.extra,

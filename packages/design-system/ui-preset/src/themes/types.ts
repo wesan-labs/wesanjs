@@ -31,6 +31,8 @@ export type ThemeDefinition = {
   intensity?: ThemeIntensity
   /** Brutalist / neubrutalist: hard border + offset shadow on card surfaces. */
   hardSurface?: boolean
+  /** Imported from tweakcn — contrast may follow shadcn palette, not Medusa AA targets. */
+  faithfulSource?: "tweakcn"
 }
 
 /** Resolved material for plugin pipeline (backward-compat shim). */

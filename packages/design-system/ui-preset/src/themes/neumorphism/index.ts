@@ -1,27 +1,29 @@
 import { defineTheme } from "../build-tokens"
 
 const NEU_SHADOW_LIGHT =
-  "-7px -7px 14px rgba(255, 255, 255, 0.95), 7px 7px 16px rgba(163, 177, 198, 0.5)"
+  "-7px -7px 14px rgba(255, 255, 255, 0.95), 7px 7px 16px rgba(163, 177, 198, 0.50)"
 const NEU_SHADOW_DARK =
   "-7px -7px 14px rgba(58, 64, 74, 0.85), 7px 7px 16px rgba(12, 14, 18, 0.75)"
 
+/** Neumorphism — soft extruded surfaces, dual-tone shadows. */
 export const neumorphism = defineTheme({
   name: "neumorphism",
   label: "Neumorphism",
   light: {
     palette: {
-      canvas: "#e0e5ec",
-      surface: "#e0e5ec",
-      elevated: "#e0e5ec",
-      field: "#d6dbe2",
-      text: "#1c2530",
-      textMuted: "#4a5460",
-      textSubtle: "#6b7480",
-      accent: "#3b5bdb",
-      accentFg: "#2f4ac4",
-      onAccent: "#ffffff",
+      canvas: "#D6DBE2",
+      surface: "#E0E5EC",
+      elevated: "#E0E5EC",
+      field: "#D6DBE2",
+      text: "#1C2530",
+      textMuted: "#4A5460",
+      textSubtle: "#6B7480",
+      accent: "#3B5BDB",
+      accentHover: "#2F4AC4",
+      accentFg: "#2F4AC4",
+      onAccent: "#FFFFFF",
       border: "rgba(163, 177, 198, 0.35)",
-      borderStrong: "rgba(110, 122, 140, 0.5)",
+      borderStrong: "rgba(110, 122, 140, 0.50)",
       borderStyle: "soft",
       radius: "18px",
       borderWidth: "1px",
@@ -29,30 +31,31 @@ export const neumorphism = defineTheme({
       shadowPressed:
         "inset -5px -5px 10px rgba(255, 255, 255, 0.85), inset 5px 5px 12px rgba(163, 177, 198, 0.55)",
       blur: "12px",
-      glow: "0 0 0 3px rgba(59, 91, 219, 0.3)",
-      focusRing: "3px solid #3b5bdb",
+      glow: "0 0 0 3px rgba(59, 91, 219, 0.30)",
+      focusRing: "3px solid #3B5BDB",
       focusRingOffset: "2px",
     },
     extra: {
-      "--button-inverted": "#3b5bdb",
-      "--button-inverted-hover": "#2f4ac4",
-      "--button-inverted-pressed": "#2840b0",
+      "--button-inverted": "#3B5BDB",
+      "--button-inverted-hover": "#2F4AC4",
+      "--button-inverted-pressed": "#2840B0",
     },
   },
   dark: {
     palette: {
-      canvas: "#2b3038",
-      surface: "#2b3038",
-      elevated: "#2b3038",
+      canvas: "#313742",
+      surface: "#2B3038",
+      elevated: "#2B3038",
       field: "#313742",
-      text: "#eef1f5",
-      textMuted: "#aab3c0",
-      textSubtle: "#828d9c",
-      accent: "#6f9bff",
-      accentFg: "#93b8ff",
-      onAccent: "#0c1320",
+      text: "#EEF1F5",
+      textMuted: "#AAB3C0",
+      textSubtle: "#828D9C",
+      accent: "#6F9BFF",
+      accentHover: "#93B8FF",
+      accentFg: "#93B8FF",
+      onAccent: "#0C1320",
       border: "rgba(0, 0, 0, 0.35)",
-      borderStrong: "rgba(0, 0, 0, 0.5)",
+      borderStrong: "rgba(0, 0, 0, 0.50)",
       borderStyle: "soft",
       radius: "18px",
       borderWidth: "1px",
@@ -61,13 +64,13 @@ export const neumorphism = defineTheme({
         "inset -5px -5px 10px rgba(54, 60, 70, 0.85), inset 5px 5px 12px rgba(15, 18, 22, 0.75)",
       blur: "12px",
       glow: "0 0 0 3px rgba(111, 155, 255, 0.35)",
-      focusRing: "3px solid #6f9bff",
+      focusRing: "3px solid #6F9BFF",
       focusRingOffset: "2px",
     },
     extra: {
-      "--button-inverted": "#6f9bff",
-      "--button-inverted-hover": "#93b8ff",
-      "--button-inverted-pressed": "#5a8aef",
+      "--button-inverted": "#6F9BFF",
+      "--button-inverted-hover": "#93B8FF",
+      "--button-inverted-pressed": "#5A8AEF",
     },
   },
 })

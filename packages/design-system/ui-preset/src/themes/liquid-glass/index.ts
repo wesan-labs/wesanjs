@@ -1,39 +1,43 @@
 import { defineTheme } from "../build-tokens"
-
-const LIQUID_LIGHT_BG =
-  "radial-gradient(70% 90% at 10% 5%, oklch(0.82 0.18 285 / 0.65), transparent 55%), radial-gradient(60% 80% at 90% 10%, oklch(0.85 0.14 250 / 0.5), transparent 50%), radial-gradient(50% 60% at 50% 100%, oklch(0.88 0.12 320 / 0.4), transparent 55%), oklch(0.94 0.04 285)"
-
-const LIQUID_DARK_BG =
-  "radial-gradient(60% 80% at 8% 5%, oklch(0.42 0.20 285 / 0.55), transparent 55%), radial-gradient(55% 75% at 92% 8%, oklch(0.38 0.16 250 / 0.45), transparent 50%), oklch(0.12 0.04 265)"
+import {
+  AURORA_MESH_DARK,
+  AURORA_MESH_LIGHT,
+  CHROME_DARK_DARK,
+  CHROME_DARK_LIGHT,
+  REF,
+} from "../shared/pro-palette"
 
 const LIQUID_GLASS_EXTRA_LIGHT = {
-  "--app-backdrop": LIQUID_LIGHT_BG,
-  "--glass-blur": "16px",
-  "--glass-blur-nav": "14px",
-  "--glass-blur-flyout": "18px",
-  "--glass-blur-modal": "22px",
+  "--app-backdrop": AURORA_MESH_LIGHT,
+  "--glass-blur": "18px",
+  "--glass-blur-nav": "16px",
+  "--glass-blur-flyout": "20px",
+  "--glass-blur-modal": "24px",
   "--glass-specular":
-    "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.08)",
-  "--glass-scrim": "rgba(15, 23, 42, 0.08)",
-  "--surface-solid-fallback": "oklch(0.98 0.01 285)",
+    "inset 0 1px 0 rgba(255,255,255,0.60), inset 0 -1px 0 rgba(255,255,255,0.06)",
+  "--glass-scrim": "rgba(15, 23, 42, 0.06)",
+  "--surface-solid-fallback": REF.cream,
   "--opacity-surface": "0.88",
-  "--opacity-field": "0.92",
+  "--opacity-field": "0.94",
+  ...CHROME_DARK_LIGHT,
 }
 
 const LIQUID_GLASS_EXTRA_DARK = {
-  "--app-backdrop": LIQUID_DARK_BG,
-  "--glass-blur": "18px",
-  "--glass-blur-nav": "14px",
-  "--glass-blur-flyout": "18px",
-  "--glass-blur-modal": "22px",
+  "--app-backdrop": AURORA_MESH_DARK,
+  "--glass-blur": "20px",
+  "--glass-blur-nav": "16px",
+  "--glass-blur-flyout": "22px",
+  "--glass-blur-modal": "26px",
   "--glass-specular":
-    "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(255,255,255,0.04)",
-  "--glass-scrim": "rgba(0, 0, 0, 0.22)",
-  "--surface-solid-fallback": "oklch(0.18 0.03 265)",
+    "inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(255,255,255,0.04)",
+  "--glass-scrim": "rgba(0, 0, 0, 0.24)",
+  "--surface-solid-fallback": "#0C0C10",
   "--opacity-surface": "0.78",
   "--opacity-field": "0.85",
+  ...CHROME_DARK_DARK,
 }
 
+/** iOS-style liquid glass — aurora backdrop, frosted chrome, cream content surface. */
 export const liquidGlass = defineTheme({
   name: "liquid-glass",
   label: "Liquid Glass",
@@ -44,66 +48,68 @@ export const liquidGlass = defineTheme({
   frostedSurfaces: true,
   light: {
     palette: {
-      canvas: "oklch(0.94 0.05 285 / 0.45)",
-      surface: "oklch(0.97 0.04 285 / 0.82)",
-      elevated: "oklch(0.98 0.03 285 / 0.88)",
-      field: "oklch(0.99 0.02 285 / 0.94)",
-      text: "#12121a",
-      textMuted: "#43435a",
-      textSubtle: "#5c5c6e",
-      accent: "#5b4ef0",
-      accentFg: "#4338ca",
-      onAccent: "#ffffff",
-      border: "rgba(255, 255, 255, 0.45)",
-      borderStrong: "rgba(255, 255, 255, 0.65)",
+      canvas: "rgba(249, 248, 243, 0.72)",
+      surface: "rgba(255, 255, 255, 0.88)",
+      elevated: "rgba(255, 255, 255, 0.92)",
+      field: "rgba(255, 255, 255, 0.94)",
+      text: REF.ink,
+      textMuted: REF.inkMuted,
+      textSubtle: REF.inkSubtle,
+      accent: REF.violetInteractive,
+      accentHover: REF.violetInteractiveHover,
+      accentFg: REF.violetDeep,
+      onAccent: REF.white,
+      border: "rgba(255, 255, 255, 0.55)",
+      borderStrong: "rgba(255, 255, 255, 0.72)",
       borderStyle: "soft",
-      radius: "20px",
+      radius: REF.radiusLg,
       borderWidth: "1px",
       shadow:
-        "0 8px 32px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.55)",
+        "0 8px 32px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.60)",
       shadowSm:
-        "0 4px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.45)",
+        "0 4px 16px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.50)",
       shadowMd:
-        "0 8px 32px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.55)",
+        "0 8px 32px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.60)",
       shadowLg:
-        "0 12px 40px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
-      shadowPressed: "inset 0 2px 8px rgba(15, 23, 42, 0.15)",
-      blur: "16px",
-      glow: "0 0 0 1px rgba(255, 255, 255, 0.25)",
-      focusRing: "3px solid #4f46e5",
+        "0 12px 40px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65)",
+      shadowPressed: "inset 0 2px 8px rgba(15, 23, 42, 0.12)",
+      blur: "18px",
+      glow: "0 0 0 1px rgba(255, 255, 255, 0.30)",
+      focusRing: `3px solid ${REF.violet}`,
       focusRingOffset: "2px",
     },
     extra: LIQUID_GLASS_EXTRA_LIGHT,
   },
   dark: {
     palette: {
-      canvas: "rgba(10, 12, 24, 0.35)",
-      surface: "rgba(22, 24, 38, 0.78)",
-      elevated: "rgba(28, 30, 46, 0.82)",
-      field: "rgba(18, 20, 32, 0.85)",
-      text: "#f2f3fa",
-      textMuted: "#b0b6d6",
-      textSubtle: "#8086a8",
-      accent: "#818cf8",
-      accentFg: "#a5b4fc",
-      onAccent: "#0f1020",
-      border: "rgba(255, 255, 255, 0.14)",
-      borderStrong: "rgba(255, 255, 255, 0.22)",
+      canvas: "rgba(12, 12, 16, 0.55)",
+      surface: "rgba(24, 24, 32, 0.78)",
+      elevated: "rgba(30, 30, 40, 0.82)",
+      field: "rgba(18, 18, 26, 0.85)",
+      text: "#F2F3FA",
+      textMuted: "#B0B6D6",
+      textSubtle: "#8086A8",
+      accent: REF.violetInteractive,
+      accentHover: REF.violetInteractiveHover,
+      accentFg: "#C4B5FD",
+      onAccent: REF.white,
+      border: "rgba(255, 255, 255, 0.12)",
+      borderStrong: "rgba(255, 255, 255, 0.20)",
       borderStyle: "soft",
-      radius: "20px",
+      radius: REF.radiusLg,
       borderWidth: "1px",
       shadow:
-        "0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+        "0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.10)",
       shadowSm:
         "0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
       shadowMd:
-        "0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+        "0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.10)",
       shadowLg:
         "0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
       shadowPressed: "inset 0 2px 8px rgba(0, 0, 0, 0.5)",
-      blur: "18px",
+      blur: "20px",
       glow: "0 0 0 1px rgba(255, 255, 255, 0.08)",
-      focusRing: "3px solid #818cf8",
+      focusRing: `3px solid ${REF.violet}`,
       focusRingOffset: "2px",
     },
     extra: LIQUID_GLASS_EXTRA_DARK,

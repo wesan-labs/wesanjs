@@ -17,6 +17,11 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.mjs",
+      "require": "./dist/runtime.js"
+    },
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.ts",
@@ -24,7 +29,10 @@
   "scripts": {
     "build": "yarn run -T tsup",
     "generate": "toolbox tokens -o './src/theme'",
-    "validate:themes": "bun run scripts/validate-theme-contrast.ts"
+    "validate:themes": "bun run scripts/validate-theme-contrast.ts",
+    "sync:tweakcn": "node scripts/sync-tweakcn-themes.mjs",
+    "generate:tweakcn": "node scripts/generate-tweakcn-themes.mjs",
+    "audit:tweakcn": "node scripts/audit-tweakcn-themes.mjs"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.3",
