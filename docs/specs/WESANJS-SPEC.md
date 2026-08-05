@@ -86,7 +86,9 @@ plugins: [
 
 ## 5. Altyapı (Docker + DB)
 
-Medusa **Postgres zorunlu**; Redis opsiyonel (dev'de inmemory cache/event-bus/workflow var, prod-like için redis).
+Medusa **Postgres zorunlu**. Redis: tek süreçli dev'de opsiyonel (inmemory cache/event-bus/workflow),
+ama **çok replikalı veya uzun-süren işli kurulumda zorunlu** — kayıt yoksa workflow'lar kalıcı olmaz
+ve cron'lar her replikada ayrı koşar. Bkz. [ADR-0005](../adr/0005-background-jobs-queue-worker.md).
 
 ```yaml
 # docker-compose.yml (dev)
