@@ -35,3 +35,5 @@ dist/**
 
 .cursorignore
 **/.medusa
+# DB yedekleri — asla commit edilmez (PII + secret icerebilir)
+_backups/

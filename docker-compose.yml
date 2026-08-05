@@ -1,26 +1,37 @@
 name: helm
 
+# Dev altyapisi. Bu dosya, container'lari daha once yaratan compose dosyasinin
+# (old-levios/templates/fullstack — dizin SILINDI) yerini alir.
+#
+# ⚠️ VOLUME'LAR EXTERNAL: canli veri `helm_pgdata` / `helm_redisdata` icinde.
+# Bu dosya onlari YARATMAZ, var olani baglar. Compose'un kendi adlandirmasiyla
+# (helm_helm_pg gibi) yeni bos volume yaratirsa DB sifirdan acilir ve veri
+# kaybi gibi gorunur — external tanimi tam da bunu engelliyor.
+# Yedek: _backups/helm-<ts>.dump (pg_dump -Fc) + cluster-<ts>.sql
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: helm-postgres
+    # POSTGRES_* degiskenleri SADECE bos bir veri dizini ilk kez baslatilirken
+    # islenir. helm_pgdata zaten kurulu (PG_VERSION=16), dolayisiyla bunlar
+    # yok sayilir; mevcut cluster'daki gercek degerlerle ayni tutuluyor ki
+    # dosya yanlis bilgi vermesin. Uygulama DB'si: helm (helm/.env DATABASE_URL).
     environment:
-      POSTGRES_USER: helm
-      POSTGRES_PASSWORD: helm
-      POSTGRES_DB: helm
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: levios-store
     ports:
       - "5432:5432"
     volumes:
-      - helm_pg:/var/lib/postgresql/data
+      - helm_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U helm"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 3s
       retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: helm-redis
     # ADR-0005 K5: kuyruk verisi burada durur.
     #  appendonly yes    -> yeniden baslatmada kuyruktaki isler kaybolmaz
     #  noeviction        -> bellek dolunca Redis kuyruk anahtarlarini SILMEZ.
@@ -34,7 +45,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - helm_redis:/data
+      - helm_redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -42,5 +53,7 @@ services:
       retries: 10
 
 volumes:
-  helm_pg:
-  helm_redis:
+  helm_pgdata:
+    external: true
+  helm_redisdata:
+    external: true
