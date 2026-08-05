@@ -21,6 +21,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: helm-redis
+    # ADR-0005 K5: kuyruk verisi burada durur.
+    #  appendonly yes    -> yeniden baslatmada kuyruktaki isler kaybolmaz
+    #  noeviction        -> bellek dolunca Redis kuyruk anahtarlarini SILMEZ.
+    #                       allkeys-lru olsaydi isler sessizce yok olurdu.
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - noeviction
     ports:
       - "6379:6379"
     volumes:

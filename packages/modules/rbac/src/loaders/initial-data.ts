@@ -72,15 +72,31 @@ export default async ({
     syncedPolicies.map((p: { key: string; id: string }) => [p.key, p])
   )
 
-  for (const key of financePolicyKeys) {
-    const finPolicy = policyByKey.get(key)
-    if (!finPolicy) {
-      continue
-    }
-    await rbacRolePolicyService.upsert({
+  // Bagli tablonun dogal anahtari (role_id, policy_id) ve uzerinde unique index
+  // var; `id` uzerinden upsert etmek YANLIS. Ayni cifti admin UI rastgele bir
+  // id ile eklediyse upsert INSERT'e duser ve unique kisiti ihlal edip boot'u
+  // kilitler. Bu yuzden once mevcut cift kumesi cekilir (tek sorgu, O(n)).
+  const existingRolePolicies = await rbacRolePolicyService.list(
+    { role_id: financeRole.id },
+    { take: 500 }
+  )
+  const linkedPolicyIds = new Set(
+    existingRolePolicies.map((rp: { policy_id: string }) => rp.policy_id)
+  )
+
+  const missingLinks = financePolicyKeys
+    .map((key) => policyByKey.get(key))
+    .filter(
+      (finPolicy): finPolicy is { key: string; id: string } =>
+        !!finPolicy && !linkedPolicyIds.has(finPolicy.id)
+    )
+    .map((finPolicy) => ({
       id: `rlpl_finance_${finPolicy.id}`,
       role_id: financeRole.id,
       policy_id: finPolicy.id,
-    })
+    }))
+
+  if (missingLinks.length) {
+    await rbacRolePolicyService.create(missingLinks)
   }
 }
