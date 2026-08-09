@@ -6,6 +6,9 @@ Detaylı pazar analizi, sektör kaldıraç matrisi ve yol haritası için: [Sekt
 
 **Ana mimari doküman (ürün + 4 modül + plugin sözleşmesi):** [levios-platform-architecture.md](architecture/levios-platform-architecture.md)
 
+> ▶ **Nereden başlamalı:** [ROADMAP.md](ROADMAP.md) — sıra, her adımın "bitti sayılır" tanımı ve açık kararlar.
+> İş modeli / tam stack envanteri: [PLATFORM-MODEL-SPEC](specs/PLATFORM-MODEL-SPEC.md).
+
 ---
 
 ## Mimari Özet ve Kavram Ayrımı
