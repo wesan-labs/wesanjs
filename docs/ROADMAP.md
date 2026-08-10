@@ -10,8 +10,8 @@
 
 Platform soyut bir "SaaS" olarak değil, **iki somut kurulumla** doğrulanacak:
 
-1. **Kendi panelimiz** — wesan'ın kendi operasyonu
-2. **begahome** — babanın atölyesinin mobilya mağazası (gerçek işletme, gerçek ürünler)
+1. **Kendi panelimiz** — oyun/uygulama analitiği (AdMob · RevenueCat · sosyal). Ticaret **değil**.
+2. **begahome** — babanın atölyesinin mobilya mağazası (gerçek işletme, gerçek ürünler). Tek commerce tenant.
 
 ▎Bu, hayali müşteri beklemekten çok daha iyi bir doğrulama yolu. Gerçek veri, gerçek kullanım,
 sıfır ticari risk. Platformun çalıştığını A4'ü (kayıt/ödeme) beklemeden kanıtlarsın.
@@ -32,9 +32,53 @@ Zemin temizliği. Hiçbiri mimari değil, hepsi risk kapatıyor.
 
 ---
 
-## 2. ⚠️ Önce bir mimari karar — çekirdek tenant izolasyonu
+## 2. Çekirdek tenant izolasyonu — **ertelendi, bloke etmiyor**
 
-**Bunu netleştirmeden Durak 1'e geçme.**
+> **Karar (2026-08-10):** Bu kapı şimdilik açılmıyor. Gerekçe aşağıda.
+> Durak 1'e doğrudan geçilebilir.
+
+**Neden ertelenebilir:** İki kurulumun kullandığı tablolar ayrışıyor.
+
+```
+Kendi panelimiz — oyun/uygulama analitiği
+  revenue_app · revenue_source · revenue_event · revenue_metric_snapshot
+  revenue_expense · analytics_metric_snapshot · social_snapshot     → 7/7 tenant_id ✅
+
+begahome — ticaret
+  product · order · customer                                        → tenant_id ❌
+```
+
+Kendi panelimiz ticaret tablolarına **hiç dokunmuyor**. begahome ise tek commerce tenant.
+Tek sahibi olan tabloda çapraz-tenant sızıntısı olmaz.
+
+**⚠️ Kapının tetikleyicisi:** *ikinci bir commerce tenant*. (Örn. ileride giyim dikeyi.)
+O gün gelmeden önce aşağıdaki deney çalıştırılmış ve karar verilmiş olmalı.
+
+**Araştırma sonucu — "Store Module" yolu ELENDI:**
+
+| Varlık | Medusa'nın yerel kapsamı | Sorun |
+| :--- | :--- | :--- |
+| `product` | `product_sales_channel` (çoka-çok) | Görünürlük listesi, sahiplik değil |
+| `order` · `cart` | `sales_channel_id` | Sınır olarak çalışır |
+| `customer` | **yok** | Müşteriler tamamen ortak — KVKK'ya aykırı |
+| `store` | 8 alan, başka modüle link'i **yok** | Ayar kabı, tenant sınırı değil |
+
+`customer` tek başına bu yolu bitiriyor.
+
+**Kalan iki alt-yol — deneyle seçilecek:**
+
+| | Nasıl | Merge maliyeti | Bilinmeyen |
+| :--- | :--- | :--- | :--- |
+| **B1** | Sadece migration: kolon + `DEFAULT current_setting('app.current_tenant_id')` + RLS. Model dosyasına dokunulmaz. | **Sıfır** | MikroORM bilmediği kolona tahammül eder mi? `db:generate` düşürmek ister mi? |
+| **B2** | Upstream model dosyalarına alan ekle | Her Medusa sürümünde çakışma | Yok |
+
+**Deney (yarım gün, canlı veriye dokunmadan):** kopya DB → tek tablo (`product`) → B1 uygula →
+dört soruyu test et: ① tenant_id doluyor mu ② çapraz-tenant okuma engelleniyor mu
+③ `db:migrate` kolonu koruyor mu ④ `db:generate` düşürmek istiyor mu.
+Dördü temizse B1, değilse B2 — ama maliyeti bilerek.
+
+**Yan iş:** RLS rolü adları `levios_app` / `levios_platform` (39 referans), levios döneminden kalma.
+Çekirdeğe yayılmadan önce değiştirmek ucuz; sonra pahalı.
 
 Bugünkü durum ([#0005](tasks/0005-tenant-id-rls-rollout.md)):
 
@@ -186,10 +230,11 @@ kapsam büyümesinden** öldü. Her seferinde yeni katman eklendi, hiçbiri bitm
 
 | # | Karar | Neyi bloke ediyor |
 | :-- | :--- | :--- |
-| 1 | "Kendi panelim" bir mağaza mı, yoksa platform yönetimi mi? | §2 — çekirdek izolasyon kapısının ne zaman açılacağı |
-| 2 | Çekirdek izolasyon: Store Module mü, RLS mi? | Durak 1 sonrası her şey |
+| ~~1~~ | ~~"Kendi panelim" mağaza mı?~~ | **Kapandı (2026-08-10):** analitik paneli, ticaret değil → §2 ertelendi |
+| 2 | Çekirdek izolasyon B1 mi B2 mi? | Hiçbir şeyi — ama ikinci commerce tenant'tan **önce** deney koşulmalı |
 | 3 | Durak 4: WhatsApp mı, ikinci sektör seti mi? | Durak 4'ün içeriği |
 | 4 | ADR-0005 "Önerildi" → "Kabul" olacak mı? | Yok (uygulandı, çalışıyor) |
+| 5 | RLS rol adları `levios_*` yeniden adlandırılsın mı? | Yok — ama çekirdeğe yayılmadan yapılmalı |
 
 ---
 
